@@ -1,6 +1,6 @@
 {
     "name": "@nowams/verovioscoreeditor",
-    "version": "1.1.5",
+    "version": "1.1.6",
     "main": "src/scripts/js/Entry.js",
     "keywords": [],
     "author": "Matthias Nowakowski",
