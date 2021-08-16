@@ -1,0 +1,71 @@
+/**
+ * Class to fill SVG of Score in HTML with information from underlying mei
+ */
+class SVGFiller{
+
+    private classListMap: Map<string, DOMTokenList>
+
+    constructor(){}
+
+    /**
+     * Fill SVG in Dom with relevant mei Information
+     * @param mei Document from MEI
+     */
+    fillSVG(mei: Document){
+        this.fillSystemCounts(mei)
+    }
+
+    /**
+     * Fill measure, staff and layer with attributes from MEI
+     * @param mei Document from MEI 
+     */
+    fillSystemCounts(mei: Document){
+        var elements = Array.from(mei.querySelectorAll("measure, staff, layer"))
+        elements.forEach(e => {
+            var svgElement = document.getElementById(e.id)
+            if(svgElement === null || e.getAttribute("n") === null ){
+                return
+            }
+            svgElement.setAttribute("n", e.getAttribute("n"))
+        })
+        return this
+    }
+
+    cacheClasses(){
+        var svg = document.getElementById("rootSVG")
+        if(svg === null){
+            return this
+        }
+
+        this.classListMap = new Map();
+        svg.querySelectorAll("*").forEach(el => {
+            if(el.tagName.toLowerCase() === "g" && el.getAttribute("id") !== null){
+                this.classListMap.set(el.getAttribute("id"), el.classList)
+            }
+        })
+        return this
+    }
+
+    loadClasses(){
+        if(typeof this.classListMap === "undefined"){
+            return this
+        }
+
+        for(const [key, value] of this.classListMap.entries()){
+            var el = document.getElementById(key)
+            if(el !== null){
+                el.removeAttribute("class")
+                value.forEach(v => {
+                    if(!el.hasAttribute("class")){
+                        el.setAttribute("class", v)
+                    }else{
+                        el.classList.add(v)
+                    }
+                })
+            }
+        }
+        return this
+    }
+}
+
+export default SVGFiller

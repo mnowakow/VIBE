@@ -1,0 +1,284 @@
+@import '~bootstrap/dist/css/bootstrap.min.css';
+
+.h5p-container{    
+    position: relative;
+    width: auto;
+    height: 500px;
+    background: white;
+}
+
+body.waiting * {
+    cursor:wait !important;
+}
+
+body.textmode  * {
+    cursor: text !important;
+}
+
+body.clickmode  * {
+    cursor: crosshair !important;
+}
+
+#rootSVG{
+    top: 0px;
+    width: 100%;
+    height: auto;
+    overflow: scroll;
+}
+
+#svg_output, .annotText, .annotText *{
+    white-space: pre;
+}
+
+
+.note, .staff, .measure{
+    cursor: pointer;
+}
+
+/*
+*   TOOLBAR
+*/
+#insertMode{
+    background-image: url(../images/GUI/edit-solid.svg);
+    background-color: white;
+    color: rgba(0,0,0,0);
+}
+
+#fullNote{
+    background-image: url(../images/bravura_notes/full.svg);
+}
+
+#halfNote{
+    background-image: url(../images/bravura_notes/half.svg);
+}
+
+#quarterNote{
+    background-image: url(../images/bravura_notes/quarter.svg);
+}
+
+#eigthNote{
+    background-image: url(../images/bravura_notes/eigth.svg);
+}
+
+#sixteenthNote{
+    background-image: url(../images/bravura_notes/16th.svg);
+}
+
+#thirtysecondNote{
+    background-image: url(../images/bravura_notes/32th.svg);
+}
+
+#oneDot{
+    background-image: url(../images/bravura_notes/oneDot.svg);
+}
+
+#twoDot{
+    background-image: url(../images/bravura_notes/twoDot.svg);
+}
+
+#pauseNote{
+    background-image: url(../images/bravura_notes/pauseNote.svg);
+}
+
+.btn{
+    background-repeat: no-repeat;
+    background-position-x: center;
+    background-position-y: center;
+    outline: none;
+    background-size: 20% contain;
+}
+
+.btn:hover, .btn.selected {
+    filter: invert();
+    color: black;
+    background-color: white;
+}
+
+#btnToolbar{
+    top: 0px;
+    transition: 0.5s;
+}
+
+#toggleSidebar{
+    border-bottom-left-radius: 0;
+    border-top-left-radius: 0;
+}
+
+#toggleSidebar.closedSidebar{
+    background-image: url(../images/GUI/caret-right-solid.svg);
+}
+
+#toggleSidebar.openSidebar{
+    background-image: url(../images/GUI/caret-left-solid.svg);
+}
+
+
+#sidebarContainer{
+    position: absolute;
+    left: 0;
+    z-index: 1;
+    top: 0;
+    width: 0;
+    height: 100%;
+    border-color: black;
+    border-style: solid;
+    border-width: 1px;
+    background-color: white;
+    transition: 0.5s;
+    border-top-left-radius: 5px;
+    border-bottom-left-radius: 5px;
+    overflow:scroll;
+}
+
+#sidebarContainer a{
+    display: block;
+    padding-left: 10px;
+    overflow: visible;
+}
+
+#sidebarContainer *{
+    font-size: 10pt;
+}
+
+#sidebarContainer.closedSidebar{
+    visibility: hidden;
+}
+
+#sidebarContainer.openSidebar{
+    visibility: visible;
+}
+
+.list-group{
+    display: block;
+}
+
+/*
+* ANNOTATIONS
+*/
+
+#canvasG.back *{
+   opacity: 0.5;
+}
+
+#canvasG.front *{
+    opacity: 1;
+ }
+ 
+.annotFO{
+    background-color: rgba(255, 255, 153, 0.8);
+    border-radius: 0px 10px 10px 10px;
+}
+
+.annotLine{
+    stroke-width: 2px;
+    stroke: lightskyblue;
+    stroke-dasharray: 2px;
+}
+
+
+.lineDragRect{
+    stroke-width: 1px;
+    stroke: black;
+    fill: whitesmoke;
+    height: 7px;
+    width: 7px;
+    transform: translate(-3.5, -3.5);
+}
+
+.highlightAnnotation, .highlightChord{
+    fill-opacity: 0.2;
+    outline-style: dotted;
+    outline-width: 0.5px;
+    outline-color: black;
+}
+
+.layer[n="1"] .note.highlighted{
+    fill: rgb(255, 71, 255)
+}
+
+.layer[n="2"] .note.highlighted{
+    fill: green
+}
+
+.layer[n="3"]  .note.highlighted{
+    fill: blue
+}
+
+.layer[n="4"]  .note.highlighted{
+    fill: orange
+}
+
+.customAnnotShape.selected{
+    box-shadow: 10px 10px 15px silver;
+}
+
+.customAnnotShape{
+    fill: orange;
+    fill-opacity: 0.2;
+    outline-style: dotted;
+    outline-width: 0.5px;
+    outline-color: black; 
+}
+
+.annotText.selected{
+    box-shadow: 10px 10px 15px silver;
+}
+
+[contentEditable=false]:empty:not(:focus):before{
+    content:attr(data-text);
+    color: lightgray;
+}
+
+.currentlyPlaying{
+    fill:red;
+    fill-opacity: 1;
+}
+
+#followerRect{
+    fill: red;
+    fill-opacity: 0.3;
+    outline-style: none;
+}
+
+.marked{
+    fill: red
+}
+
+.playing{
+    fill: red
+}
+
+
+/* HARMONY */
+
+.harmonyDiv{
+    border: 2px solid black;
+    border-radius: 10px;
+    height: fit-content;
+    width: fit-content;
+    min-width: 50px;
+    background-color: beige;
+}
+
+/* KEYMODE */
+
+#keyModeSelectRect{
+    stroke: black;
+    stroke-opacity: 1;
+    stroke-width: 2px;
+    fill: lightskyblue;
+    fill-opacity: 0.4;
+}
+
+/* CLICK MODE */
+
+#phantomNote{
+    transform: skew(-20);
+}
+
+.phantomLine{
+    stroke-width: 2px;
+    stroke:black;
+    opacity: 0.5;
+}
+

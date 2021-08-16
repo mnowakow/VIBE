@@ -1,0 +1,193 @@
+import MusicPlayer from "../MusicPlayer";
+import { Mouse2MEI } from "../utils/Mouse2MEI";
+import Handler from "./Handler";
+import { constants as c } from '../constants'
+import Annotations from "../gui/Annotations";
+import { NewNote } from "../utils/Types";
+
+//@ts-ignore
+//const $ = H5P.jQuery;
+
+class ClickModeHandler implements Handler{
+    m2m?: Mouse2MEI;
+    musicPlayer?: MusicPlayer;
+    currentMEI?: string | Document;
+    annotations: Annotations;
+    insertCallback: (newNote: NewNote) => Promise<any>;
+    deleteCallback: (notes: Array<Element>) => Promise<any>;
+
+    setListeners(){
+        // Listenere for whole SVG (maybe just layer?)
+        var svg = document.querySelectorAll(c._ROOTSVGID_WITH_IDSELECTOR_)
+        Array.from(svg).forEach(element => {
+            element.addEventListener('click', this.clickHandler)
+            element.addEventListener("mousemove", this.mouseOverChordHandler)
+        });
+
+
+        // Listener just for staves
+        var staves = document.querySelectorAll(".staffLine")
+        Array.from(staves).forEach(element => {
+        element.addEventListener('click', this.clickHandler)
+        })
+    }
+
+    removeListeners(){
+        var svg = document.querySelectorAll(c._ROOTSVGID_WITH_IDSELECTOR_)
+        Array.from(svg).forEach(element => {
+            element.removeEventListener('click', this.clickHandler)
+            element.removeEventListener("mousemove", this.mouseOverChordHandler)
+            if(typeof this.annotations !== "undefined"){
+            var highLightElements: NodeListOf<Element> = this.annotations.getCanvasGroup().querySelectorAll(".highlightChord")
+            Array.from(highLightElements).forEach(el => {
+                el.remove()
+            })
+            }
+        });
+
+        document.querySelectorAll(".highlighted").forEach((c: Element) => {
+            c.classList.remove("highlighted")
+        })
+
+
+        // Listener just for staves
+        var staves = document.querySelectorAll(".staffLine")
+        Array.from(staves).forEach(element => {
+            element.removeEventListener('click', this.clickHandler)          
+        })
+    }
+
+    resetListeners(){
+        this.removeListeners()
+        this.setListeners()
+    }
+
+    /**
+     * Event handler for inserting Notes
+     */
+    clickHandler = (function clickHandler (evt: MouseEvent): void{
+
+        var posx = evt.offsetX
+        var posy = evt.offsetY
+        var target = evt.target as HTMLElement;
+        var options = {}
+
+        if(target.classList.contains("staffLine")){
+            options["staffLineId"] = target.id
+        }
+        if(target.classList.contains("highlightChord")){
+            options["targetChord"] = this.findScoreTarget(posx, posy)
+        }
+        this.m2m.defineNote(evt.pageX, evt.pageY, options);
+        //this.removeListeners();
+
+        var newNote: NewNote = this.m2m.getNewNote()
+        var meiDoc = this.m2m.getCurrentMei()
+        var pitchExists: Boolean = false
+
+        // do not insert same note more than once in chord
+        if(typeof newNote.chordElement !== "undefined"){
+            var chordEl = meiDoc.getElementById(newNote.chordElement.id)
+            if(chordEl.getAttribute("pname") === newNote.pname && chordEl.getAttribute("oct") === newNote.oct){
+                pitchExists = true
+            }else{
+                for(let c of chordEl.children){
+                    if(c.getAttribute("pname") === newNote.pname && c.getAttribute("oct") === newNote.oct){
+                    pitchExists = true
+                    break
+                    }
+                }
+            }
+        }
+
+        if(!pitchExists){
+            this.insertCallback(this.m2m.getNewNote())
+            this.musicPlayer.generateTone(this.m2m.getNewNote())
+        }
+    }).bind(this)
+
+
+    mouseOverChordHandler = (function mouseOverHandler (evt: MouseEvent): void{
+        var rootBBox = document.getElementById(c._ROOTSVGID_).getBoundingClientRect()    
+        var posx = evt.offsetX
+        var posy = evt.offsetY
+
+        var elementToHighlight: Element = this.findScoreTarget(posx, posy)
+        if(typeof this.prevElementToHighlight === "undefined" || this.currentElementToHighlight !== elementToHighlight){
+        
+        // in css: elements get highlight color according to layer
+        document.querySelectorAll(".highlighted").forEach(h => {
+            h.classList.remove("highlighted")
+        })
+        if(!elementToHighlight.classList.contains("chord")){
+            elementToHighlight.classList.add("highlighted")
+        }else{
+            elementToHighlight.querySelectorAll(".note").forEach((c: Element) => {
+            c.classList.add("highlighted")
+            })
+        }
+
+        var highLightRects: NodeListOf<Element> = this.annotations.getCanvasGroup().querySelectorAll(".highlightChord")
+        Array.from(highLightRects).forEach(el => {
+            el.remove()
+        })
+
+        var ebb: DOMRect = elementToHighlight.getBoundingClientRect()
+
+        var highlightRect: SVGElement = document.createElementNS(c._SVGNS_, "rect")
+        var margin = 5
+        highlightRect.setAttribute("x", (ebb.x - rootBBox.x - margin).toString())
+        highlightRect.setAttribute("y", (ebb.y - rootBBox.y - 10*margin).toString())
+        highlightRect.setAttribute("height", (ebb.height + 20*margin).toString())
+        highlightRect.setAttribute("width", (ebb.width + 2*margin).toString())
+        highlightRect.classList.add("highlightChord")
+        this.annotations.getCanvasGroup().appendChild(highlightRect)
+        //highlightRect.addEventListener("click", this.clickHandler)
+        this.currentElementToHighlight = elementToHighlight
+        }
+        
+    }).bind(this)
+
+    /**
+         * Find Score Element nearest to given Position (e.g. Mouse)
+         * @param posx 
+         * @param posy 
+         * @returns 
+         */
+    findScoreTarget(posx: number, posy: number): Element{
+        var nextNote = this.m2m.findScoreTarget(posx, posy)
+        var el = document.getElementById(nextNote.id).closest(".chord") || document.getElementById(nextNote.id)
+        return el
+    }
+
+
+    ///// GETTER / SETTER////////////////
+
+    setM2M(m2m: Mouse2MEI){
+        this.m2m = m2m
+        return this
+      }
+    
+      setMusicPlayer(musicPlayer: MusicPlayer){
+        this.musicPlayer = musicPlayer
+        return this
+      }
+
+      setAnnotations(annotations: Annotations){
+          this.annotations = annotations
+          return this
+      }
+    
+      setInsertCallback(insertCallback: (newNote: NewNote) => Promise<any>){
+        this.insertCallback = insertCallback
+        return this
+      }
+    
+      setDeleteCallback(deleteCallback: (notes: Array<Element>) => Promise<any>){
+        this.deleteCallback = deleteCallback
+        return this
+      }
+
+}
+
+export default ClickModeHandler

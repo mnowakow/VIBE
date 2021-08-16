@@ -1,7 +1,7 @@
 {
     "name": "@nowams/verovioscoreeditor",
     "version": "1.1.0",
-    "main": "Entry.ts",
+    "main": "src/Entry.ts",
     "keywords": [],
     "author": "Matthias Nowakowski",
     "license": "MIT",

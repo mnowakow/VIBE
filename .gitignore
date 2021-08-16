@@ -1,0 +1,8 @@
+*~
+node_modules/
+dist/
+src/scripts/js
+src/deprecated
+.DS_Store
+h5p.code-workspace
+package-lock.json
