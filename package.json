@@ -58,5 +58,10 @@
     ],
     "devDependencies": {
         "@nowams/verovioscoreeditor": "^1.1.2"
-    }
+    }, 
+    "files": [
+        "src/styles/*.css",
+        "src/images/*/*"
+    ]
+
 }
