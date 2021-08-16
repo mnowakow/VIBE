@@ -5,4 +5,4 @@ node_modules/
 .*
 package-lock.json
 src/scripts/
-!src/script/js
+!src/script/js/*
