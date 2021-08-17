@@ -58,6 +58,7 @@
     ],
     "files": [
         "src/styles/*.css",
-        "src/images/*/*"
+        "src/images/*/*",
+        "src/scripts/js/*"
     ]
 }
