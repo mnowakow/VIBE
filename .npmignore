@@ -1,6 +1,0 @@
-*.ts
-README.md
-tsconfig.json
-node_modules/
-.*
-package-lock.json
