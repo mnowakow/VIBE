@@ -1,7 +1,7 @@
 # VerovioScoreEditor
 
-![npm](https://img.shields.io/npm/v/@nowams/verovioscoreeditor)
+![npm](https://img.shields.io/npm/v/verovioscoreeditor)
 
-npm package for a score editor using verovio as rendering engine
+A score editor using verovio as rendering engine
 
 

@@ -3,8 +3,8 @@ import * as customType from "../utils/Types"
 import { Button, Dropdown, Collapse } from 'bootstrap'
 import { thresholdFreedmanDiaconis } from 'd3-array'
 import SidebarHandler from '../handlers/SideBarHandler'
-import Evaluation from '../evaluation/Evaluation'    
-import SimpleSubmit from '../evaluation/SimpleSubmit'
+//import Evaluation from '../evaluation/Evaluation'    
+//import SimpleSubmit from '../evaluation/SimpleSubmit'
 
 const buttonStyle = "btn btn-outline-dark btn-md"
 
@@ -21,7 +21,7 @@ class Toolbar{
     private textModeGroup: HTMLElement
     private options: customType.InstanceOptions
 
-    private task: Evaluation
+    //private task: Evaluation
 
     constructor(options: customType.InstanceOptions = null){
         if(options !== null){
@@ -134,15 +134,15 @@ class Toolbar{
             return
         }
 
-        if(typeof this.options.taskType !== "undefined"){
-            var submitButton = dc.makeNewButton("Submit", "submitScore", buttonStyle)
-            this.sidebar.appendChild(submitButton)
-            switch(this.options.taskType){
-                case "simpleSubmit":
-                    this.task = new SimpleSubmit()
-                    break;
-            }
-        }
+        // if(typeof this.options.taskType !== "undefined"){
+        //     var submitButton = dc.makeNewButton("Submit", "submitScore", buttonStyle)
+        //     this.sidebar.appendChild(submitButton)
+        //     switch(this.options.taskType){
+        //         case "simpleSubmit":
+        //             this.task = new SimpleSubmit()
+        //             break;
+        //     }
+        // }
     }
 
     private createButtonsMainToolbar(){
@@ -230,7 +230,7 @@ class Toolbar{
         // achtung: nie preventDefault in einem Document anwenden
         document.addEventListener("keydown", this.closeHandlerKey)
 
-        document.getElementsByClassName("h5p-container")[0].addEventListener("click", this.closeHandlerMouse)
+        document.getElementsByClassName("vse-container")[0].addEventListener("click", this.closeHandlerMouse)
         
         document.querySelectorAll(".btn-group button").forEach(el => {
             el.addEventListener("click", this.exclusiveSelectHandler)
@@ -254,7 +254,7 @@ class Toolbar{
 
         document.removeEventListener("keydown", this.closeHandlerKey)
 
-        document.getElementsByClassName("h5p-container")[0].removeEventListener("click", this.closeHandlerMouse)
+        document.getElementsByClassName("vse-container")[0].removeEventListener("click", this.closeHandlerMouse)
 
         document.querySelectorAll(".btn-group button").forEach(el => {
             el.removeEventListener("click", this.exclusiveSelectHandler)

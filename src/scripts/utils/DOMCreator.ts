@@ -50,8 +50,10 @@ export function makeNewDivH5P(id: string, className: string, role: string = ""):
 export function makeNewDiv(id: string, className: string, attributes: object = null): Element{
     var div = document.createElement("div")
     div.setAttribute("id", id)
-    var classList = className.split(" ")
-    classList.forEach(c =>  div.classList.add(c))
+    if(["", " "].indexOf(className) === -1){
+        var classList = className.split(" ")
+        classList.forEach(c =>  div.classList.add(c))
+    }
     if(div.classList.contains("dropdown-menu")){
         div.setAttribute("aria-labelledby", "insertMode")
     }
