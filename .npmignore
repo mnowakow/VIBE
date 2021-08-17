@@ -4,5 +4,3 @@ tsconfig.json
 node_modules/
 .*
 package-lock.json
-src/scripts/*
-!src/script/js
