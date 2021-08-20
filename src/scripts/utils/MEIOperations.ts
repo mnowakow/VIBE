@@ -1,8 +1,9 @@
 import * as meiConverter from './MEIConverter'
 import { uuidv4 } from './random'
-import { constants as c} from '../constants'
-import { NewNote } from './Types'
+import { constants as c } from '../constants'
+import { NewChord, NewNote } from './Types'
 import { keysigToNotes, nextStepUp, nextStepDown } from './mappings'
+import MeiTemplate from '../assets/mei_template'
 
 const countableNoteUnitSelector: string =  
 ":scope > note:not([grace])," +
@@ -33,7 +34,6 @@ export function removeFromMEI(notes: Array<Element>, currentMEI: Document): Prom
     cleanUp(currentMEI)
     //fillWithRests(currentMEI)
   
-
     // Warum ist das ein Problem?
     currentMEI = meiConverter.restorepXmlIdTags(currentMEI)
     resolve(currentMEI)
@@ -89,82 +89,88 @@ function getMeterRatioGlobal(xmlDoc: Document): number{
  * @param newNote Information where to put new Note
  * @param mei 
  */
-export function addToMEI(newNote: NewNote, currentMEI: Document): Promise<Document> {
+export function addToMEI(newElement: NewNote | NewChord, currentMEI: Document): Promise<Document> {
   return new Promise<Document>((resolve): void => {
 
-    var newElem: HTMLElement
-    if(newNote.rest){
-      newElem = currentMEI.createElement("rest")
-    }else{
-      newElem = currentMEI.createElement("note");
-      newElem.setAttribute("pname", newNote.pname);
-      newElem.setAttribute("oct", newNote.oct);
-      if(typeof newNote.accid !== "undefined"){
-        newElem.setAttribute("accid.ges", newNote.accid)
-      }
-    }
-    newElem.setAttribute("dur", newNote.dur);
-
-    if(typeof newNote.dots !== "undefined"){
-      newElem.setAttribute("dots", newNote.dots)
-    }
-    if(typeof newNote.id !== "undefined" && newNote.id !== null){
-      newElem.setAttribute("id", newNote.id)
-    }
-
-    //Do sthm with chords
-    if(typeof newNote.chordElement !== "undefined" && !newNote.rest){
-      var chord: Element
-      var meiChordEl = currentMEI.getElementById(newNote.chordElement.id)
-      if(newNote.chordElement.classList.contains("chord")){
-        chord = meiChordEl
-        chord.appendChild(newElem)
+    if(Object.prototype.toString.apply(newNote) === "NewNote"){
+      var newNote = newElement as NewNote
+      var newElem: HTMLElement
+      if(newNote.rest){
+        newElem = currentMEI.createElement("rest")
       }else{
-        chord = document.createElement("chord")
-        chord.setAttribute("id", uuidv4())
-        chord.setAttribute("dur", meiChordEl.getAttribute("dur"));
-          if(meiChordEl.getAttribute("dots") !== null){
-            chord.setAttribute("dots", meiChordEl.getAttribute("dots"))
-          }
-        chord.appendChild(newElem)
-        meiChordEl.parentElement.insertBefore(chord, meiChordEl)
-        chord.appendChild(meiChordEl)
+        newElem = currentMEI.createElement("note");
+        newElem.setAttribute("pname", newNote.pname);
+        newElem.setAttribute("oct", newNote.oct);
+        if(typeof newNote.accid !== "undefined"){
+          newElem.setAttribute("accid.ges", newNote.accid)
+        }
+      }
+      newElem.setAttribute("dur", newNote.dur);
+
+      if(typeof newNote.dots !== "undefined"){
+        newElem.setAttribute("dots", newNote.dots)
+      }
+      if(typeof newNote.id !== "undefined" && newNote.id !== null){
+        newElem.setAttribute("id", newNote.id)
       }
 
-      chord.childNodes.forEach((n: Element) => {
-        n.removeAttribute("dur")
-        n.removeAttribute("dots")
-      });
-      
-    }else if(newNote.nearestNoteId !== null){
-      var sibling: HTMLElement = currentMEI.getElementById(newNote.nearestNoteId);
-      var parentLayer = sibling.closest("layer")
-      var trueParent = sibling.parentElement
-      var isTrueSibling = parentLayer == trueParent
-      var trueSibling: HTMLElement = sibling;
-      if(!isTrueSibling){
-          var currParent: HTMLElement = trueParent;
-          while(!isTrueSibling){
-            isTrueSibling = (trueSibling.tagName === "note" && trueSibling.closest("chord") === null) || trueSibling.closest("chord") === trueSibling //parentLayer == currParent.parentElement 
-            if(!isTrueSibling){
-              trueSibling = currParent;
-              currParent = currParent.parentElement;
+      //Do sthm with chords
+      if(typeof newNote.chordElement !== "undefined" && !newNote.rest){
+        var chord: Element
+        var meiChordEl = currentMEI.getElementById(newNote.chordElement.id)
+        if(newNote.chordElement.classList.contains("chord")){
+          chord = meiChordEl
+          chord.appendChild(newElem)
+        }else{
+          chord = document.createElement("chord")
+          chord.setAttribute("id", uuidv4())
+          chord.setAttribute("dur", meiChordEl.getAttribute("dur"));
+            if(meiChordEl.getAttribute("dots") !== null){
+              chord.setAttribute("dots", meiChordEl.getAttribute("dots"))
             }
-          }
-      }
-      if(newNote.relPosX === "left"){
-        trueSibling.parentElement.insertBefore(newElem, trueSibling)
-      }else{
-        trueSibling.parentElement.insertBefore(newElem, trueSibling.nextSibling)
-      }
-    
-      // For now: No Shifts (22.07.2021)
-      // if($(".measure").length > 1){
-      //   checkInsertShifts(currentMEI);
-      // }
+          chord.appendChild(newElem)
+          meiChordEl.parentElement.insertBefore(chord, meiChordEl)
+          chord.appendChild(meiChordEl)
+        }
 
-    }else{
-      currentMEI.getElementById(newNote.staffId).querySelector("layer").appendChild(newElem)
+        chord.childNodes.forEach((n: Element) => {
+          n.removeAttribute("dur")
+          n.removeAttribute("dots")
+        });
+        
+      }else if(newNote.nearestNoteId !== null){
+        var sibling: HTMLElement = currentMEI.getElementById(newNote.nearestNoteId);
+        var parentLayer = sibling.closest("layer")
+        var trueParent = sibling.parentElement
+        var isTrueSibling = parentLayer == trueParent
+        var trueSibling: HTMLElement = sibling;
+        if(!isTrueSibling){
+            var currParent: HTMLElement = trueParent;
+            while(!isTrueSibling){
+              isTrueSibling = (trueSibling.tagName === "note" && trueSibling.closest("chord") === null) || trueSibling.closest("chord") === trueSibling //parentLayer == currParent.parentElement 
+              if(!isTrueSibling){
+                trueSibling = currParent;
+                currParent = currParent.parentElement;
+              }
+            }
+        }
+        if(newNote.relPosX === "left"){
+          trueSibling.parentElement.insertBefore(newElem, trueSibling)
+        }else{
+          trueSibling.parentElement.insertBefore(newElem, trueSibling.nextSibling)
+        }
+      
+        // For now: No Shifts (22.07.2021)
+        // if($(".measure").length > 1){
+        //   checkInsertShifts(currentMEI);
+        // }
+
+      }else{
+        currentMEI.getElementById(newNote.staffId).querySelector("layer").appendChild(newElem)
+      }
+    }else if(Object.prototype.toString.apply(newNote) === "NewChord"){
+      //TODO
+      var newChord = newElement as NewChord
     }
 
     cleanUp(currentMEI)
@@ -800,8 +806,8 @@ function fillWithRests(xmlDoc: Document){
 
 function replaceWithRest(element: Element, xmlDoc: Document){
   var elmei: Element = xmlDoc.getElementById(element.id)
-  var closestChord: Element = xmlDoc.getElementById(element.id).closest("chord")
-  if(closestChord !== null){elmei = closestChord}
+  //var closestChord: Element = xmlDoc.getElementById(element.id).closest("chord")
+  //if(closestChord !== null){elmei = closestChord}
   var dur = elmei.getAttribute("dur")
   var dots = elmei.getAttribute("dots")
   var newRest = xmlDoc.createElementNS(c._MEINS_, "rest")
@@ -896,6 +902,7 @@ export function changeDuration(xmlDoc: Document, mode: string, additionalElement
 function cleanUp(xmlDoc: Document){
   reorganizeBeams(xmlDoc)
   removeEmptyElements(xmlDoc)
+  //fillWithRests(xmlDoc)
   adjustRests(xmlDoc)
 }
 
@@ -972,5 +979,181 @@ function reorganizeBeams(xmlDoc: Document){
       }
     })
   })
+}
 
+export function addMeasure(xmlDoc: Document){
+  var lastMeasure = Array.from(xmlDoc.querySelectorAll("measure")).reverse()[0]
+  var staffCounts: number[] = Array.from(lastMeasure.querySelectorAll("staff")).map(s => {return parseInt(s.getAttribute("n"))})
+  var staffCount = Math.max.apply(Math, staffCounts)
+  var layerCounts: number[] = Array.from(lastMeasure.querySelectorAll("layer")).map(s => {return parseInt(s.getAttribute("n"))})
+  var layerCount = Math.max.apply(Math, layerCounts)
+  var newMeasure: Element = new MeiTemplate().createMeasure(1, staffCount, layerCount) as Element
+  newMeasure.setAttribute("id", uuidv4())
+  lastMeasure.parentElement.append(newMeasure)
+  var i = 1
+  xmlDoc.querySelectorAll("measure").forEach(m => {
+    m.setAttribute("n", i.toString())
+    i++
+  })
+  cleanUp(xmlDoc)
+}
+
+export function removeMeasure(xmlDoc: Document){
+  var measures = Array.from(xmlDoc.querySelectorAll("measure")).reverse()
+  if(measures.length > 1){
+    measures[0].remove()
+}else{
+  measures[0].querySelectorAll("layer").forEach(l => {
+    l.innerHTML = ""
+    l.appendChild(xmlDoc.createElement("mRest"))
+  })
+}
+  cleanUp(xmlDoc)
+}
+
+export function addStaff(xmlDoc:Document, referenceStaff: Element, relPos: string){
+  var staffNum = referenceStaff.getAttribute("n")
+  var refn: string
+  var refElement: Element
+  xmlDoc.querySelectorAll("staff[n=\"" + staffNum +"\"]").forEach(s =>{
+    var newStaff = new MeiTemplate().createStaff(1, 1) as Element
+    switch(relPos){
+      case "above":
+        refElement = s.previousElementSibling
+        break;
+      case "below":
+        refElement = s.nextElementSibling
+        break;
+      default:
+        console.error(relPos, " was never an option")
+    }
+    s.parentElement.insertBefore(newStaff, refElement)
+    refn = refElement.getAttribute("n")
+  })
+
+  //new StaffDef
+  var refStaffDef = xmlDoc.querySelector("staffDef[n=\""+refn+"\"]")
+  var refCopy = refStaffDef.cloneNode(true) as Document
+  refCopy.querySelectorAll("*[id]").forEach(i => {
+    i.removeAttribute("id")
+  })
+  refStaffDef.parentElement.insertBefore(refCopy, refStaffDef)
+
+
+  xmlDoc.querySelectorAll("measure").forEach(m => {
+    var i = 1
+    m.querySelectorAll("staff").forEach(s => {
+      s.setAttribute("n", i.toString())
+      i++
+    })
+  })
+  var i = 1
+  xmlDoc.querySelectorAll("staffDef").forEach(sd => {
+    sd.setAttribute("n", i.toString())
+    i++
+  })
+  cleanUp(xmlDoc)
+}
+
+export function removeStaff(xmlDoc:Document, referenceStaff: Element, relPos:string){
+  var staff = xmlDoc.getElementById(referenceStaff.id)
+  var staffNum = staff.getAttribute("n")
+  var refn: string
+  xmlDoc.querySelectorAll("staff[n=\"" + staffNum +"\"]").forEach(s =>{
+    switch(relPos){
+      case "above":
+        refn = s.previousElementSibling.getAttribute("n")
+        s.previousElementSibling.remove()
+        break;
+      case "below":
+        refn = s.nextElementSibling.getAttribute("n")
+        s.nextElementSibling.remove()
+        break;
+      default:
+        console.error(relPos, " was never an option")
+    }
+  })
+
+  xmlDoc.querySelector("staffDef[n=\""+refn+"\"]").remove()
+
+  xmlDoc.querySelectorAll("measure").forEach(m => {
+    var i = 1
+    m.querySelectorAll("staff").forEach(s => {
+      s.setAttribute("n", i.toString())
+      i++
+    })
+  })
+  var i = 1
+  xmlDoc.querySelectorAll("staffDef").forEach(sd => {
+    sd.setAttribute("n", i.toString())
+    i++
+  })
+  cleanUp(xmlDoc)
+}
+
+/**
+ * Paste copied ids. First position to which the Elements are copied is the Element according to the refId (= RefElement).
+ * If multiple staffs are copied, overhanging staffs will be pasted to the staffs below the staff of the RefElement, if definedstaffs exist. 
+ * Else these copiedId will be not pasted.
+ * @param ids 
+ * @param refId 
+ */
+export function paste(ids: Array<string>, refId: string, xmlDoc: Document){
+  //ordered by staff
+  var meiElements = new Array<Array<Element>>()
+  ids.forEach(id => {
+    var el = xmlDoc.getElementById(id)
+    if(["CHORD", "NOTE"].includes(el?.tagName.toUpperCase())){
+      if(!(el.tagName.toUpperCase() === "NOTE" && el.closest("chord") !== null)){
+        var staff = el.closest("staff")
+        var num = parseInt(staff.getAttribute("n")) - 1
+        if(meiElements[num] == undefined){
+          meiElements[num] = new Array()
+        }
+        var cel = el.cloneNode(true) as Element
+        cel.removeAttribute("id")
+        meiElements[num].push(cel)
+      }
+    }
+  })
+
+  var refElement = xmlDoc.getElementById(refId)
+  var refStaff = refElement.closest("staff")
+  var refLayer = refElement.closest("layer")
+  var refMeasure = refElement.closest("measure")
+  var currentMeasure: Element
+
+  meiElements.forEach((staff,staffIdx) => {
+    currentMeasure = refElement.closest("measure")
+    staff.forEach((element,elementIdx) => {
+      if(element.tagName.toUpperCase() === "NOTE"){
+        var newNote = convertToNewNote(element)
+        addToMEI(newNote, xmlDoc)
+      }else if(element.tagName.toUpperCase() === "CHORD"){
+        var newChord = convertToNewChord(element)
+        addToMEI(newChord, xmlDoc)
+      }
+    })
+  })
+}
+
+function convertToNewNote(element: Element): NewNote{
+
+  var newNote: NewNote = {
+    pname: element.getAttribute("pname"),
+    dur: element.getAttribute("dur"),
+    dots: element.getAttribute("dots"),
+    oct: element.getAttribute("oct"),
+    rest: false
+  }
+  return newNote
+}
+
+function convertToNewChord(element: Element): NewChord{
+
+  var newChord: NewChord = {
+   
+  }
+
+  return newChord
 }

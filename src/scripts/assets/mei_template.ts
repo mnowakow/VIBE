@@ -1,3 +1,5 @@
+import { constants as c} from "../constants"
+
 class MeiTemplate{
     private xmlDoc: XMLDocument;
     private isEmpty: boolean;
@@ -8,7 +10,7 @@ class MeiTemplate{
      */
     constructor(xml?: XMLDocument){
         this.xmlDoc = xml;
-        this.isEmpty = false;
+        this.isEmpty = true;
     }
 
     emptyMEI(): string{
@@ -107,13 +109,18 @@ class MeiTemplate{
         var newElem = document.createElement("layer");
         newElem.setAttribute("n", n.toString());
         if(this.isEmpty){
-            newElem.appendChild(this.createMSpace());
+            newElem.appendChild(this.createMRest());
         }
         return newElem;
     }
 
     createMSpace(): any {
-        var newElem = document.createElement("mSpace");
+        var newElem = document.createElementNS(c._MEINS_, "mSpace");
+        return newElem;
+    }
+
+    createMRest(): any {
+        var newElem = document.createElementNS(c._MEINS_, "mRest");
         return newElem;
     }
 

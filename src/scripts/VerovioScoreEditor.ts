@@ -6,10 +6,10 @@ import { Mouse2MEI } from './utils/Mouse2MEI';
 import * as dc from './utils/DOMCreator'
 import Toolbar from './gui/Toolbar'
 
-//@ts-ignore
-//const $ = H5P.jQuery;
-
-class Entry{
+/**
+ * Main Class for the VerovioScoreEditor
+ */
+class VerovioScoreEditor{
     public coreInstance: Core;
     public startId: string;
     public endId: string;
@@ -21,7 +21,7 @@ class Entry{
     
     /**
      * 
-     * @param container Container provided by H5P
+     * @param container Container in which the editor will be displayed
      * @param options options from Class implementing H5P functionality
      */
     constructor(container: HTMLElement = null, options: customType.InstanceOptions){
@@ -86,7 +86,6 @@ class Entry{
          container.append(dc.makeNewDiv("sideBarGroup", "btn-group me-2", {role: "group"}))
 
         // parentElement for toolbarTop
-        //container.append("<div class=\"btn-toolbar d-inline-flex align-items-stretch\" role=\"toolbar\" id=\"btnToolbar\"></div>")
         container.append(dc.makeNewDiv("btnToolbar", "btn-toolbar d-inline-flex align-items-stretch", {role: "toolbar"}))
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -94,8 +93,13 @@ class Entry{
     
 
         // parentElement for customToolbar
-        //container.append("<div class=\"btn-toolbar align-items-stretch\" role=\"toolbar\" id=\"customToolbar\"></div>")
         container.append(dc.makeNewDiv("customToolbar", "btn-toolbar align-items-stretch", {role: "toolbar"}))
+
+        //Statusbar
+        //container.parentElement.insertBefore(dc.makeNewDiv("statusBar", ""), container.nextElementSibling)
+        var statusBar = dc.makeNewDiv("statusBar", "")
+        statusBar.textContent = "Status: "
+        container.append(statusBar)
 
 
         var tb = new Toolbar(this.options)
@@ -104,7 +108,6 @@ class Entry{
 
         //attach mei first time
         this.coreInstance = new Core();
-        //container.append("<div id=\""+ c._TARGETDIVID_ +"\"/>")
         container.append(dc.makeNewDiv(c._TARGETDIVID_, ""))
         if(this.options.meiURL != undefined){
             this.coreInstance.loadData('', this.options.meiURL, true, c._TARGETDIVID_).then((mei) => {
@@ -119,4 +122,4 @@ class Entry{
 
 }
 
-export default Entry;
+export default VerovioScoreEditor;

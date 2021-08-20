@@ -149,11 +149,11 @@ class Core {
             this.musicplayer.update()
             this.scoreGraph = new ScoreGraph(this.currentMEIDoc, md)
             this.musicplayer.setScoreGraph(this.scoreGraph)
-
+            this.initializeHandlers()
             resolve(svg);
           })
         })
-      }).then(() => this.initializeHandlers())
+      })
     });
   }
 

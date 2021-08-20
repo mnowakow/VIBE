@@ -6,7 +6,8 @@ import SidebarHandler from '../handlers/SideBarHandler'
 //import Evaluation from '../evaluation/Evaluation'    
 //import SimpleSubmit from '../evaluation/SimpleSubmit'
 
-const buttonStyle = "btn btn-outline-dark btn-md"
+const buttonStyleDarkOutline = "btn btn-outline-dark btn-md"
+const buttonStyleDark = "btn btn-dark btn-md"
 
 class Toolbar{
 
@@ -31,7 +32,7 @@ class Toolbar{
 
     createToolbars(){
         this.sideBarGroup = document.getElementById("sideBarGroup")
-        var toggleBtn = dc.makeNewButton("", "toggleSidebar", buttonStyle + " closedSidebar")
+        var toggleBtn = dc.makeNewButton("", "toggleSidebar", buttonStyleDarkOutline + " closedSidebar")
         this.sideBarGroup.append(toggleBtn)
         this.createSideBar()
         this.createMainToolbar()
@@ -48,7 +49,7 @@ class Toolbar{
         this.sidebar.appendChild(accordeon)
         
         //Keysignatures
-        var keySelectItem = dc.makeNewAccordionItem("sidebarList", "selectKey", "selectKeyHeader", "selectKeyBtn", "Key",  buttonStyle, "selectKeyDiv")
+        var keySelectItem = dc.makeNewAccordionItem("sidebarList", "selectKey", "selectKeyHeader", "selectKeyBtn", "Key",  buttonStyleDark, "selectKeyDiv")
         accordeon.appendChild(keySelectItem)
 
         var keyListCMajRow = dc.makeNewDiv("keyListCDIV", "row")
@@ -57,7 +58,7 @@ class Toolbar{
         keyListCMajRow.appendChild(keyListCMaj)
         keyListCMaj.appendChild(dc.makeNewAElement("CMaj", "KeyCMaj", "list-group-item list-group-item-action", "#"))
         
-        var keyListSignedRow = dc.makeNewDiv("keyListCrossDIV", "col") //"row g-0")
+        var keyListSignedRow = dc.makeNewDiv("keyListCrossDIV", "col row g-0")
         var keyListCross = dc.makeNewDiv("keyListCross", "list-group flex-fill col")
         accordeon.querySelector("#selectKeyDiv").appendChild(keyListSignedRow)
         keyListSignedRow.appendChild(keyListCross)
@@ -79,7 +80,7 @@ class Toolbar{
 
 
         //Music Key
-        var clefSelectItem = dc.makeNewAccordionItem("sidebarList", "selectClef", "selectClefHeader", "selectClefBtn", "Clef",  buttonStyle, "selectClefDiv")
+        var clefSelectItem = dc.makeNewAccordionItem("sidebarList", "selectClef", "selectClefHeader", "selectClefBtn", "Clef",  buttonStyleDark, "selectClefDiv")
         accordeon.appendChild(clefSelectItem)
         var clefList = dc.makeNewDiv("clefList", "list-group flex-fill")
         accordeon.querySelector("#selectClefDiv").appendChild(clefList)
@@ -88,7 +89,7 @@ class Toolbar{
         clefList.appendChild(dc.makeNewAElement("bass", "FClef", "list-group-item list-group-item-action", "#"))
 
         //Time Signature
-        var timeSelectItem = dc.makeNewAccordionItem("sidebarList", "selectTime", "selectTimeHeader", "selectTimeBtn", "Time",  buttonStyle, "selectTimeDiv")
+        var timeSelectItem = dc.makeNewAccordionItem("sidebarList", "selectTime", "selectTimeHeader", "selectTimeBtn", "Time",  buttonStyleDark, "selectTimeDiv")
         accordeon.appendChild(timeSelectItem)
         var timeDiv = dc.makeNewDiv("timeDiv", "row align-items-start")
         var countDiv = dc.makeNewDiv("countDiv", "col")
@@ -156,30 +157,30 @@ class Toolbar{
         handlerDropdown.append(dc.makeNewAElement("Harmony Mode", "activateHarm", "dropdown-item", "#"))
 
         this.handlerGroup = document.getElementById("handlerGroup")
-        this.handlerGroup.append(dc.makeNewButton("___", "insertMode", buttonStyle, "dropdown"))
+        this.handlerGroup.append(dc.makeNewButton("___", "insertMode", buttonStyleDarkOutline, "dropdown"))
         this.handlerGroup.append(handlerDropdown)
 
         this.noteButtonGroup = document.getElementById("noteGroup")
-        this.noteButtonGroup.append(dc.makeNewButton("", "fullNote", buttonStyle))
-        this.noteButtonGroup.append(dc.makeNewButton("", "halfNote", buttonStyle))
-        this.noteButtonGroup.append(dc.makeNewButton("", "quarterNote", buttonStyle))
-        this.noteButtonGroup.append(dc.makeNewButton("", "eigthNote", buttonStyle))
-        this.noteButtonGroup.append(dc.makeNewButton("", "sixteenthNote", buttonStyle))
-        this.noteButtonGroup.append(dc.makeNewButton("", "thirtysecondNote", buttonStyle))
+        this.noteButtonGroup.append(dc.makeNewButton("", "fullNote", buttonStyleDarkOutline))
+        this.noteButtonGroup.append(dc.makeNewButton("", "halfNote", buttonStyleDarkOutline))
+        this.noteButtonGroup.append(dc.makeNewButton("", "quarterNote", buttonStyleDarkOutline))
+        this.noteButtonGroup.append(dc.makeNewButton("", "eigthNote", buttonStyleDarkOutline))
+        this.noteButtonGroup.append(dc.makeNewButton("", "sixteenthNote", buttonStyleDarkOutline))
+        this.noteButtonGroup.append(dc.makeNewButton("", "thirtysecondNote", buttonStyleDarkOutline))
 
         this.dotButtonGroup = document.getElementById("dotGroup")
-        this.dotButtonGroup.append(dc.makeNewButton("", "oneDot", buttonStyle))
-        this.dotButtonGroup.append(dc.makeNewButton("", "twoDot", buttonStyle))
+        this.dotButtonGroup.append(dc.makeNewButton("", "oneDot", buttonStyleDarkOutline))
+        this.dotButtonGroup.append(dc.makeNewButton("", "twoDot", buttonStyleDarkOutline))
 
         this.modButtonGroup = document.getElementById("modGroup")
-        this.modButtonGroup.appendChild(dc.makeNewButton("", "pauseNote", buttonStyle))
+        this.modButtonGroup.appendChild(dc.makeNewButton("", "pauseNote", buttonStyleDarkOutline))
     
     }
 
     createButtonsCustomToolbar(){
          
         this.textModeGroup  = dc.makeNewDiv("textModeGroup", "btn-group me-2", {role: "group"}) as HTMLElement
-        this.textModeGroup.append(dc.makeNewButton("CHORD", "chordButton", buttonStyle))
+        this.textModeGroup.append(dc.makeNewButton("CHORD", "chordButton", buttonStyleDarkOutline))
         this.textModeGroup.addEventListener("click", this.exclusiveSelectHandler)
     }
 
@@ -188,7 +189,7 @@ class Toolbar{
 
         var btnToolbar = document.getElementById("btnToolbar")
         btnToolbar.appendChild(this.sideBarGroup)
-        btnToolbar.appendChild(this.sidebar)
+        btnToolbar.parentElement.insertBefore(this.sidebar, btnToolbar.parentElement.firstChild) // important for ~ selector
         btnToolbar.appendChild(this.handlerGroup)
         btnToolbar.appendChild(this.noteButtonGroup)
         btnToolbar.appendChild(this.dotButtonGroup)
@@ -242,9 +243,21 @@ class Toolbar{
             a.addEventListener("click", this.customToolbarHandler)
         })
 
-        document.querySelectorAll("#sidebarContainer * a").forEach(el => {
-            el.addEventListener("click", this.sidebarHandler)
-        })
+        // document.querySelectorAll("#sidebarContainer * a").forEach(el => {
+        //     el.addEventListener("click", this.sidebarHandler)
+        // })
+
+        // Why do I have to control this manually???
+        document.querySelectorAll(".accordion-button").forEach(ac => {
+            ac.addEventListener("hidden.bs.collapse", () => {
+                ac.classList.add("show")
+            })
+
+            ac.addEventListener("hide.bs.collapse", () => {
+                ac.classList.add("show")
+            })
+
+        }) 
     }
 
     removeListeners(){
@@ -266,9 +279,9 @@ class Toolbar{
             a.removeEventListener("click", this.customToolbarHandler)
         })
 
-        document.querySelectorAll("#sidebarContainer * a").forEach(el => {
-            el.removeEventListener("click", this.sidebarHandler)
-        })
+        // document.querySelectorAll("#sidebarContainer * a").forEach(el => {
+        //     el.removeEventListener("click", this.sidebarHandler)
+        // })
     }
 
     closeHandlerMouse = (function closeHandlerMouse(evt: MouseEvent): void {
@@ -325,20 +338,20 @@ class Toolbar{
         var sidebarWidthRatio = "30%"
         var btnToolbar = document.getElementById("btnToolbar")
         if(this.sidebar.classList.contains("closedSidebar")){
-            document.getElementById("sidebarContainer").style.width = sidebarWidthRatio
+            //document.getElementById("sidebarContainer").style.width = sidebarWidthRatio
             Array.from(document.querySelectorAll(".closedSidebar")).forEach(el => {
                 el.classList.remove("closedSidebar")
                 el.classList.add("openSidebar")
             })
-            btnToolbar.style.marginLeft = sidebarWidthRatio
+            //btnToolbar.style.marginLeft = sidebarWidthRatio
 
         }else{
-            document.getElementById("sidebarContainer").style.width = "0"
+            //document.getElementById("sidebarContainer").style.width = "0"
             Array.from(document.querySelectorAll(".openSidebar")).forEach(el => {
                 el.classList.add("closedSidebar")
                 el.classList.remove("openSidebar")
             })
-            btnToolbar.style.marginLeft = "0"
+            //btnToolbar.style.marginLeft = "0"
         }
     }).bind(this)
 

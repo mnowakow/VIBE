@@ -84,6 +84,16 @@ export type NewNote = {
   rest: boolean
 }
 
+export type NewChord = {
+  id?: string,
+  dur?: string,
+  dots?: string,
+  relPosX?: string, //left right
+  nearestNoteId?: string
+  staffId?: string,
+  noteElements?: NewNote
+}
+
 export type Staff = {
   clef?: string,
   keysig?: string

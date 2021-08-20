@@ -14,9 +14,7 @@ import ClickModeHandler from './ClickModeHandler';
 import { NewNote } from '../utils/Types';
 import PhantomElementHandler from './PhantomElementHandler';
 import { restorepXmlIdTags } from '../utils/MEIConverter';
-
-//@ts-ignore
-//const $ = H5P.jQuery;
+import ScoreManipulatorHandler from './ScoreManipulatorHandler';
 
 /**
  * Class that handles insert mode, events, and actions.
@@ -42,6 +40,7 @@ class InsertModeHandler implements Handler{
   clickModeHandler: ClickModeHandler;
   phantomNoteHandler: PhantomElementHandler;
   private annotations: Annotations;
+  smHandler: ScoreManipulatorHandler
 
   private currentElementToHighlight: Element
 
@@ -200,6 +199,17 @@ class InsertModeHandler implements Handler{
 
   }
 
+  setSMHandler(){
+    if(this.smHandler == undefined){
+      this.smHandler = new ScoreManipulatorHandler()
+    }
+    this.smHandler
+      .setMEI(this.m2m.getCurrentMei())
+      .setMusicPlayer(this.musicPlayer)
+      .setLoadDataCallback(this.loadDataCallback)
+      .drawElements()
+  }
+
   setListeners(){
     var that = this
     Array.from(document.querySelectorAll(".dropdown-item")).forEach(n => {
@@ -290,6 +300,7 @@ class InsertModeHandler implements Handler{
      if(this.clickInsertMode) this.activateClickMode();
      if(this.annotationMode) this.activateAnnotationMode();
      if(this.harmonyMode) this.activateHarmonyMode();
+     this.setSMHandler()
      return this
   }
 

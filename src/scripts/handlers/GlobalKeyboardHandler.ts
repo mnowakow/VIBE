@@ -4,6 +4,7 @@ import * as meiConverter from "../utils/MEIConverter"
 import { constants as c} from "../constants"
 import MusicPlayer from "../MusicPlayer";
 import ScoreGraph from "../datastructures/ScoreGraph";
+import { runInThisContext } from "vm";
 
 const marked = "marked"
 
@@ -17,6 +18,7 @@ class GlobalKeyboardHandler implements Handler{
     musicPlayer: MusicPlayer
 
     scoreGraph: ScoreGraph
+    copiedIds: Array<string>
 
     constructor(){
         this.setListeners();
@@ -36,10 +38,12 @@ class GlobalKeyboardHandler implements Handler{
         if(typeof e.key === "undefined"){
             return
         }
-        if(e.ctrlKey){
+        if(e.ctrlKey || e.metaKey){
             if(e.key === "z"){ this.undoHandler(e)}
             if(e.key === "y"){ this.redoHandler(e)}
             if(e.key === "a"){ this.selectAllHandler(e)}
+            if(e.key === "c"){ this.copyHandler(e)}
+            if(e.key === "v"){ this.pasteHandler(e)}
         }else if(e.key.includes("Arrow")){
             document.removeEventListener("keydown", this.keydownHandler)
             this.transposeHandler(e)
@@ -85,12 +89,37 @@ class GlobalKeyboardHandler implements Handler{
         })
     }
 
+    /**
+     * Copy marked Elements
+     * @param e 
+     */
+    copyHandler(e: KeyboardEvent){
+        e.preventDefault()
+        this.copiedIds = new Array()
+        document.querySelectorAll(".marked").forEach(m => {
+            this.copiedIds.push(m.id)
+        })
+    }
+
+    /**
+     * paste marked Elements
+     * @param e 
+     */
+    pasteHandler(e: KeyboardEvent){
+        e.preventDefault()
+        var pastePosition = document.querySelector(".chord.marked, .note.marked")?.id
+        if(this.copiedIds != undefined && pastePosition != undefined){
+            meiOperation.paste(this.copiedIds, pastePosition, this.currentMEI)
+            var mei = meiConverter.restorepXmlIdTags(this.currentMEI)
+            this.loadDataCallback("", mei, false, c._TARGETDIVID_)
+        }
+    }
+
     resetHandler(e: KeyboardEvent){
         e.preventDefault()
         document.querySelectorAll(".marked").forEach(el => {
             el.classList.remove(marked)
         })
-
         this.musicPlayer.rewind()
     }
 

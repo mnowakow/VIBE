@@ -22,7 +22,7 @@ export function makeNewButton(text: string, id: string, className: string, toggl
         //b.setAttribute("aria-expanded", "false")
     }
     if(toggle === "button"){
-        b.setAttribute("data-bs-toggle", toggle)
+        b.setAttribute("data-toggle", toggle)
         b.setAttribute("autocomplete", "off")
     }
     b.textContent = text

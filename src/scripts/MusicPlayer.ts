@@ -473,6 +473,10 @@ class MusicPlayer{
         }
     }
 
+    resetInstruments(){
+        this.instruments = undefined
+    }
+
     getRestartTime(){
         return this.restartTime
     }
