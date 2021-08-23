@@ -56,7 +56,7 @@ class PhantomElementHandler implements Handler{
 
     trackMouseHandler = (function handler(e: MouseEvent){
         var that = this
-        setInterval(that.trackMouse(e), 500) 
+        that.trackMouse(e)
     }).bind(this)
 
 

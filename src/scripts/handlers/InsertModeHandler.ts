@@ -13,8 +13,11 @@ import KeyModeHandler from './KeyModeHandler';
 import ClickModeHandler from './ClickModeHandler';
 import { NewNote } from '../utils/Types';
 import PhantomElementHandler from './PhantomElementHandler';
-import { restorepXmlIdTags } from '../utils/MEIConverter';
+import { restoreXmlIdTags } from '../utils/MEIConverter';
 import ScoreManipulatorHandler from './ScoreManipulatorHandler';
+import { cleanUp } from '../utils/MEIOperations';
+import { isFunction } from 'tone';
+import { truncate } from 'fs';
 
 /**
  * Class that handles insert mode, events, and actions.
@@ -53,9 +56,12 @@ class InsertModeHandler implements Handler{
     this.annotations = new Annotations()
   }
 
-  activateClickMode(){
+  activateClickMode(clicked: Boolean = false){
     if(this.keyInsertMode || this.annotationMode || this.harmonyMode){
       this.insertDeactivate()
+    }
+    if(clicked){
+      if(this.unselectMenuItem("clickInsert")){return}
     }
     document.body.classList.add("clickmode")
     this.keyInsertMode = false;
@@ -83,9 +89,12 @@ class InsertModeHandler implements Handler{
     this.deleteHandler.setListeners()
   }
 
-  activateKeyMode(){
+  activateKeyMode(clicked = false){
     if(this.clickInsertMode || this.annotationMode || this.harmonyMode){
       this.insertDeactivate()
+    }
+    if(clicked){
+      if(this.unselectMenuItem("keyInsert")){return}
     }
     document.body.classList.add("textmode")
     this.keyInsertMode = true;
@@ -118,8 +127,11 @@ class InsertModeHandler implements Handler{
     this.deleteHandler.setListeners()
   }
 
-  activateAnnotationMode(){
+  activateAnnotationMode(clicked = false){
     this.insertDeactivate()
+    if(clicked){
+      if(this.unselectMenuItem("activateAnnot")){return}
+    }
     if(typeof this.annotations === "undefined"){
       this.annotations = new Annotations()
     }else{
@@ -137,8 +149,11 @@ class InsertModeHandler implements Handler{
       this.harmonyMode = false;
   }
 
-  activateHarmonyMode(){
+  activateHarmonyMode(clicked = false){
     this.insertDeactivate()
+    if(clicked){
+      if(this.unselectMenuItem("activateHarm")){return}
+    }
     if(typeof this.harmonyHandler === "undefined"){
       this.harmonyHandler = new HarmonyHandler()
     }
@@ -217,19 +232,19 @@ class InsertModeHandler implements Handler{
           e.preventDefault()
           switch(this.id){
               case "clickInsert":
-                  that.activateClickMode();
+                  that.activateClickMode(true);
                   break;
               case "keyInsert":
-                 that.activateKeyMode();
+                 that.activateKeyMode(true);
                   break;
-              case "activateSelect":
-                that.activateSelectionMode();
-                break;
+              // case "activateSelect":
+              //   that.activateSelectionMode();
+              //   break;
               case "activateAnnot":
-                that.activateAnnotationMode();
+                that.activateAnnotationMode(true);
                 break;
               case "activateHarm":
-                that.activateHarmonyMode();
+                that.activateHarmonyMode(true);
                 break;
               default:
                 that.insertDeactivate()
@@ -263,7 +278,8 @@ class InsertModeHandler implements Handler{
         }
         that.m2m.setDurationNewNote(dur)
         if(that.m2m.setMarkedNoteDurations(dur)){
-          var mei = restorepXmlIdTags(that.m2m.getCurrentMei())
+          cleanUp(that.m2m.getCurrentMei())
+          var mei = restoreXmlIdTags(that.m2m.getCurrentMei())
           that.loadDataCallback("", mei, false, c._TARGETDIVID_)
         }
       })
@@ -282,6 +298,11 @@ class InsertModeHandler implements Handler{
           }
         }
         that.m2m.setDotsNewNote(dots)
+        if(that.m2m.setMarkedNoteDots(dots)){
+          cleanUp(that.m2m.getCurrentMei())
+          var mei = restoreXmlIdTags(that.m2m.getCurrentMei())
+          that.loadDataCallback("", mei, false, c._TARGETDIVID_)
+        }
       })
     })
 
@@ -302,6 +323,23 @@ class InsertModeHandler implements Handler{
      if(this.harmonyMode) this.activateHarmonyMode();
      this.setSMHandler()
      return this
+  }
+
+  unselectMenuItem(key: string): Boolean{
+    var menuitem = document.getElementById(key)
+    if(menuitem.classList.contains("selected")){
+      menuitem.classList.remove("selected")
+      this.insertDeactivate()
+      return true
+    }else{
+      document.querySelectorAll("#insertDropdown > a").forEach(a => {
+        if(a.id !== key){
+          a.classList.remove("selected")
+        }
+      })
+      menuitem.classList.add("selected")
+      return false
+    }
   }
 
   /////////////// GETTER/ SETTER /////////////////

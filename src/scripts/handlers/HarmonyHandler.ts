@@ -81,7 +81,7 @@ class HarmonyHandler implements Handler{
         var measure = this.currentMEI.getElementById(bboxId).closest("measure")
         measure.appendChild(harmonyLabel.getHarmElement())
 
-        var mei = meiConverter.restorepXmlIdTags(this.currentMEI)
+        var mei = meiConverter.restoreXmlIdTags(this.currentMEI)
 
         this.loadDataCallback("", mei, false, c._TARGETDIVID_).then(() => {
             this.reset()
@@ -170,7 +170,7 @@ class HarmonyHandler implements Handler{
         }
 
         this.closeModifyWindow()
-        var mei = meiConverter.restorepXmlIdTags(this.currentMEI)
+        var mei = meiConverter.restoreXmlIdTags(this.currentMEI)
         this.loadDataCallback("", mei, false, c._TARGETDIVID_).then(() => {
             this.reset()
         })

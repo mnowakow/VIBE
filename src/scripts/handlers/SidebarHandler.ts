@@ -84,7 +84,7 @@ class SidebarHandler implements Handler{
         })
 
         var mei = meiOperation.adjustAccids(this.currentMEI)
-        mei = meiConverter.restorepXmlIdTags(mei)
+        mei = meiConverter.restoreXmlIdTags(mei)
         this.loadDataCallback("", mei, false, c._TARGETDIVID_)
 
         return this
@@ -120,7 +120,7 @@ class SidebarHandler implements Handler{
     changeMeterHandler = (function changeMeter(e: Event){
         var mei = meiOperation.changeMeter(this.currentMEI)
         if(mei !== null){
-            mei = meiConverter.restorepXmlIdTags(mei)
+            mei = meiConverter.restoreXmlIdTags(mei)
             this.loadDataCallback("", mei, false, c._TARGETDIVID_)
         }
     }).bind(this)
@@ -161,7 +161,7 @@ class SidebarHandler implements Handler{
         })
         
         if(reload){
-            this.loadDataCallback("", meiConverter.restorepXmlIdTags(this.currentMEI), false, c._TARGETDIVID_)
+            this.loadDataCallback("", meiConverter.restoreXmlIdTags(this.currentMEI), false, c._TARGETDIVID_)
         }
     }
 

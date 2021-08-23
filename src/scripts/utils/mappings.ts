@@ -1,4 +1,4 @@
-const idxNoteMapGClef: Map<number, string> = new Map();
+export const idxNoteMapGClef: Map<number, string> = new Map();
 idxNoteMapGClef.set(0, "f5")
 idxNoteMapGClef.set(1, "e5")
 idxNoteMapGClef.set(2, "d5")
@@ -9,7 +9,7 @@ idxNoteMapGClef.set(6, "g4")
 idxNoteMapGClef.set(7, "f4")
 idxNoteMapGClef.set(8, "e4")
 
-const idxNoteMapFClef: Map<number, string> = new Map();
+export const idxNoteMapFClef: Map<number, string> = new Map();
 idxNoteMapFClef.set(0, "a3")
 idxNoteMapFClef.set(1, "g3")
 idxNoteMapFClef.set(2, "f3")
@@ -20,7 +20,7 @@ idxNoteMapFClef.set(6, "b2")
 idxNoteMapFClef.set(7, "a2")
 idxNoteMapFClef.set(8, "g2")
 
-const idxNoteMapCClef: Map<number, string> = new Map();
+export const idxNoteMapCClef: Map<number, string> = new Map();
 idxNoteMapCClef.set(0, "g4")
 idxNoteMapCClef.set(1, "f4")
 idxNoteMapCClef.set(2, "e4")
@@ -31,7 +31,7 @@ idxNoteMapCClef.set(6, "a3")
 idxNoteMapCClef.set(7, "g3")
 idxNoteMapCClef.set(8, "f3")
 
-const idxNotePhantomMapAboveG: Map<number, string> = new Map();
+export const idxNotePhantomMapAboveG: Map<number, string> = new Map();
 idxNotePhantomMapAboveG.set(0, "g5")
 idxNotePhantomMapAboveG.set(1, "a5")
 idxNotePhantomMapAboveG.set(2, "b5")
@@ -51,7 +51,7 @@ idxNotePhantomMapAboveG.set(15, "a7")
 idxNotePhantomMapAboveG.set(16, "b7")
 idxNotePhantomMapAboveG.set(17, "c8")
 
-const idxNotePhantomMapBelowG: Map<number, string> = new Map();
+export const idxNotePhantomMapBelowG: Map<number, string> = new Map();
 idxNotePhantomMapBelowG.set(0, "d4")
 idxNotePhantomMapBelowG.set(1, "c4")
 idxNotePhantomMapBelowG.set(2, "b3")
@@ -78,7 +78,7 @@ idxNotePhantomMapBelowG.set(22, "c2")
 idxNotePhantomMapBelowG.set(23, "b0")
 idxNotePhantomMapBelowG.set(24, "a0")
 
-const idxNotePhantomMapAboveF: Map<number, string> = new Map();
+export const idxNotePhantomMapAboveF: Map<number, string> = new Map();
 idxNotePhantomMapAboveF.set(0, "b3")
 idxNotePhantomMapAboveF.set(1, "c4")
 idxNotePhantomMapAboveF.set(2, "d4")
@@ -98,7 +98,7 @@ idxNotePhantomMapAboveF.set(15, "c6")
 idxNotePhantomMapAboveF.set(16, "d6")
 idxNotePhantomMapAboveF.set(17, "e6")
 
-const idxNotePhantomMapBelowF: Map<number, string> = new Map();
+export const idxNotePhantomMapBelowF: Map<number, string> = new Map();
 idxNotePhantomMapBelowF.set(0, "f2")
 idxNotePhantomMapBelowF.set(1, "e2")
 idxNotePhantomMapBelowF.set(2, "d2")
@@ -119,7 +119,7 @@ idxNotePhantomMapBelowF.set(16, "d0")
 idxNotePhantomMapBelowF.set(17, "c0")
 
 
-const idxNotePhantomMapAboveC: Map<number, string> = new Map();
+export const idxNotePhantomMapAboveC: Map<number, string> = new Map();
 idxNotePhantomMapAboveC.set(0, "a4")
 idxNotePhantomMapAboveC.set(1, "b4")
 idxNotePhantomMapAboveC.set(2, "c5")
@@ -139,7 +139,7 @@ idxNotePhantomMapAboveC.set(15, "b6")
 idxNotePhantomMapAboveC.set(16, "c7")
 idxNotePhantomMapAboveC.set(17, "d7")
 
-const idxNotePhantomMapBelowC: Map<number, string> = new Map();
+export const idxNotePhantomMapBelowC: Map<number, string> = new Map();
 idxNotePhantomMapBelowC.set(0, "e3")
 idxNotePhantomMapBelowC.set(1, "d3")
 idxNotePhantomMapBelowC.set(2, "c3")
@@ -165,9 +165,7 @@ idxNotePhantomMapBelowC.set(21, "e0")
 idxNotePhantomMapBelowC.set(22, "d0")
 idxNotePhantomMapBelowC.set(23, "c0")
 
-
-
-const keyCodeNoteMap: Map<string, string> = new Map;
+export const keyCodeNoteMap: Map<string, string> = new Map;
 keyCodeNoteMap.set("KeyC", "c");
 keyCodeNoteMap.set("KeyD", "d");
 keyCodeNoteMap.set("KeyE", "e");
@@ -178,12 +176,12 @@ keyCodeNoteMap.set("KeyB", "b");
 keyCodeNoteMap.set("KeyH", "b"); //alternative when keydown h
 
 
-const idToClef: Map<string, string> = new Map;
+export const idToClef: Map<string, string> = new Map;
 idToClef.set("#E050", "G");
 idToClef.set("#E062", "F");
 idToClef.set("#E05C", "C");
 
-const noteToCross: Map<string, string> = new Map;
+export const noteToCross: Map<string, string> = new Map;
 noteToCross.set("f", "f#")
 noteToCross.set("c", "c#")
 noteToCross.set("g", "g#")
@@ -192,7 +190,7 @@ noteToCross.set("a", "a#")
 noteToCross.set("e", "e#")
 noteToCross.set("b", "b#")
 
-const noteToB: Map<string, string> = new Map;
+export const noteToB: Map<string, string> = new Map;
 noteToB.set("b", "bb")
 noteToB.set("e", "eb")
 noteToB.set("a", "ab")
@@ -201,7 +199,7 @@ noteToB.set("g", "gb")
 noteToB.set("c", "cb")
 noteToB.set("f", "fb")
 
-const nextStepDown: Map<string, string> = new Map;
+export const nextStepDown: Map<string, string> = new Map;
 nextStepDown.set("b", "bf")
 nextStepDown.set("bf", "a")
 nextStepDown.set("as", "a")
@@ -222,7 +220,7 @@ nextStepDown.set("df", "c")
 nextStepDown.set("bs", "b")
 nextStepDown.set("c", "b")
 
-const nextStepUp: Map<string, string> = new Map;
+export const nextStepUp: Map<string, string> = new Map;
 nextStepUp.set("c", "cs")
 nextStepUp.set("cs", "d")
 nextStepUp.set("df", "d")
@@ -244,7 +242,7 @@ nextStepUp.set("cf", "c")
 nextStepUp.set("b", "c")
 
 
-const keysigToNotes: Map<string, Array<string>> = new Map;
+export const keysigToNotes: Map<string, Array<string>> = new Map;
 keysigToNotes.set("0", [])
 keysigToNotes.set("1s", ["f"])
 keysigToNotes.set("2s", ["f", "c"])
@@ -259,7 +257,7 @@ keysigToNotes.set("4f", ["b", "e", "a", "d"])
 keysigToNotes.set("5f", ["b", "e", "a", "d", "g"])
 keysigToNotes.set("6f", ["b", "e", "a", "d", "g", "c"])
 
-const keyIdToSig: Map<string, string> = new Map;
+export const keyIdToSig: Map<string, string> = new Map;
 keyIdToSig.set("KeyGMaj", "1s")
 keyIdToSig.set("KeyDMaj", "2s")
 keyIdToSig.set("KeyAMaj", "3s")
@@ -274,22 +272,14 @@ keyIdToSig.set("KeyDbMaj", "5f")
 keyIdToSig.set("KeyGbMaj", "6f")
 keyIdToSig.set("KeyCMaj", "0")
 
-export {
-    idxNoteMapGClef, 
-    idxNoteMapFClef, 
-    idxNoteMapCClef,
-    idxNotePhantomMapAboveG,
-    idxNotePhantomMapBelowG,
-    idxNotePhantomMapAboveF,
-    idxNotePhantomMapBelowF,
-    idxNotePhantomMapAboveC,
-    idxNotePhantomMapBelowC,
-    keyCodeNoteMap, 
-    idToClef, 
-    noteToCross, 
-    noteToB, 
-    keysigToNotes, 
-    keyIdToSig, 
-    nextStepUp, 
-    nextStepDown
-};
+export const numToNoteButtonId: Map<string, string> = new Map;
+numToNoteButtonId.set("1","fullNote")
+numToNoteButtonId.set("2","halfNote")
+numToNoteButtonId.set("4","quarterNote")
+numToNoteButtonId.set("8","eigthNote")
+numToNoteButtonId.set("16","sixteenthNote")
+numToNoteButtonId.set("32","thirtysecondNote")
+
+export const numToDotButtonId: Map<string, string> = new Map;
+numToDotButtonId.set("1", "oneDot")
+numToDotButtonId.set("2", "twoDot")

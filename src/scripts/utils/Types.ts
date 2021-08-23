@@ -91,7 +91,7 @@ export type NewChord = {
   relPosX?: string, //left right
   nearestNoteId?: string
   staffId?: string,
-  noteElements?: NewNote
+  noteElements: Array<NewNote>
 }
 
 export type Staff = {

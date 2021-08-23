@@ -25,7 +25,7 @@ export function meiToDoc(mei: string): Document{
     return parser.parseFromString(meiCopy, "text/xml")
 }
 
-export function restorepXmlIdTags(xmlDoc: Document){
+export function restoreXmlIdTags(xmlDoc: Document){
     var parser: DOMParser = new DOMParser();
     var mei = new XMLSerializer().serializeToString(xmlDoc).replace(/\ id/gi, " xml:id");
     return parser.parseFromString(mei, "text/xml");

@@ -65,29 +65,33 @@ class ScoreManipulatorHandler implements Handler{
     }
 
     addMeasure = (function handler(e: MouseEvent){
+        e.preventDefault()
         meiOperation.addMeasure(this.currentMEI as Document)
-        this.loadDataCallback("", meiConverter.restorepXmlIdTags(this.currentMEI), false, c._TARGETDIVID_)
+        this.loadDataCallback("", meiConverter.restoreXmlIdTags(this.currentMEI), false, c._TARGETDIVID_)
     }).bind(this)
 
     removeMeasure = (function handler(e: MouseEvent){
+        e.preventDefault()
         meiOperation.removeMeasure(this.currentMEI as Document)
-        this.loadDataCallback("", meiConverter.restorepXmlIdTags(this.currentMEI), false, c._TARGETDIVID_)
+        this.loadDataCallback("", meiConverter.restoreXmlIdTags(this.currentMEI), false, c._TARGETDIVID_)
     }).bind(this)
 
     addStaff = (function handler(e: MouseEvent){
+        e.preventDefault()
         var target = e.target as Element
         var relpos = target.classList.contains("below") ? "below" : "above"
         meiOperation.addStaff(this.currentMEI as Document, target.closest(".staff"), relpos)
         this.musicPlayer.resetInstruments()
-        this.loadDataCallback("", meiConverter.restorepXmlIdTags(this.currentMEI), false, c._TARGETDIVID_)
+        this.loadDataCallback("", meiConverter.restoreXmlIdTags(this.currentMEI), false, c._TARGETDIVID_)
     }).bind(this)
 
     removeStaff = (function handler(e: MouseEvent){
+        e.preventDefault()
         var target = e.target as Element
         var relpos = target.classList.contains("below") ? "below" : "above"
         meiOperation.removeStaff(this.currentMEI as Document, target.closest(".staff"), relpos)
         this.musicPlayer.resetInstruments()
-        this.loadDataCallback("", meiConverter.restorepXmlIdTags(this.currentMEI), false, c._TARGETDIVID_)
+        this.loadDataCallback("", meiConverter.restoreXmlIdTags(this.currentMEI), false, c._TARGETDIVID_)
     }).bind(this)
 
 

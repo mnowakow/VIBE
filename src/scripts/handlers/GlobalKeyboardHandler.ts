@@ -110,9 +110,9 @@ class GlobalKeyboardHandler implements Handler{
         var pastePosition = document.querySelector(".chord.marked, .note.marked")?.id
         if(this.copiedIds != undefined && pastePosition != undefined){
             meiOperation.paste(this.copiedIds, pastePosition, this.currentMEI)
-            var mei = meiConverter.restorepXmlIdTags(this.currentMEI)
+            var mei = meiConverter.restoreXmlIdTags(this.currentMEI)
             this.loadDataCallback("", mei, false, c._TARGETDIVID_)
-        }
+        }    
     }
 
     resetHandler(e: KeyboardEvent){
@@ -138,7 +138,7 @@ class GlobalKeyboardHandler implements Handler{
             default:
                 console.log(this, "Sorry, wrong turn")
         }
-        mei = meiConverter.restorepXmlIdTags(mei)
+        mei = meiConverter.restoreXmlIdTags(mei)
         this.loadDataCallback("", mei, false, c._TARGETDIVID_)
     }
 
@@ -146,7 +146,7 @@ class GlobalKeyboardHandler implements Handler{
         var additionalElements = new Array<Element>();
         additionalElements.push(document.getElementById(this.scoreGraph.nextRight().getId()))
         meiOperation.changeDuration(this.currentMEI, "reduce", additionalElements)
-        var mei = meiConverter.restorepXmlIdTags(this.currentMEI)
+        var mei = meiConverter.restoreXmlIdTags(this.currentMEI)
         this.loadDataCallback("", mei, false, c._TARGETDIVID_)
     }
 
@@ -154,7 +154,7 @@ class GlobalKeyboardHandler implements Handler{
         var additionalElements = new Array<Element>();
         additionalElements.push(document.getElementById(this.scoreGraph.nextRight().getId()))
         meiOperation.changeDuration(this.currentMEI, "prolong", additionalElements)
-        var mei = meiConverter.restorepXmlIdTags(this.currentMEI)
+        var mei = meiConverter.restoreXmlIdTags(this.currentMEI)
         this.loadDataCallback("", mei, false, c._TARGETDIVID_)
     }
 

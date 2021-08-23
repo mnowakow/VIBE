@@ -16,7 +16,7 @@ body.textmode  * {
 }
 
 body.clickmode  * {
-    cursor: crosshair !important;
+    cursor: crosshair
 }
 
 #rootSVG{
@@ -37,7 +37,7 @@ body.clickmode  * {
 }
 
 .note, .staff, .measure, #measureAdder, #measureRemover{
-    cursor: pointer;
+    cursor: pointer !important; 
 }
 
 /*
@@ -102,6 +102,11 @@ body.clickmode  * {
 #btnToolbar{
     top: 0px;
     transition: 0.5s;
+}
+
+.dropdown-item.selected{
+    background-color: antiquewhite;
+    font-weight: bold;
 }
 
 #toggleSidebar{

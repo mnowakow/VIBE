@@ -1,9 +1,10 @@
 import * as meiConverter from './MEIConverter'
 import { uuidv4 } from './random'
-import { constants as c } from '../constants'
+import { constants as c} from '../constants'
 import { NewChord, NewNote } from './Types'
 import { keysigToNotes, nextStepUp, nextStepDown } from './mappings'
 import MeiTemplate from '../assets/mei_template'
+import { xml } from 'd3'
 
 const countableNoteUnitSelector: string =  
 ":scope > note:not([grace])," +
@@ -23,7 +24,11 @@ export function removeFromMEI(notes: Array<Element>, currentMEI: Document): Prom
       if(currentMEI.getElementById(note.id) !== null){
         //do not remove completely, replace with rest
         //currentMEI.getElementById(note.id).remove()
-        replaceWithRest(note, currentMEI)
+        if(!note.classList.contains("rest")){
+          replaceWithRest(note, currentMEI)
+        }else{
+          currentMEI.getElementById(note.id).remove() // possibility to remove rests entirely
+        }
       }
     })
     //removeEmptyElements(currentMEI)
@@ -35,7 +40,7 @@ export function removeFromMEI(notes: Array<Element>, currentMEI: Document): Prom
     //fillWithRests(currentMEI)
   
     // Warum ist das ein Problem?
-    currentMEI = meiConverter.restorepXmlIdTags(currentMEI)
+    currentMEI = meiConverter.restoreXmlIdTags(currentMEI)
     resolve(currentMEI)
   })
 }
@@ -89,12 +94,11 @@ function getMeterRatioGlobal(xmlDoc: Document): number{
  * @param newNote Information where to put new Note
  * @param mei 
  */
-export function addToMEI(newElement: NewNote | NewChord, currentMEI: Document): Promise<Document> {
-  return new Promise<Document>((resolve): void => {
-
-    if(Object.prototype.toString.apply(newNote) === "NewNote"){
+export function addToMEI(newElement: NewNote | NewChord, currentMEI: Document): Document{//Promise<Document> {
+  //return new Promise<Document>((resolve): void => {
+    var newElem: Element
+    if(newElement.hasOwnProperty("pname")){
       var newNote = newElement as NewNote
-      var newElem: HTMLElement
       if(newNote.rest){
         newElem = currentMEI.createElement("rest")
       }else{
@@ -168,16 +172,23 @@ export function addToMEI(newElement: NewNote | NewChord, currentMEI: Document): 
       }else{
         currentMEI.getElementById(newNote.staffId).querySelector("layer").appendChild(newElem)
       }
-    }else if(Object.prototype.toString.apply(newNote) === "NewChord"){
+    }else{ // is newChord
       //TODO
       var newChord = newElement as NewChord
+      newElem = convertToElement(newChord, currentMEI)
+      if(newChord.relPosX === "left"){
+        currentMEI.getElementById(newChord.nearestNoteId).parentElement.insertBefore(newElem, currentMEI.getElementById(newChord.nearestNoteId))
+      }else{
+        currentMEI.getElementById(newChord.nearestNoteId).parentElement.insertBefore(newElem, currentMEI.getElementById(newChord.nearestNoteId).nextSibling)
+      }
     }
 
     cleanUp(currentMEI)
     // Warum ist das ein Problem?
-    currentMEI = meiConverter.restorepXmlIdTags(currentMEI)
-    resolve(currentMEI)
-  })
+    currentMEI = meiConverter.restoreXmlIdTags(currentMEI)
+    return currentMEI
+    //resolve(currentMEI)
+  //})
 }
 
 
@@ -899,7 +910,7 @@ export function changeDuration(xmlDoc: Document, mode: string, additionalElement
  * Clean up mei after changing values
  * @param xmlDoc 
  */
-function cleanUp(xmlDoc: Document){
+export function cleanUp(xmlDoc: Document){
   reorganizeBeams(xmlDoc)
   removeEmptyElements(xmlDoc)
   //fillWithRests(xmlDoc)
@@ -1045,7 +1056,7 @@ export function addStaff(xmlDoc:Document, referenceStaff: Element, relPos: strin
     m.querySelectorAll("staff").forEach(s => {
       s.setAttribute("n", i.toString())
       i++
-    })
+    }) 
   })
   var i = 1
   xmlDoc.querySelectorAll("staffDef").forEach(sd => {
@@ -1099,60 +1110,102 @@ export function removeStaff(xmlDoc:Document, referenceStaff: Element, relPos:str
  * @param refId 
  */
 export function paste(ids: Array<string>, refId: string, xmlDoc: Document){
-  //ordered by staff
-  var meiElements = new Array<Array<Element>>()
-  ids.forEach(id => {
-    var el = xmlDoc.getElementById(id)
-    if(["CHORD", "NOTE"].includes(el?.tagName.toUpperCase())){
-      if(!(el.tagName.toUpperCase() === "NOTE" && el.closest("chord") !== null)){
-        var staff = el.closest("staff")
-        var num = parseInt(staff.getAttribute("n")) - 1
-        if(meiElements[num] == undefined){
-          meiElements[num] = new Array()
+    //ordered by staff
+    var meiElements = new Array<Array<Element>>()
+    ids.forEach(id => {
+      var el = xmlDoc.getElementById(id)
+      if(["CHORD", "NOTE"].includes(el?.tagName.toUpperCase())){
+        if(!(el.tagName.toUpperCase() === "NOTE" && el.closest("chord") !== null)){
+          var staff = el.closest("staff")
+          var num = parseInt(staff.getAttribute("n")) - 1
+          if(meiElements[num] == undefined){
+            meiElements[num] = new Array()
+          }
+          var cel = el.cloneNode(true) as Element
+          cel.setAttribute("id", uuidv4())
+          meiElements[num].push(cel)
         }
-        var cel = el.cloneNode(true) as Element
-        cel.removeAttribute("id")
-        meiElements[num].push(cel)
-      }
-    }
-  })
-
-  var refElement = xmlDoc.getElementById(refId)
-  var refStaff = refElement.closest("staff")
-  var refLayer = refElement.closest("layer")
-  var refMeasure = refElement.closest("measure")
-  var currentMeasure: Element
-
-  meiElements.forEach((staff,staffIdx) => {
-    currentMeasure = refElement.closest("measure")
-    staff.forEach((element,elementIdx) => {
-      if(element.tagName.toUpperCase() === "NOTE"){
-        var newNote = convertToNewNote(element)
-        addToMEI(newNote, xmlDoc)
-      }else if(element.tagName.toUpperCase() === "CHORD"){
-        var newChord = convertToNewChord(element)
-        addToMEI(newChord, xmlDoc)
       }
     })
-  })
+
+    var refElement = xmlDoc.getElementById(refId) as Element
+    refElement = refElement.closest("chord") || refElement
+    var refStaff = refElement.closest("staff")
+    var refLayer = refElement.closest("layer")
+    var refMeasure = refElement.closest("measure")
+    var currentMeasure: Element
+
+    meiElements.forEach((staff,staffIdx) => {
+      currentMeasure = refElement.closest("measure")
+      let anyNew
+      staff.forEach((element,elementIdx) => {
+        if(element.tagName.toUpperCase() === "NOTE"){
+          var newNote = convertToNewNote(element)
+          newNote.nearestNoteId = refElement.id
+          newNote.relPosX =  "right"
+          anyNew = newNote
+        }else if(element.tagName.toUpperCase() === "CHORD"){
+          var newChord = convertToNewChord(element)
+          newChord.nearestNoteId = refElement.id
+          newChord.relPosX =  "right"
+          anyNew = newChord
+        }
+
+        addToMEI(anyNew, xmlDoc) 
+        refElement = element
+      })
+    })
 }
+
 
 function convertToNewNote(element: Element): NewNote{
 
   var newNote: NewNote = {
+    id: element.id,
     pname: element.getAttribute("pname"),
     dur: element.getAttribute("dur"),
     dots: element.getAttribute("dots"),
     oct: element.getAttribute("oct"),
-    rest: false
+    accid: element.getAttribute("accid.ges") || element.getAttribute("accid"),
+    rest: element.classList.contains("rest") ? true : false
   }
   return newNote
 }
 
+function convertToElement(n: NewNote | NewChord, xmlDoc: Document): Element{
+  var nn
+  var newElement: Element
+  if(n.hasOwnProperty("pname")){
+    nn = n as NewNote
+    newElement = xmlDoc.createElement("note")
+    newElement.setAttribute("pname", nn.pname)
+    newElement.setAttribute("oct", nn.oct)
+    newElement.setAttribute("accid", nn.accid)
+  }else{
+    nn = n as NewChord
+    newElement = xmlDoc.createElement("chord")
+    nn.noteElements.forEach(ne => {
+      newElement.append(convertToElement(ne, xmlDoc))
+    });
+  }
+  newElement.setAttribute("id", uuidv4())
+  newElement.setAttribute("dur", nn.dur)
+  newElement.setAttribute("dots", nn.dots)
+
+  return newElement
+}
+
 function convertToNewChord(element: Element): NewChord{
 
+  var newNotes = Array.from(element.querySelectorAll("note")).map(n => {
+    return convertToNewNote(n)
+  })
+
   var newChord: NewChord = {
-   
+    id: uuidv4(),
+    dur: element.getAttribute("dur"),
+    dots: element.getAttribute("dots"),
+    noteElements: newNotes
   }
 
   return newChord

@@ -2,6 +2,8 @@ import * as d3 from 'd3';
 import { Mouse2MEI } from '../utils/Mouse2MEI';
 import Handler from './Handler';
 import MusicPlayer from '../MusicPlayer';
+import {numToNoteButtonId, numToDotButtonId} from '../utils/mappings'
+import { select } from 'd3';
 
 const marked = "marked"
 
@@ -62,7 +64,9 @@ class SelectionHandler implements Handler{
                         var chord = note.closest(".chord")
                         if(chord !== null){
                             //if(!chord.classList.contains(marked)) 
-                            chord.classList.add(marked)
+                            if(Array.from(chord.querySelectorAll(".note")).every(c => c.classList.contains(marked))){
+                                chord.classList.add(marked)
+                            }
                         }
                     }else{
                         note.classList.remove(marked)
@@ -76,6 +80,11 @@ class SelectionHandler implements Handler{
 
         function selEnd(){
             document.querySelector("#selectRect").remove();
+            var firstMarkedNote = document.querySelector(".chord.marked, .note.marked")?.id
+            var meiNote = that.m2m.getCurrentMei().getElementById(firstMarkedNote)
+            document.querySelectorAll("#noteGroup *, #dotGroup *").forEach(b => b.classList.remove("selected"))
+            document.getElementById(numToNoteButtonId.get(meiNote?.getAttribute("dur")))?.classList.add("selected")
+            document.getElementById(numToDotButtonId.get(meiNote?.getAttribute("dots")))?.classList.add("selected")
         }
         this.dragSelectAction = dragSelectAction
         this.setListeners()

@@ -2,8 +2,6 @@ import { constants as c } from '../constants';
 import Core from '../Core';
 import Handler from './Handler';
 
-//@ts-ignore
-//const $ = H5P.jQuery;
 const action = "mousedown"
 
 class DeleteHandler implements Handler{
@@ -14,9 +12,6 @@ class DeleteHandler implements Handler{
     private deleteCallback: (items: Array<Element>) => Promise<any> 
 
     constructor(){
-        this.selectedElements = new Array;
-        this.removeListeners();
-        this.setListeners();
     }
 
     setListeners(){
@@ -50,7 +45,7 @@ class DeleteHandler implements Handler{
             if(stem !== null){
                 stem.classList.remove(this.deleteFlag)
             }
-            }      
+        }      
       
     }).bind(this)
 
@@ -60,9 +55,18 @@ class DeleteHandler implements Handler{
     backSpaceHandler = (function backSpaceHandler(e: KeyboardEvent){
         Array.from(document.querySelectorAll("." + this.deleteFlag)).forEach(el => this.selectedElements.push(el))
         if((e.code === "Backspace" || e.code === "Delete") && this.selectedElements.length > 0){
-            this.deleteCallback(this.selectedElements).then(() => {this.selectedElements.length = 0})
+            this.deleteCallback(this.selectedElements).then(() => {
+                this.selectedElements.length = 0
+            }) 
         }
     }).bind(this)
+
+    update(){
+        this.selectedElements = new Array;
+        this.removeListeners();
+        this.setListeners();
+        return this
+    }
 
     /////////// GETTER/ SETTER ////////////
     setDeleteCallback(deleteCallback: (items: Array<Element>) => Promise<any>){

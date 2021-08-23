@@ -173,7 +173,7 @@ class Core {
     }
     this.m2m.setCurrentMEI(this.currentMEIDoc)
     this.insertModeHandler = typeof this.insertModeHandler === "undefined" ? new InsertModeHandler() : this.insertModeHandler
-    this.deleteHandler = new DeleteHandler()
+    this.deleteHandler = typeof this.deleteHandler === "undefined" ? new DeleteHandler() : this.deleteHandler
     this.noteDragHandler = new NoteDragHandler()
     this.keyboardHandler = typeof this.keyboardHandler === "undefined" ? new GlobalKeyboardHandler() : this.keyboardHandler
     this.sidebarHandler = typeof this.sidebarHandler === "undefined" ? new SidebarHandler() : this.sidebarHandler
@@ -193,11 +193,12 @@ class Core {
       .setDeleteCallback(this.delete)
       .setLoadDataCallback(this.loadDataFunction)
       .setScoreGraph(this.scoreGraph)
-      .setListeners()
       .resetCanvas()
       .resetModes()
 
-    this.deleteHandler.setDeleteCallback(this.delete)
+    this.deleteHandler
+      .setDeleteCallback(this.delete)
+      .update()
 
     this.noteDragHandler
       .setCurrentMEI(this.currentMEIDoc)
@@ -250,10 +251,9 @@ class Core {
   insert  = (function insert (newNote: NewNote): Promise<boolean> {    
     return new Promise((resolve): void => {
       this.getMEI("").then(mei => {
-        meiOperation.addToMEI(newNote, this.currentMEIDoc).then(updatedMEI => {
-          this.loadData("", updatedMEI, false, c._TARGETDIVID_).then(() => {
-              resolve(true)       
-          })
+      var updatedMEI = meiOperation.addToMEI(newNote, this.currentMEIDoc)
+        this.loadData("", updatedMEI, false, c._TARGETDIVID_).then(() => {
+            resolve(true)       
         })
       })
     });

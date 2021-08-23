@@ -445,7 +445,26 @@ export class Mouse2MEI{
         var retVal = false
         var markedElements =  document.querySelectorAll(".note.marked, .rest.marked")
         markedElements.forEach(m => {
-            this.currentMEI.getElementById(m.id).setAttribute("dur", dur.toString())
+            var meiElement = this.currentMEI.getElementById(m.id)
+            meiElement.setAttribute("dur", dur.toString())
+            if(meiElement.closest("chord") !== null){
+                meiElement.closest("chord").setAttribute("dur", dur.toString())
+            }
+            retVal = true
+        })
+
+        return retVal
+    }
+
+    setMarkedNoteDots(dots: number | string): Boolean{
+        var retVal = false
+        var markedElements =  document.querySelectorAll(".note.marked, .rest.marked")
+        markedElements.forEach(m => {
+            var meiElement = this.currentMEI.getElementById(m.id)
+            meiElement.setAttribute("dots", dots.toString())
+            if(meiElement.closest("chord") !== null){
+                meiElement.closest("chord").setAttribute("dots", dots.toString())
+            }
             retVal = true
         })
 
