@@ -2,6 +2,7 @@ import MusicPlayer from "../MusicPlayer";
 import { Mouse2MEI } from "../utils/Mouse2MEI";
 import Handler from "./Handler";
 import ScoreManipulatorHandler from "./ScoreManipulatorHandler";
+import { constants as c } from "../constants"
 
 
 class WindowHandler implements Handler{
@@ -16,6 +17,11 @@ class WindowHandler implements Handler{
         window.addEventListener("deviceorientation", this.update)
         document.getElementById("sidebarContainer").addEventListener("transitionend", this.update)
 
+        document.getElementById(c._ROOTSVGID_).parentElement.addEventListener("scroll", this.update)
+        document.getElementById(c._ROOTSVGID_).parentElement.addEventListener("resize", this.update)
+        document.getElementById(c._ROOTSVGID_).parentElement.addEventListener("deviceorientation", this.update)
+        
+
         return this
     }
 
@@ -25,10 +31,14 @@ class WindowHandler implements Handler{
         window.removeEventListener("deviceorientation", this.update)
         document.getElementById("sidebarContainer").removeEventListener("transitionend", this.update)
 
+        document.getElementById(c._ROOTSVGID_).parentElement.removeEventListener("scroll", this.update)
+        document.getElementById(c._ROOTSVGID_).parentElement.removeEventListener("resize", this.update)
+        document.getElementById(c._ROOTSVGID_).parentElement.removeEventListener("deviceorientation", this.update)
+
         return this
     }
 
-    update = (function update(){
+    update = (function update(e: Event){
         var that = this
         window.clearTimeout(isScrolling)
 

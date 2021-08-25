@@ -36,7 +36,7 @@ body.clickmode  * {
     overflow: scroll;
 }
 
-.note, .staff, .measure, #measureAdder, #measureRemover{
+.note, .staff, .measure, .manipulator{
     cursor: pointer !important; 
 }
 
@@ -326,7 +326,7 @@ body.clickmode  * {
 
 .signElement{
     stroke: black;
-    stroke-width: 5px;
+    stroke-width: 10%;
 }
 
 #measureAdder, #measureRemover{
@@ -336,7 +336,7 @@ body.clickmode  * {
 
 #manipulationButton{
     stroke:black;
-    stroke-width: 2px;
+    stroke-width: 5%;
     fill: antiquewhite;
 }
 

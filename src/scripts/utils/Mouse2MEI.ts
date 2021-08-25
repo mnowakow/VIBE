@@ -34,7 +34,7 @@ export class Mouse2MEI{
         this.staffLineBBoxes = new Array();
 
         this.measureMatrix = new MeasureMatrix();
-        this.setMouseEnterElements();
+        this.setMouseEnterElementListeners();
         this.findBBoxes();
     }
 
@@ -46,7 +46,7 @@ export class Mouse2MEI{
 
     }*/
 
-   setMouseEnterElements(): void{     
+   setMouseEnterElementListeners(): void{     
        var that = this;
 
         document.querySelectorAll(".system").forEach(sy => {
@@ -79,6 +79,15 @@ export class Mouse2MEI{
 
     }
 
+    setMouseEnterElements(refElement: Element): void{
+        this.lastSystemMouseEnter = refElement.closest(".system")
+        this.lastMeasureMouseEnter = refElement.closest(".measure") || refElement.querySelector(".measure")
+        this.lastStaffMouseEnter = refElement.closest(".staff") || refElement.querySelector(".staff")
+        this.lastLayerMouseEnter = refElement.closest(".layer") || refElement.querySelector(".layer")
+        
+        this.update()
+    }
+
     getMouseEnterElementByName(name: string): Element{
         let e: Element;
         switch(name){
@@ -103,6 +112,7 @@ export class Mouse2MEI{
 
     findBBoxes(){
         var notes = document.querySelectorAll(".note, .rest, .mRest") ;
+        var root = document.getElementById(c._ROOTSVGID_)
         Array.from(notes).forEach(element => {
             let bb: NoteBBox = {
                 id: element.id,
@@ -110,7 +120,7 @@ export class Mouse2MEI{
                 parentLayer: element.closest(".layer"),
                 parentMeasure: element.closest(".measure"),
                 x: element.getBoundingClientRect().x + window.pageXOffset,
-                y: element.getBoundingClientRect().y + window.pageYOffset,
+                y: element.getBoundingClientRect().y + window.pageYOffset
             }
             this.noteBBoxes.push(bb);
         })
@@ -204,7 +214,8 @@ export class Mouse2MEI{
         let leftRightPos: string;
 
         let allIDs: Array<string> = Array.from(document.querySelectorAll(".staff")).map(s => s.id)
-        let staffIdx = allIDs.indexOf(this.lastStaffMouseEnter.id)
+        if(this.lastStaffMouseEnter === null){return}
+        let staffIdx = allIDs.indexOf(this.lastStaffMouseEnter?.id)
         let upperStaffBound = staffIdx * 5 + 0;
         let lowerStaffBound = staffIdx * 5 + 4;
 
@@ -498,7 +509,7 @@ export class Mouse2MEI{
     update(){
         this.noteBBoxes.length = 0;
         this.staffLineBBoxes.length = 0;
-        this.setMouseEnterElements();
+        this.setMouseEnterElementListeners();
         this.findBBoxes();
     }
 }

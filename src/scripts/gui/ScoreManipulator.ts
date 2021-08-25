@@ -12,8 +12,9 @@ class ScoreManipulator{
     private mei: Document
     constructor(){}
 
-    drawButton(id: string = null, classNames: string = null, sign: string, posX: number, posY: number, size: number, targetParent: Element, tooltip = null){
+    drawButton(id: string = null, classNames: string = null, sign: string, posX: number, posY: number, size: number, targetParent: Element, refId: string, tooltip = null){
 
+        size = targetParent.getBoundingClientRect().height * 0.01
         var newSVG = document.createElementNS(c._SVGNS_, "svg")
         if(id !== null) newSVG.setAttribute("id", id)
         if(document.getElementById(newSVG.id)){return}
@@ -66,56 +67,60 @@ class ScoreManipulator{
             newSVG.append(foreign)
         }
 
+        newSVG.setAttribute("refId", refId)
         targetParent.appendChild(newSVG)
     }
 
     drawMeasureAdder(){
-        this.lastBline = Array.from(document.querySelectorAll(".barLineAttr")).reverse()[0]
+        this.lastBline = Array.from(document.querySelectorAll(".barLine")).reverse()[0]
         var lastBlineRect = this.lastBline.getBoundingClientRect()
-        var rootBBox = document.getElementById(c._ROOTSVGID_).getBoundingClientRect()
-        var blineMid = lastBlineRect.bottom - lastBlineRect.top - window.scrollY - rootBBox.y
-        var blineRight = lastBlineRect.right + 5 - window.scrollX - rootBBox.x
+        var root = document.getElementById(c._ROOTSVGID_)
+        var rootBBox = root.getBoundingClientRect()
+        var blineTop = lastBlineRect.top - window.scrollY - rootBBox.y - root.scrollTop
+        var blineRight = lastBlineRect.right + 5 - window.scrollX - rootBBox.x - root.scrollLeft
 
         var containerSize = (lastBlineRect.height * 0.1)
 
-        this.drawButton("measureAdder", null, "+", blineRight, blineMid, containerSize, this.lastBline.closest("svg").parentElement, "Add Measure")
+        this.drawButton("measureAdder", null, "+", blineRight, blineTop, containerSize, this.lastBline.closest("svg").parentElement, "Add Measure")
     }
 
     drawMeasureRemover(){
-        this.lastBline = Array.from(document.querySelectorAll(".barLineAttr")).reverse()[0]
+        this.lastBline = Array.from(document.querySelectorAll(".barLine")).reverse()[0]
         var lastBlineRect = this.lastBline.getBoundingClientRect()
-        var rootBBox = document.getElementById(c._ROOTSVGID_).getBoundingClientRect()
-        var blineMid = lastBlineRect.bottom - lastBlineRect.top + 40 - window.scrollY - rootBBox.y
-        var blineRight = lastBlineRect.right + 5 - window.scrollX - rootBBox.x
+        var root = document.getElementById(c._ROOTSVGID_)
+        var rootBBox = root.getBoundingClientRect()
+        var blineTop = lastBlineRect.top + 40 - window.scrollY - rootBBox.y - root.scrollTop
+        var blineRight = lastBlineRect.right + 5 - window.scrollX - rootBBox.x - root.scrollLeft
 
         var containerSize = (lastBlineRect.height * 0.1)
 
-        this.drawButton("measureRemover", null, "-", blineRight, blineMid, containerSize, this.lastBline.closest("svg").parentElement, "Remove Measure")
+        this.drawButton("measureRemover", null, "-", blineRight, blineTop, containerSize, this.lastBline.closest("svg").parentElement, "Remove Measure")
     }
 
     drawStaffManipulators(){
         document.querySelector(".measure").querySelectorAll(".staff").forEach(s => {
-            var staffBBox = s.getBoundingClientRect()
-            var rootBBox = document.getElementById(c._ROOTSVGID_).getBoundingClientRect()
-            var posX = staffBBox.left + 10 - window.scrollX - rootBBox.x -  staffBBox.x
-            var topY = staffBBox.top - 2 - window.scrollY - rootBBox.y - staffBBox.y
+            var clefBBox = s.querySelector(".clef").getBoundingClientRect()
+            var rootSVG = document.getElementById(c._ROOTSVGID_)
+            var rootBBox = rootSVG.getBoundingClientRect()
+            var posX = clefBBox.left - window.scrollX - rootBBox.x //-  staffBBox.x
+            var topY = clefBBox.top - 20 - window.scrollY - rootBBox.y //- staffBBox.y
 
-            var containerSize = staffBBox.width//((staffBBox.width*2) * 0.1)
-            this.drawButton(null, "addStaff above", "+", posX, topY, containerSize, s, "Add Staff Above")
+            var containerSize = ((clefBBox.width) * 0.1)
+            this.drawButton(null, "addStaff above", "+", posX, topY, containerSize, rootSVG, s.id, "Add Staff Above")
             if(parseInt(s.getAttribute("n")) > 1){
-                posX = staffBBox.left + 30 - window.scrollX - rootBBox.x
-                this.drawButton(null, "removeStaff above", "-", posX, topY, containerSize, s, "Remove Staff Above")
+                posX = clefBBox.left + 30 - window.scrollX - rootBBox.x
+                this.drawButton(null, "removeStaff above", "-", posX, topY, containerSize, rootSVG, s.id, "Remove Staff Above")
             }
 
-            posX = staffBBox.left + 10 - window.scrollX - rootBBox.x - staffBBox.x
-            var bottomY = staffBBox.bottom + 2 - window.scrollY - rootBBox.y - staffBBox.y
+            posX = clefBBox.left - window.scrollX - rootBBox.x //- staffBBox.x
+            var bottomY = clefBBox.bottom + 2 - window.scrollY - rootBBox.y //- staffBBox.y
 
-            var containerSize = (staffBBox.height * 0.1)
-            this.drawButton(null, "addStaff below", "+", posX, topY, containerSize, s, "Add Staff Below")
+            var containerSize = (clefBBox.height * 0.1)
+            this.drawButton(null, "addStaff below", "+", posX, bottomY, containerSize, rootSVG, s.id, "Add Staff Below")
             var staffCount =  s.parentElement.querySelectorAll(".staff")
             if(parseInt(s.getAttribute("n")) !== staffCount.length){
-                posX = staffBBox.left + 30 - window.scrollX - rootBBox.x
-                this.drawButton(null, "removeStaff below", "-", posX, bottomY, containerSize, s, "Remove Staff Below")
+                posX = clefBBox.left + 30 - window.scrollX - rootBBox.x
+                this.drawButton(null, "removeStaff below", "-", posX, bottomY, containerSize, rootSVG, s.id, "Remove Staff Below")
             }
         })
     }

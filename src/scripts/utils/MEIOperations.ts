@@ -921,7 +921,7 @@ function reorganizeBeams(xmlDoc: Document){
   // if beams have elements, which shouldn be there
   xmlDoc.querySelectorAll("beam").forEach(b => {
     var beamNotes = Array.from(b.children)
-    if(!beamNotes.every(c => parseInt(c.getAttribute("dur")) >= 8)){
+    if(!beamNotes.every(c => parseInt(c.getAttribute("dur")) >= 8) && beamNotes.length > 0){
       beamNotes.forEach(n => {
         if(parseInt(n.getAttribute("dur")) >= 8){
           if(n.previousElementSibling !== null){
@@ -957,7 +957,8 @@ function reorganizeBeams(xmlDoc: Document){
       //b.remove()
       b.outerHTML = b.innerHTML
     }
-    if(Array.from(b.children).every(c => c.tagName === "rest")){
+    var bArr = Array.from(b.children)
+    if(bArr.every(c => c.tagName === "rest") && bArr.length > 0){
       // Array.from(b.children).forEach(c => {
       //   b.parentElement.insertBefore(c, b)
       // })
@@ -1030,16 +1031,21 @@ export function addStaff(xmlDoc:Document, referenceStaff: Element, relPos: strin
     var newStaff = new MeiTemplate().createStaff(1, 1) as Element
     switch(relPos){
       case "above":
-        refElement = s.previousElementSibling
+        refElement = s
         break;
       case "below":
-        refElement = s.nextElementSibling
+        refElement = s.nextElementSibling || s
         break;
       default:
         console.error(relPos, " was never an option")
     }
-    s.parentElement.insertBefore(newStaff, refElement)
-    refn = refElement.getAttribute("n")
+    if(relPos === "below" && refElement === s){ // => new staff at the end
+      s.parentElement.append(newStaff)
+    }else{
+      s.parentElement.insertBefore(newStaff, refElement)
+    }
+
+    refn = refElement?.getAttribute("n") || staffNum // s.getAttribute("n")
   })
 
   //new StaffDef

@@ -78,18 +78,18 @@ class ScoreManipulatorHandler implements Handler{
 
     addStaff = (function handler(e: MouseEvent){
         e.preventDefault()
-        var target = e.target as Element
+        var target = (e.target as Element).closest(".manipulator")
         var relpos = target.classList.contains("below") ? "below" : "above"
-        meiOperation.addStaff(this.currentMEI as Document, target.closest(".staff"), relpos)
+        meiOperation.addStaff(this.currentMEI as Document, document.getElementById(target.getAttribute("refId")), relpos)
         this.musicPlayer.resetInstruments()
         this.loadDataCallback("", meiConverter.restoreXmlIdTags(this.currentMEI), false, c._TARGETDIVID_)
     }).bind(this)
 
     removeStaff = (function handler(e: MouseEvent){
         e.preventDefault()
-        var target = e.target as Element
+        var target = (e.target as Element).closest(".manipulator")
         var relpos = target.classList.contains("below") ? "below" : "above"
-        meiOperation.removeStaff(this.currentMEI as Document, target.closest(".staff"), relpos)
+        meiOperation.removeStaff(this.currentMEI as Document, document.getElementById(target.getAttribute("refId")), relpos)
         this.musicPlayer.resetInstruments()
         this.loadDataCallback("", meiConverter.restoreXmlIdTags(this.currentMEI), false, c._TARGETDIVID_)
     }).bind(this)

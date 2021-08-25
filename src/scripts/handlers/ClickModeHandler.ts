@@ -115,35 +115,40 @@ class ClickModeHandler implements Handler{
         var elementToHighlight: Element = this.findScoreTarget(posx, posy)
         if(typeof this.prevElementToHighlight === "undefined" || this.currentElementToHighlight !== elementToHighlight){
         
-        // in css: elements get highlight color according to layer
-        document.querySelectorAll(".highlighted").forEach(h => {
-            h.classList.remove("highlighted")
-        })
-        if(!elementToHighlight.classList.contains("chord")){
-            elementToHighlight.classList.add("highlighted")
-        }else{
-            elementToHighlight.querySelectorAll(".note").forEach((c: Element) => {
-            c.classList.add("highlighted")
+            // in css: elements get highlight color according to layer
+            document.querySelectorAll(".highlighted").forEach(h => {
+                h.classList.remove("highlighted")
             })
-        }
+            if(!elementToHighlight.classList.contains("chord")){
+                elementToHighlight.classList.add("highlighted")
+            }else{
+                elementToHighlight.querySelectorAll(".note").forEach((c: Element) => {
+                c.classList.add("highlighted")
+                })
+            }
 
-        var highLightRects: NodeListOf<Element> = this.annotations.getCanvasGroup().querySelectorAll(".highlightChord")
-        Array.from(highLightRects).forEach(el => {
-            el.remove()
-        })
+            //update focussed layer if element and layer do not match
+            if(elementToHighlight.closest(".layer").id !== this.m2m.getMouseEnterElementByName("layer")?.id && this.m2m.getMouseEnterElementByName("layer") !== null){
+                this.m2m.setMouseEnterElements(elementToHighlight)
+            }
 
-        var ebb: DOMRect = elementToHighlight.getBoundingClientRect()
+            var highLightRects: NodeListOf<Element> = this.annotations.getCanvasGroup().querySelectorAll(".highlightChord")
+            Array.from(highLightRects).forEach(el => {
+                el.remove()
+            })
 
-        var highlightRect: SVGElement = document.createElementNS(c._SVGNS_, "rect")
-        var margin = 5
-        highlightRect.setAttribute("x", (ebb.x - rootBBox.x - margin).toString())
-        highlightRect.setAttribute("y", (ebb.y - rootBBox.y - 10*margin).toString())
-        highlightRect.setAttribute("height", (ebb.height + 20*margin).toString())
-        highlightRect.setAttribute("width", (ebb.width + 2*margin).toString())
-        highlightRect.classList.add("highlightChord")
-        this.annotations.getCanvasGroup().appendChild(highlightRect)
-        //highlightRect.addEventListener("click", this.clickHandler)
-        this.currentElementToHighlight = elementToHighlight
+            var ebb: DOMRect = elementToHighlight.getBoundingClientRect()
+
+            var highlightRect: SVGElement = document.createElementNS(c._SVGNS_, "rect")
+            var margin = 5
+            highlightRect.setAttribute("x", (ebb.x - rootBBox.x - margin).toString())
+            highlightRect.setAttribute("y", (ebb.y - rootBBox.y - 10*margin).toString())
+            highlightRect.setAttribute("height", (ebb.height + 20*margin).toString())
+            highlightRect.setAttribute("width", (ebb.width + 2*margin).toString())
+            highlightRect.classList.add("highlightChord")
+            this.annotations.getCanvasGroup().appendChild(highlightRect)
+            //highlightRect.addEventListener("click", this.clickHandler)
+            this.currentElementToHighlight = elementToHighlight
         }
         
     }).bind(this)

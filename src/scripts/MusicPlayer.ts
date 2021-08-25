@@ -250,7 +250,7 @@ class MusicPlayer{
             n.classList.remove("marked")
         })
         var playingNote = e.target as Element
-        playingNote = playingNote.closest(".note") || playingNote.closest(".rest") 
+        playingNote = playingNote.closest(".note") || playingNote.closest(".rest") || playingNote.closest(".mRest")
         playingNote?.classList.add("marked")
         if(playingNote !== null){
             var it = this.durationMap.values()

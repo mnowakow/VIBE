@@ -4,6 +4,7 @@ import Handler from './Handler';
 import MusicPlayer from '../MusicPlayer';
 import {numToNoteButtonId, numToDotButtonId} from '../utils/mappings'
 import { select } from 'd3';
+import { constants as c } from "../constants"
 
 const marked = "marked"
 
@@ -26,8 +27,9 @@ class SelectionHandler implements Handler{
 
         var that = this;
         function selStart(){
-            that.initialX = d3.event.x
-            that.initialY = d3.event.y
+            var root = document.getElementById(c._ROOTSVGID_).parentElement;
+            that.initialX = d3.event.x + root.scrollLeft 
+            that.initialY = d3.event.y + root.scrollTop
             that.m2m.getNoteBBoxes().forEach(bb => {
                 let note = document.getElementById(bb.id)
                 note.classList.remove(marked)
@@ -36,10 +38,10 @@ class SelectionHandler implements Handler{
         }
 
         function selecting(){
-            //const currentPt = 
-            const curX = d3.event.x
-            const curY = d3.event.y
-      
+            var root = document.getElementById(c._ROOTSVGID_).parentElement;
+            const curX = d3.event.x + root.scrollLeft 
+            const curY = d3.event.y + root.scrollTop 
+
             const newX = curX < that.initialX ? curX : that.initialX;
             const newY = curY < that.initialY ? curY : that.initialY;
             const width = curX < that.initialX ? that.initialX - curX : curX - that.initialX;
@@ -49,8 +51,8 @@ class SelectionHandler implements Handler{
 
             var rect =  document.querySelector("#selectRect");
             var rectBBox = rect.getBoundingClientRect();
-            var rx = rectBBox.x + window.pageXOffset //accomodate for scrolling
-            var ry = rectBBox.y + window.pageYOffset
+            var rx = rectBBox.x + window.pageXOffset + root.scrollLeft  //accomodate for scrolling
+            var ry = rectBBox.y + window.pageYOffset + root.scrollTop
             var noteBBoxes = that.m2m.getNoteBBoxes();
             noteBBoxes.forEach(bb => {
                 var note = document.getElementById(bb.id)
@@ -64,7 +66,8 @@ class SelectionHandler implements Handler{
                         var chord = note.closest(".chord")
                         if(chord !== null){
                             //if(!chord.classList.contains(marked)) 
-                            if(Array.from(chord.querySelectorAll(".note")).every(c => c.classList.contains(marked))){
+                            let noteArr = Array.from(chord.querySelectorAll(".note"))
+                            if(noteArr.every(c => c.classList.contains(marked)) && noteArr.length > 0){
                                 chord.classList.add(marked)
                             }
                         }

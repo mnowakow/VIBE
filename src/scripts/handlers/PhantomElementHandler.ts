@@ -66,9 +66,11 @@ class PhantomElementHandler implements Handler{
      */
     trackMouse(e: MouseEvent){
       
-        var svgrect = document.querySelector(c._ROOTSVGID_WITH_IDSELECTOR_).getBoundingClientRect()
-        var relX = e.pageX - window.pageXOffset - svgrect.x //- window.pageXOffset
-        var relY = e.pageY - window.pageYOffset - svgrect.y //- window.pageYOffset - svgrect.y
+        var root = document.getElementById(c._ROOTSVGID_)
+        var rootBBox = root.getBoundingClientRect()
+        
+        var relX = e.pageX - window.pageXOffset - rootBBox.x - root.scrollLeft //- window.pageXOffset
+        var relY = e.pageY - window.pageYOffset - rootBBox.y - root.scrollTop //- window.pageYOffset - svgrect.y
         var target = e.target as HTMLElement;
         var options = {}
 
@@ -79,17 +81,17 @@ class PhantomElementHandler implements Handler{
         this.phantom.setAttribute("cx", relX.toString());
         this.phantom.setAttribute("cy", relY.toString());
         //(this.phantom as HTMLElement).style.transform += 'translate(' + [- window.pageXOffset, - window.pageYOffset - svgrect.y] +')'
-        this.phantom.setAttribute('transform', 'translate(' + [- window.pageXOffset, - window.pageYOffset - svgrect.y] +')') // BUT WHY???
+        this.phantom.setAttribute('transform', 'translate(' + [- window.pageXOffset, - window.pageYOffset - rootBBox.y] +')') // BUT WHY???
         this.phantom.setAttribute("visibility", "visible")
         this.m2m.defineNote(e.pageX, e.pageY, options)
-        var newCY = (this.m2m.getNewNoteY()).toString()
-        this.phantom.setAttribute("cy", newCY)
+        var newCY = (this.m2m.getNewNoteY())?.toString()
+        this.phantom.setAttribute("cy", (newCY || "0"))
 
         this.removeLines()
         if(typeof this.m2m.getPhantomLines() !== "undefined"){
             this.phantomLines = new Array();
             this.m2m.getPhantomLines().forEach(pl => {
-                this.phantomLines.push(new PhantomElement("line", {lineX: relX - window.pageXOffset, lineY: pl - window.pageYOffset - svgrect.y}))
+                this.phantomLines.push(new PhantomElement("line", {lineX: relX - window.pageXOffset, lineY: pl - window.pageYOffset - rootBBox.y}))
             })
             this.setPhantomLineListeners()
         }
