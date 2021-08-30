@@ -15,6 +15,7 @@ import SVGFiller from "./utils/SVGFiller"
 import ScoreGraph from './datastructures/ScoreGraph';
 import WindowHandler from "./handlers/WindowHandler"
 import SidebarHandler from './handlers/SideBarHandler';
+import * as utf8 from "utf8"
 
 /**
  * A cache is used to keep track of what has happened
@@ -55,6 +56,7 @@ class Core {
   private musicplayer: MusicPlayer;
   private scoreGraph: ScoreGraph;
   private svgFiller: SVGFiller;
+  private meiChangedCallback: (mei: string) => void;
 
   /**
    * Constructor for NeonCore
@@ -89,10 +91,11 @@ class Core {
     return new Promise((resolve, reject): void => {
       var d: string;
       var u: boolean;
-      var type: string = data.constructor.name;
+      var type: string = data?.constructor.name;
       switch(type){
         case 'String':
-          d = data as string;
+          data = meiConverter.reformatMEI(data as string)
+          d = data
           u = isUrl
           break;
         case 'XMLDocument':
@@ -103,6 +106,10 @@ class Core {
         case 'HTMLUnknownElement':
           d = new XMLSerializer().serializeToString(data as HTMLElement);
           u = false;
+          break;
+        case undefined:
+          d = new MeiTemplate().emptyMEI()
+          u = false
           break;
         default:
           reject("Wrong Datatype: " + type)
@@ -139,6 +146,11 @@ class Core {
           .fillSVG(this.currentMEIDoc)
         this.musicplayer.setMEI(this.currentMEIDoc)
         this.undoStacks.push(mei)
+
+        if(this.meiChangedCallback != undefined){
+          console.log(this, this.currentMEI)
+          this.meiChangedCallback(this.currentMEI)
+        }
 
         // MusicPlayer stuff
         this.getMidi().then(midi => {
@@ -420,7 +432,7 @@ class Core {
     return this.verovioWrapper.setMessage(message).attributes;
   }).bind(this)
 
-  ////////// GETTER/ SETTER OF PRIVATE INSTANCES
+  ////////// GETTER/ SETTER
   /**
    * 
    * @returns current Mouse2MEI Instance
@@ -450,6 +462,10 @@ class Core {
 
   getMusicPlayer(): MusicPlayer{
     return this.musicplayer;
+  }
+
+  setMEIChangedCallback(meiChangedCallback: (mei: string) => void) {
+    this.meiChangedCallback = meiChangedCallback
   }
   
 }

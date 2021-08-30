@@ -20,7 +20,10 @@ class WindowHandler implements Handler{
         document.getElementById(c._ROOTSVGID_).parentElement.addEventListener("scroll", this.update)
         document.getElementById(c._ROOTSVGID_).parentElement.addEventListener("resize", this.update)
         document.getElementById(c._ROOTSVGID_).parentElement.addEventListener("deviceorientation", this.update)
-        
+
+        document.querySelectorAll("*").forEach(el => {
+            el.addEventListener("fullscreenchange", this.update)
+        })
 
         return this
     }
@@ -35,6 +38,9 @@ class WindowHandler implements Handler{
         document.getElementById(c._ROOTSVGID_).parentElement.removeEventListener("resize", this.update)
         document.getElementById(c._ROOTSVGID_).parentElement.removeEventListener("deviceorientation", this.update)
 
+        document.querySelectorAll("*").forEach(el => {
+            el.removeEventListener("fullscreenchange", this.update)
+        })
         return this
     }
 
@@ -45,6 +51,10 @@ class WindowHandler implements Handler{
         var isScrolling = setTimeout(function(){
             that.m2m.update()
         }, 100)  
+    }).bind(this)
+
+    scoreChangedHandler = (function scoreChangedHandler(e: Event){
+        console.log(e)
     }).bind(this)
 
     resetListeners(){

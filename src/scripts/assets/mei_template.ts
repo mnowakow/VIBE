@@ -15,9 +15,9 @@ class MeiTemplate{
 
     emptyMEI(): string{
         this.isEmpty = true;
-        var mei = document.createElement("mei")
-        mei.setAttribute("xmlns", "http://www.music-encoding.org/ns/mei");
-        mei.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
+        var mei = document.createElementNS(c._MEINS_, "mei")
+        //mei.setAttribute("xmlns", "http://www.music-encoding.org/ns/mei");
+        //mei.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
         mei.setAttribute("meiversion", "4.0.0")
         mei.appendChild(this.createMeiHead())
         mei.appendChild(this.createMusic())
@@ -73,10 +73,28 @@ class MeiTemplate{
         return newElem
     }
 
-    createStaffDef(n: number = 1, lines: number = 5): Node {
+    createStaffDef(n: number = 1, lines: number = 5, meterCount: number = 4, meterUnit: number = 4): Node {
         var newElem = document.createElement("staffDef");
         newElem.setAttribute("n", n.toString());
         newElem.setAttribute("lines", lines.toString());
+        newElem.setAttribute("meter.count", meterCount.toString())
+        newElem.setAttribute("meter.unit", meterUnit.toString())
+        newElem.appendChild(this.createClef())
+        newElem.appendChild(this.createKeySig())
+        return newElem
+    }
+
+    createClef(shape: string = "G", line: number = 2): Node{
+        var newElem = document.createElement("clef")
+        newElem.setAttribute("shape", shape)
+        newElem.setAttribute("line", line.toString())
+        return newElem 
+    }  
+    
+    createKeySig(mode: string = "major", sig: string = "0"): Node{
+        var newElem = document.createElementNS(c._MEINS_, "keySig")
+        newElem.setAttribute("mode", mode)
+        newElem.setAttribute("sig", sig)
         return newElem
     }
 

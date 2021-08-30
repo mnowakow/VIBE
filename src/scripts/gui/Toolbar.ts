@@ -157,7 +157,7 @@ class Toolbar{
         handlerDropdown.append(dc.makeNewAElement("Harmony Mode", "activateHarm", "dropdown-item", "#"))
 
         this.handlerGroup = document.getElementById("handlerGroup")
-        this.handlerGroup.append(dc.makeNewButton("___", "insertMode", buttonStyleDarkOutline, "dropdown"))
+        this.handlerGroup.append(dc.makeNewButton("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;", "insertMode", buttonStyleDarkOutline + " empty", "dropdown"))
         this.handlerGroup.append(handlerDropdown)
 
         this.noteButtonGroup = document.getElementById("noteGroup")
@@ -179,7 +179,7 @@ class Toolbar{
 
     createButtonsCustomToolbar(){
          
-        this.textModeGroup  = dc.makeNewDiv("textModeGroup", "btn-group me-2", {role: "group"}) as HTMLElement
+        this.textModeGroup  = dc.makeNewDiv("textModeGroup", "btn-group me-2 h-100", {role: "group"}) as HTMLElement
         this.textModeGroup.append(dc.makeNewButton("CHORD", "chordButton", buttonStyleDarkOutline))
         this.textModeGroup.addEventListener("click", this.exclusiveSelectHandler)
     }
@@ -231,7 +231,7 @@ class Toolbar{
         // achtung: nie preventDefault in einem Document anwenden
         document.addEventListener("keydown", this.closeHandlerKey)
 
-        document.getElementsByClassName("vse-container")[0].addEventListener("click", this.closeHandlerMouse)
+        document.getElementsByClassName("vse-container")[0]?.addEventListener("click", this.closeHandlerMouse)
         
         document.querySelectorAll(".btn-group button").forEach(el => {
             el.addEventListener("click", this.exclusiveSelectHandler)
@@ -358,7 +358,6 @@ class Toolbar{
     customToolbarHandler = (function customToolbarHandler (e: MouseEvent){
         var target = e.target as Element
         var tID = target.id
-        this.removeAllCustomGroups()
         switch(tID){
             case "clickInsert":
                 this.clickInsertHandler()
@@ -366,24 +365,34 @@ class Toolbar{
             case "keyInsert":
                 this.keyInsertHandler()
                 break;
-            case "activateSelect":
-                //this.selectModeHandler()
-                break;
             case "activateAnnot":
-                //this.annotHandler()
+                this.annotHandler()
                 break;
             case "activateHarm":
+                this.harmHandler()
                 break;
         }
     }).bind(this)
 
     clickInsertHandler(){
-
+        this.removeAllCustomGroups()
     }
 
     keyInsertHandler(){
-        this.customToolbar.appendChild(this.textModeGroup)
+        if(this.customToolbar.querySelector("#" + this.textModeGroup.id) === null){
+            this.customToolbar.appendChild(this.textModeGroup)
+        }else{
+            this.removeAllCustomGroups()
+        }
         //this.addElementsToBootstrap();
+    }
+
+    harmHandler(){
+        this.removeAllCustomGroups()
+    }
+
+    annotHandler(){
+        this.removeAllCustomGroups()
     }
 }
 

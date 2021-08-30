@@ -1,10 +1,16 @@
 @import '~bootstrap/dist/css/bootstrap.min.css';
 
+
+.dropdown button{
+    height: 100%;
+}
 .vse-container{    
     position: absolute;
     width: 100%;
     height: 100%;
     background: white;
+    overflow: scroll;
+    
 }
 
 body.waiting * {
@@ -32,7 +38,7 @@ body.clickmode  * {
 
 #svg_output{
     position: relative;
-    height: 85%;
+    height: 100%;
     overflow: scroll;
 }
 
@@ -43,10 +49,14 @@ body.clickmode  * {
 /*
 *   TOOLBAR
 */
-#insertMode{
+#insertMode.empty{
     background-image: url(../images/GUI/edit-solid.svg);
+    background-position-x: 10%;
+}
+
+#insertMode{
     background-color: white;
-    color: rgba(0,0,0,0);
+    color: black;
 }
 
 #fullNote{
@@ -102,6 +112,7 @@ body.clickmode  * {
 #btnToolbar{
     top: 0px;
     transition: 0.5s;
+    height: 5%;
 }
 
 .dropdown-item.selected{
@@ -338,6 +349,10 @@ body.clickmode  * {
     stroke:black;
     stroke-width: 5%;
     fill: antiquewhite;
+}
+
+.manipulator:hover * {
+    filter: invert();
 }
 
 .tooltiptext{

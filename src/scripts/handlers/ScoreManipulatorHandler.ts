@@ -49,6 +49,7 @@ class ScoreManipulatorHandler implements Handler{
         document.getElementById("toggleSidebar").addEventListener("click", this.removeFunction)
         document.getElementById("toggleSidebar").addEventListener("click", this.drawFunction)
     }
+
     removeListeners() {
         var that = this
         document.getElementById("measureAdder")?.removeEventListener("click", this.addMeasure)

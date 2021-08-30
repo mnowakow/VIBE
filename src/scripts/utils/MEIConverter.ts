@@ -13,6 +13,13 @@ function cleanMEI(mei: string): string{
  return mei;
 }
 
+export function reformatMEI(mei: string): string{
+    mei = mei.replace(/\n/g, ""); // delete all unnecessary newline
+    mei = mei.replace(/\s{2,}/g, ""); // delete all unnecessary whitespaces
+    mei = mei.replace(/&amp;/g, "&").replace(/&gt;/g, ">").replace(/&lt;/g, "<").replace(/&quot;/g, "\"");
+    return mei
+}
+
 /**
  * Converts MEI to DOM-conform objec
  * @param mei 

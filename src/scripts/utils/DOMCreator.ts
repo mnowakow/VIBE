@@ -25,7 +25,11 @@ export function makeNewButton(text: string, id: string, className: string, toggl
         b.setAttribute("data-toggle", toggle)
         b.setAttribute("autocomplete", "off")
     }
-    b.textContent = text
+    if(text.indexOf("&nbsp;") > -1){
+        b.innerHTML = text
+    }else{
+        b.textContent = text
+    }
     return b
 }
 

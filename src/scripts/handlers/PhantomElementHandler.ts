@@ -1,4 +1,4 @@
-import { Mouse } from "canvg";
+
 import { constants as c } from "../constants"
 import PhantomElement from "../gui/PhantomElement";
 import MusicPlayer from "../MusicPlayer";

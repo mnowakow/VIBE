@@ -327,8 +327,11 @@ class InsertModeHandler implements Handler{
 
   unselectMenuItem(key: string): Boolean{
     var menuitem = document.getElementById(key)
+    var modeButton = document.getElementById("insertMode")
     if(menuitem.classList.contains("selected")){
       menuitem.classList.remove("selected")
+      modeButton.innerHTML = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+      modeButton.classList.add("empty")
       this.insertDeactivate()
       return true
     }else{
@@ -338,6 +341,8 @@ class InsertModeHandler implements Handler{
         }
       })
       menuitem.classList.add("selected")
+      modeButton.textContent = menuitem.textContent
+      modeButton.classList.remove("empty")
       return false
     }
   }
@@ -391,6 +396,10 @@ class InsertModeHandler implements Handler{
 
   getAnnotations(): Annotations{
     return this.annotations
+  }
+
+  getSMHandler(){
+    return this.smHandler
   }
 
 }

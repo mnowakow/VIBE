@@ -57,5 +57,9 @@
         "src/styles/*.css",
         "src/images/*/*",
         "src/scripts/js/*"
-    ]
+    ],
+    "devDependencies": {
+        "@types/utf8": "^3.0.0",
+        "utf8": "^3.0.0"
+    }
 }

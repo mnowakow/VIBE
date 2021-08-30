@@ -3,7 +3,6 @@ import { Mouse2MEI } from '../utils/Mouse2MEI';
 import Handler from './Handler';
 import MusicPlayer from '../MusicPlayer';
 import {numToNoteButtonId, numToDotButtonId} from '../utils/mappings'
-import { select } from 'd3';
 import { constants as c } from "../constants"
 
 const marked = "marked"
@@ -27,9 +26,9 @@ class SelectionHandler implements Handler{
 
         var that = this;
         function selStart(){
-            var root = document.getElementById(c._ROOTSVGID_).parentElement;
-            that.initialX = d3.event.x + root.scrollLeft 
-            that.initialY = d3.event.y + root.scrollTop
+            var container = document.getElementById(c._ROOTSVGID_).parentElement
+            that.initialX = d3.event.x + container.scrollLeft 
+            that.initialY = d3.event.y + container.scrollTop
             that.m2m.getNoteBBoxes().forEach(bb => {
                 let note = document.getElementById(bb.id)
                 note.classList.remove(marked)
@@ -38,9 +37,11 @@ class SelectionHandler implements Handler{
         }
 
         function selecting(){
-            var root = document.getElementById(c._ROOTSVGID_).parentElement;
-            const curX = d3.event.x + root.scrollLeft 
-            const curY = d3.event.y + root.scrollTop 
+            var container = document.getElementById(c._ROOTSVGID_).parentElement
+            var root = document.getElementById(c._ROOTSVGID_)
+            var rootBBox = root.getBoundingClientRect()
+            const curX = d3.event.x + container.scrollLeft 
+            const curY = d3.event.y + container.scrollTop 
 
             const newX = curX < that.initialX ? curX : that.initialX;
             const newY = curY < that.initialY ? curY : that.initialY;
@@ -51,8 +52,8 @@ class SelectionHandler implements Handler{
 
             var rect =  document.querySelector("#selectRect");
             var rectBBox = rect.getBoundingClientRect();
-            var rx = rectBBox.x + window.pageXOffset + root.scrollLeft  //accomodate for scrolling
-            var ry = rectBBox.y + window.pageYOffset + root.scrollTop
+            var rx = rectBBox.x + window.scrollX + root.scrollLeft  //accomodate for scrolling
+            var ry = rectBBox.y + window.scrollY + root.scrollTop
             var noteBBoxes = that.m2m.getNoteBBoxes();
             noteBBoxes.forEach(bb => {
                 var note = document.getElementById(bb.id)
