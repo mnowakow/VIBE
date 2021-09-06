@@ -80,6 +80,7 @@ class PhantomElementHandler implements Handler{
 
         this.phantom.setAttribute("cx", relX.toString());
         this.phantom.setAttribute("cy", relY.toString());
+        this.phantom.setAttribute("r", this.m2m?.getLineDist()?.toString() || "0")
         //(this.phantom as HTMLElement).style.transform += 'translate(' + [- window.pageXOffset, - window.pageYOffset - svgrect.y] +')'
         this.phantom.setAttribute('transform', 'translate(' + [- window.pageXOffset, - window.pageYOffset - rootBBox.y] +')') // BUT WHY???
         this.phantom.setAttribute("visibility", "visible")

@@ -229,19 +229,19 @@ body.clickmode  * {
     outline-color: black;
 }
 
-.layer[n="1"] .note.highlighted{
+.layer[n="1"] .note.highlighted, #phantomNote.l1{
     fill: rgb(255, 71, 255)
 }
 
-.layer[n="2"] .note.highlighted{
+.layer[n="2"] .note.highlighted, #phantomNote.l2{
     fill: green
 }
 
-.layer[n="3"]  .note.highlighted{
+.layer[n="3"]  .note.highlighted, #phantomNote.l3{
     fill: blue
 }
 
-.layer[n="4"]  .note.highlighted{
+.layer[n="4"]  .note.highlighted, #phantomNote.l4{
     fill: orange
 }
 

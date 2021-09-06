@@ -28,6 +28,7 @@ export class Mouse2MEI{
 
     private newNoteY: number;
     private phantomLines: Array<number>
+    private lineDist: number
 
     constructor(){
         this.noteBBoxes = new Array();
@@ -300,26 +301,34 @@ export class Mouse2MEI{
                 mappingidx++
                 if(diffStaff === null || Math.abs(tempDiff) < Math.abs(diffStaff)){
                     this.phantomLines.push(line.y)
-                    if(idx%2 !== 0){return} // take only Elements which are actually lines! (every second one)
+                    //if(idx%2 !== 0){return} // take only Elements which are actually lines! (every second one)
                     currentNearestY = line.y
                     diffStaff = tempDiff
                     currentNearestLineIdx = idx+mappingidx
                     isOverStaff = tempDiff <= 0 ? true : false;
                 }
             })
-            if(aboveSystem){
-                nextPitchIdx = isOverStaff ? currentNearestLineIdx + 1 : currentNearestLineIdx - 1 
+        
+            // prepare center coordinate (Y) for snapping
+            let lineDist = Math.abs(lineArr[0].y - lineArr[1].y)
+            this.lineDist = lineDist/2
+            lineDist = isOverStaff ? -lineDist : lineDist
+            if( Math.abs(currentNearestY - y) < Math.abs(lineDist/2 + currentNearestY - y)){ // line pos < middleline pos
+                this.newNoteY = currentNearestY
+                nextPitchIdx = currentNearestLineIdx
             }else{
-                nextPitchIdx = isOverStaff ? currentNearestLineIdx - 1 : currentNearestLineIdx + 1 
+                if(aboveSystem){
+                    nextPitchIdx = isOverStaff ? currentNearestLineIdx + 1 : currentNearestLineIdx - 1 
+                }else{
+                    nextPitchIdx = isOverStaff ? currentNearestLineIdx - 1 : currentNearestLineIdx + 1 
+                }
+                this.newNoteY = currentNearestY + lineDist/2
             }
+
             if(typeof map.get(nextPitchIdx) === "undefined"){return} // cursor is outside of score
             
             pname = map.get(nextPitchIdx).charAt(0)
             oct = map.get(nextPitchIdx).charAt(1)
-            // prepare center coordinate (Y) for snapping
-            let lineDist = Math.abs(lineArr[0].y - lineArr[1].y)
-            lineDist = isOverStaff ? -lineDist : lineDist
-            this.newNoteY = currentNearestY + lineDist/2
             
         }else{
             // Decide if Staffline is given or not
@@ -336,18 +345,25 @@ export class Mouse2MEI{
                         //isUnderStaff = tempDiff > 0 ? true : false;
                     }
                 })
-                nextPitchIdx = isOverStaff ? currentNearestStaffLine.staffIdx - 1 : currentNearestStaffLine.staffIdx + 1
+        
+                // prepare center coordinate (Y) for snapping
+                let lineDist = Math.abs(sbb[0].y - sbb[1].y)
+                this.lineDist = lineDist/2
+                lineDist = isOverStaff ? -lineDist : lineDist
+                if( Math.abs(currentNearestStaffLine.y - y) < Math.abs(lineDist/2 + currentNearestStaffLine.y - y)){ // line pos < middleline pos
+                    this.newNoteY = currentNearestStaffLine.y // on line
+                    nextPitchIdx = currentNearestStaffLine.staffIdx
+                }else{
+                    this.newNoteY = currentNearestStaffLine.y + lineDist/2 // between lines
+                    nextPitchIdx = isOverStaff ? currentNearestStaffLine.staffIdx - 1 : currentNearestStaffLine.staffIdx + 1
+                }
+
                 let map = null
                 if(currentNearestStaffLine.classList.contains("ClefG")){map = idxNoteMapGClef} 
                 else if(currentNearestStaffLine.classList.contains("ClefF")){map = idxNoteMapFClef}
                 pname = map.get(nextPitchIdx).charAt(0)
                 oct = map.get(nextPitchIdx).charAt(1)
-        
-                // prepare center coordinate (Y) for snapping
-                let lineDist = Math.abs(sbb[0].y - sbb[1].y)
-                lineDist = isOverStaff ? -lineDist : lineDist
-                this.newNoteY = currentNearestStaffLine.y + lineDist/2
-
+                
             }else{
                 let pitch: string[] = document.getElementById(options.staffLineId).getAttribute("class").split(" ")
                 let p: string[] = pitch.filter(function(obj){
@@ -504,6 +520,10 @@ export class Mouse2MEI{
 
     getDotsNewNote(): string{
         return this.noteNewDots
+    }
+
+    getLineDist(){
+        return this.lineDist
     }
 
     update(){

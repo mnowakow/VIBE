@@ -1,7 +1,7 @@
 import { noteToB } from "../utils/mappings"
 import ScoreNode from "./ScoreNode"
 
-const nodeSelector = "note, rest, mRest, chord"
+const nodeSelector = "note, rest, mRest, chord, layer"
 
 class ScoreGraph{
 
@@ -23,7 +23,7 @@ class ScoreGraph{
         this.graph = new Map()
         this.midiTimes = miditimes
         xmlDoc.querySelectorAll(nodeSelector).forEach(e => {
-            if(e.tagName === "note" && e.closest("chord") !== null){
+            if((e.tagName === "note" && e.closest("chord") !== null) || (e.tagName === "layer" && e.children.length > 0)){
                 return
             }
             this.graph.set(e.id, new ScoreNode(e.id))
@@ -42,12 +42,16 @@ class ScoreGraph{
             layerArray = Array.from(xmlDoc.querySelectorAll("layer[n=\"" + (i+1).toString() + "\"]"))
             var elements = new Array<Element>()
             layerArray.forEach(l => {
-                l.querySelectorAll(nodeSelector).forEach(c => {
-                    if(c.tagName === "note" && c.closest("chord") !== null){
-                        return
-                    }
-                    elements.push(c)
-                })
+                if(l.children.length === 0){
+                    elements.push(l)
+                }else{
+                    l.querySelectorAll(nodeSelector).forEach(c => {
+                        if(c.tagName === "note" && c.closest("chord") !== null){
+                            return
+                        }
+                        elements.push(c)
+                    })
+                }
             })
 
             elements.forEach((el, idx) => {
@@ -125,6 +129,15 @@ class ScoreGraph{
             var currentNode = value
             var leftNode = currentNode.getLeft()
             var rightNode = currentNode.getRight()
+
+            if(currentNode.getUp() == undefined){
+                currentNode.setUp(null)
+            }
+
+            if(currentNode.getDown() == undefined){
+                currentNode.setDown(null)
+            }
+
             // Get closest Node for UP reference
             //check left
             var closestTimeUp: number = 10**10
@@ -171,6 +184,8 @@ class ScoreGraph{
                 currentNode.setDown(downSet)
             }
         }
+
+        console.log(this.graph)
     }
 
     targetNodeIsLeftOrRight(startNode: ScoreNode, targetNode: ScoreNode): Boolean{

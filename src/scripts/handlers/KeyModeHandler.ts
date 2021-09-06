@@ -287,7 +287,11 @@ class KeyModeHandler implements Handler{
    */
   setCurrentNodeScoreGraph(elementId: string = null){
     if(typeof this.scoreGraph.getCurrentNode() === "undefined" || elementId === null){
-      this.scoreGraph.setCurrentNodeById(this.cursor.getNextElement().id)
+      var nextEl = this.cursor.getNextElement()
+      if(nextEl.classList.contains("staff")){
+        nextEl = nextEl.querySelector(".layer:empty")
+      }
+      this.scoreGraph.setCurrentNodeById(nextEl.id)
     }else if(elementId !== null){
       this.scoreGraph.setCurrentNodeById(elementId)
     }

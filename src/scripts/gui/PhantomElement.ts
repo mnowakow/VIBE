@@ -9,6 +9,8 @@ const svgNS = "http://www.w3.org/2000/svg";
 
 class PhantomElement{
 
+    noteR: number
+
     constructor(elementName: string, options = null){
         elementName = elementName.toLowerCase();
         switch(elementName){
@@ -68,6 +70,10 @@ class PhantomElement{
         if(document.getElementById("phantomNote") !== null){
             document.getElementById("phantomNote").remove()
         }
+    }
+
+    setNoteRadius(r: number){
+        this.noteR = r
     }
 }
 export default PhantomElement;

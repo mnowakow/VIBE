@@ -90,6 +90,7 @@ class Cursor{
     definePosById(id: string){
         this.flashStop()
         var element = document.getElementById(id)
+        element = element.classList.contains("layer") && element.children.length === 0 ? element.closest(".staff") : element //special rule for empty layer
         var svgRect = document.querySelector(c._ROOTSVGID_WITH_IDSELECTOR_).getBoundingClientRect()
 
         var elementBBox: DOMRect
@@ -97,7 +98,7 @@ class Cursor{
         var distToElement = 12
         if(element !== null){
             elementBBox = element.getBoundingClientRect()
-            currLayerY = element.closest(".layer").getBoundingClientRect().y
+            currLayerY = element.classList.contains("staff") ? element.getBoundingClientRect().y : element.closest(".layer").getBoundingClientRect().y
             this.nextElement = element
             this.isBol = false
         }else{

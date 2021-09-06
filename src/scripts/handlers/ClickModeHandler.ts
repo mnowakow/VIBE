@@ -75,7 +75,7 @@ class ClickModeHandler implements Handler{
         if(target.classList.contains("staffLine")){
             options["staffLineId"] = target.id
         }
-        if(target.classList.contains("highlightChord")){
+        if(document.getElementById("phantomNote")?.classList.contains("onChord")){
             options["targetChord"] = this.findScoreTarget(posx, posy)
         }
         this.m2m.defineNote(evt.pageX, evt.pageY, options);
@@ -132,22 +132,46 @@ class ClickModeHandler implements Handler{
                 this.m2m.setMouseEnterElements(elementToHighlight)
             }
 
-            var highLightRects: NodeListOf<Element> = this.annotations.getCanvasGroup().querySelectorAll(".highlightChord")
-            Array.from(highLightRects).forEach(el => {
-                el.remove()
-            })
+            //snap note to closest Chord
+            var phantom = document.getElementById("phantomNote")
+            var cx = parseFloat(phantom.getAttribute("cx"))
+            //snap only when within boundaries of target Chord
+            if(cx > elementToHighlight.getBoundingClientRect().left && cx < elementToHighlight.getBoundingClientRect().right){
+                var noteHead = elementToHighlight.querySelector(".noteHead")
+                var phantomSnapX = noteHead.getBoundingClientRect().x + noteHead.getBoundingClientRect().width/2
+                phantom.setAttribute("cx", phantomSnapX.toString())
+                if(!phantom.classList.contains("onChord")){
+                    phantom.classList.add("onChord")
+                    phantom.classList.add("l" + elementToHighlight.closest(".layer").getAttribute("n"))
+                }
+            }else{
+                for(const [key, value] of phantom.classList.entries()){
+                    if(value.indexOf("l") === 0){
+                        phantom.classList.remove(value)
+                    }
+                }
+                phantom.classList.remove("onChord")
+                phantom.setAttribute("fill", "black")
+            }
 
-            var ebb: DOMRect = elementToHighlight.getBoundingClientRect()
+            //MaNo: 6.9.2021: Chords will be detected by vertical snapping, not by highlighting box
+            // var highLightRects: NodeListOf<Element> = this.annotations.getCanvasGroup().querySelectorAll(".highlightChord")
+            // Array.from(highLightRects).forEach(el => {
+            //     el.remove()
+            // })
 
-            var highlightRect: SVGElement = document.createElementNS(c._SVGNS_, "rect")
-            var margin = 5
-            highlightRect.setAttribute("x", (ebb.x - rootBBox.x - margin).toString())
-            highlightRect.setAttribute("y", (ebb.y - rootBBox.y - 10*margin).toString())
-            highlightRect.setAttribute("height", (ebb.height + 20*margin).toString())
-            highlightRect.setAttribute("width", (ebb.width + 2*margin).toString())
-            highlightRect.classList.add("highlightChord")
-            this.annotations.getCanvasGroup().appendChild(highlightRect)
-            //highlightRect.addEventListener("click", this.clickHandler)
+            // var ebb: DOMRect = elementToHighlight.getBoundingClientRect()
+
+            // var highlightRect: SVGElement = document.createElementNS(c._SVGNS_, "rect")
+            // var margin = 5
+            // highlightRect.setAttribute("x", (ebb.x - rootBBox.x - margin).toString())
+            // highlightRect.setAttribute("y", (ebb.y - rootBBox.y - 10*margin).toString())
+            // highlightRect.setAttribute("height", (ebb.height + 20*margin).toString())
+            // highlightRect.setAttribute("width", (ebb.width + 2*margin).toString())
+            // highlightRect.classList.add("highlightChord")
+            // this.annotations.getCanvasGroup().appendChild(highlightRect)
+            // //highlightRect.addEventListener("click", this.clickHandler)
+            
             this.currentElementToHighlight = elementToHighlight
         }
         
@@ -177,6 +201,7 @@ class ClickModeHandler implements Handler{
         this.musicPlayer = musicPlayer
         return this
       }
+
 
       setAnnotations(annotations: Annotations){
           this.annotations = annotations

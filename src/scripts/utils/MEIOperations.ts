@@ -144,24 +144,28 @@ export function addToMEI(newElement: NewNote | NewChord, currentMEI: Document): 
         
       }else if(newNote.nearestNoteId !== null){
         var sibling: HTMLElement = currentMEI.getElementById(newNote.nearestNoteId);
-        var parentLayer = sibling.closest("layer")
-        var trueParent = sibling.parentElement
-        var isTrueSibling = parentLayer == trueParent
-        var trueSibling: HTMLElement = sibling;
-        if(!isTrueSibling){
-            var currParent: HTMLElement = trueParent;
-            while(!isTrueSibling){
-              isTrueSibling = (trueSibling.tagName === "note" && trueSibling.closest("chord") === null) || trueSibling.closest("chord") === trueSibling //parentLayer == currParent.parentElement 
-              if(!isTrueSibling){
-                trueSibling = currParent;
-                currParent = currParent.parentElement;
-              }
-            }
-        }
-        if(newNote.relPosX === "left"){
-          trueSibling.parentElement.insertBefore(newElem, trueSibling)
+        if(sibling.tagName === "layer"){
+          sibling.append(newElem)
         }else{
-          trueSibling.parentElement.insertBefore(newElem, trueSibling.nextSibling)
+          var parentLayer = sibling.closest("layer")
+          var trueParent = sibling.parentElement
+          var isTrueSibling = parentLayer == trueParent
+          var trueSibling: HTMLElement = sibling;
+          if(!isTrueSibling){
+              var currParent: HTMLElement = trueParent;
+              while(!isTrueSibling){
+                isTrueSibling = (trueSibling.tagName === "note" && trueSibling.closest("chord") === null) || trueSibling.closest("chord") === trueSibling //parentLayer == currParent.parentElement 
+                if(!isTrueSibling){
+                  trueSibling = currParent;
+                  currParent = currParent?.parentElement;
+                }
+              }
+          }
+          if(newNote.relPosX === "left"){
+            trueSibling.parentElement.insertBefore(newElem, trueSibling)
+          }else{
+            trueSibling.parentElement.insertBefore(newElem, trueSibling.nextSibling)
+          }
         }
       
         // For now: No Shifts (22.07.2021)
