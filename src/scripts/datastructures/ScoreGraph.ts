@@ -184,8 +184,6 @@ class ScoreGraph{
                 currentNode.setDown(downSet)
             }
         }
-
-        console.log(this.graph)
     }
 
     targetNodeIsLeftOrRight(startNode: ScoreNode, targetNode: ScoreNode): Boolean{

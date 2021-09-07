@@ -1,15 +1,14 @@
 import ScoreGraph from "../datastructures/ScoreGraph";
 import Cursor from "../gui/Cursor";
 import MusicPlayer from "../MusicPlayer";
-import { keyCodeNoteMap, keysigToNotes } from "../utils/mappings";
+import { keyCodeNoteMap, keysigToNotes, octToNum } from "../utils/mappings";
 import { Mouse2MEI } from "../utils/Mouse2MEI";
 import { uuidv4 } from "../utils/random";
 import { NewNote } from "../utils/Types";
 import { constants as c } from "../constants"
 import Handler from "./Handler";
 import * as coord from "../utils/coordinates"
-import { runInThisContext } from "vm";
-import { STATUS_CODES } from "http";
+
 
 const marked = "marked"
 
@@ -58,7 +57,9 @@ class KeyModeHandler implements Handler{
   keyInsertHandler = (function keyInsertHandler (evt: KeyboardEvent): void {
     if(keyCodeNoteMap.has(evt.code) && typeof this.cursor !== "undefined"){
       evt.preventDefault()
-      const newNote: NewNote = this.createNewNote(keyCodeNoteMap.get(evt.code), "4", null)
+      var pname = keyCodeNoteMap.get(evt.code)
+      var oct = octToNum.get(document.querySelector("#octaveGroupTM .selected")?.id) || "4"
+      const newNote: NewNote = this.createNewNote(pname, oct, null)
 
       var noteExists: Boolean = false
       var noteToDelete: Element

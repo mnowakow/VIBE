@@ -67,18 +67,21 @@ class ScoreManipulatorHandler implements Handler{
 
     addMeasure = (function handler(e: MouseEvent){
         e.preventDefault()
+        e.stopPropagation()
         meiOperation.addMeasure(this.currentMEI as Document)
         this.loadDataCallback("", meiConverter.restoreXmlIdTags(this.currentMEI), false, c._TARGETDIVID_)
     }).bind(this)
 
     removeMeasure = (function handler(e: MouseEvent){
         e.preventDefault()
+        e.stopPropagation()
         meiOperation.removeMeasure(this.currentMEI as Document)
         this.loadDataCallback("", meiConverter.restoreXmlIdTags(this.currentMEI), false, c._TARGETDIVID_)
     }).bind(this)
 
     addStaff = (function handler(e: MouseEvent){
         e.preventDefault()
+        e.stopPropagation()
         var target = (e.target as Element).closest(".manipulator")
         var relpos = target.classList.contains("below") ? "below" : "above"
         meiOperation.addStaff(this.currentMEI as Document, document.getElementById(target.getAttribute("refId")), relpos)
@@ -88,6 +91,7 @@ class ScoreManipulatorHandler implements Handler{
 
     removeStaff = (function handler(e: MouseEvent){
         e.preventDefault()
+        e.stopPropagation()
         var target = (e.target as Element).closest(".manipulator")
         var relpos = target.classList.contains("below") ? "below" : "above"
         meiOperation.removeStaff(this.currentMEI as Document, document.getElementById(target.getAttribute("refId")), relpos)

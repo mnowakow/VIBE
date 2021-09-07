@@ -283,3 +283,14 @@ numToNoteButtonId.set("32","thirtysecondNote")
 export const numToDotButtonId: Map<string, string> = new Map;
 numToDotButtonId.set("1", "oneDot")
 numToDotButtonId.set("2", "twoDot")
+
+export const octToNum: Map<string, string> = new Map;
+octToNum.set("subkontraOct", "0")
+octToNum.set("kontraOct", "1")
+octToNum.set("greatOct", "2")
+octToNum.set("smallOct", "3")
+octToNum.set("1LineOct", "4")
+octToNum.set("2LineOct", "5")
+octToNum.set("3LineOct", "6")
+octToNum.set("4LineOct", "7")
+octToNum.set("5LineOct", "8")

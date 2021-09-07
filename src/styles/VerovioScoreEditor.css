@@ -309,9 +309,11 @@ body.clickmode  * {
 
 /* CLICK MODE */
 
+/*
 #phantomNote{
-    transform: skew(-20);
+    transform: skew(-20deg);
 }
+*/
 
 .phantomLine{
     stroke-width: 2px;

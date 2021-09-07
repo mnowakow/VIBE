@@ -20,15 +20,17 @@ class ClickModeHandler implements Handler{
         // Listenere for whole SVG (maybe just layer?)
         var svg = document.querySelectorAll(c._ROOTSVGID_WITH_IDSELECTOR_)
         Array.from(svg).forEach(element => {
-            element.addEventListener('click', this.clickHandler)
-            element.addEventListener("mousemove", this.mouseOverChordHandler)
+            if (!["manipulator"].some(cn => element.classList.contains(cn))){
+                element.addEventListener('click', this.clickHandler)
+                element.addEventListener("mousemove", this.mouseOverChordHandler)
+            }
         });
 
 
         // Listener just for staves
         var staves = document.querySelectorAll(".staffLine")
         Array.from(staves).forEach(element => {
-        element.addEventListener('click', this.clickHandler)
+            element.addEventListener('click', this.clickHandler)
         })
     }
 
@@ -108,7 +110,8 @@ class ClickModeHandler implements Handler{
 
 
     mouseOverChordHandler = (function mouseOverHandler (evt: MouseEvent): void{
-        var rootBBox = document.getElementById(c._ROOTSVGID_).getBoundingClientRect()    
+        var root = document.getElementById(c._ROOTSVGID_)
+        var rootBBox = root.getBoundingClientRect()    
         var posx = evt.offsetX
         var posy = evt.offsetY
 
@@ -135,10 +138,14 @@ class ClickModeHandler implements Handler{
             //snap note to closest Chord
             var phantom = document.getElementById("phantomNote")
             var cx = parseFloat(phantom.getAttribute("cx"))
+            var left = elementToHighlight.getBoundingClientRect().left - window.scrollX - rootBBox.x - root.scrollLeft
+            var right = elementToHighlight.getBoundingClientRect().right - window.scrollX - rootBBox.x - root.scrollLeft
+
             //snap only when within boundaries of target Chord
-            if(cx > elementToHighlight.getBoundingClientRect().left && cx < elementToHighlight.getBoundingClientRect().right){
-                var noteHead = elementToHighlight.querySelector(".noteHead")
-                var phantomSnapX = noteHead.getBoundingClientRect().x + noteHead.getBoundingClientRect().width/2
+            if(cx > left && cx < right){
+                var snapTarget = elementToHighlight.querySelector(".noteHead")|| elementToHighlight
+                var snapTargetBBox = snapTarget.getBoundingClientRect()
+                var phantomSnapX = snapTargetBBox.x + snapTargetBBox.width/2 - window.scrollX - rootBBox.x - root.scrollLeft
                 phantom.setAttribute("cx", phantomSnapX.toString())
                 if(!phantom.classList.contains("onChord")){
                     phantom.classList.add("onChord")

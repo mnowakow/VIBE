@@ -19,7 +19,8 @@ class Toolbar{
     private sideBarGroup: HTMLElement;
 
     private customToolbar: HTMLElement
-    private textModeGroup: HTMLElement
+    private chordGroupTM: HTMLElement
+    private octaveGroupTM: HTMLElement
     private options: customType.InstanceOptions
 
     //private task: Evaluation
@@ -179,9 +180,51 @@ class Toolbar{
 
     createButtonsCustomToolbar(){
          
-        this.textModeGroup  = dc.makeNewDiv("textModeGroup", "btn-group me-2 h-100", {role: "group"}) as HTMLElement
-        this.textModeGroup.append(dc.makeNewButton("CHORD", "chordButton", buttonStyleDarkOutline))
-        this.textModeGroup.addEventListener("click", this.exclusiveSelectHandler)
+        this.chordGroupTM  = dc.makeNewDiv("chordGroupTM", "btn-group me-2 h-100", {role: "group"}) as HTMLElement
+        this.chordGroupTM.append(dc.makeNewButton("CHORD", "chordButton", buttonStyleDarkOutline))
+        this.chordGroupTM.addEventListener("click", this.exclusiveSelectHandler)
+
+        this.octaveGroupTM = dc.makeNewDiv("octaveGroupTM", "btn-group me-2 h-100", {role: "group"}) as HTMLElement
+        let oct = dc.makeNewButton("", "subkontraOct", buttonStyleDarkOutline)
+        oct.innerHTML = "C" + "0".sub()
+        this.octaveGroupTM.appendChild(oct)
+
+        oct = dc.makeNewButton("", "kontraOct", buttonStyleDarkOutline)
+        oct.innerHTML = "C" + "1".sub()
+        this.octaveGroupTM.appendChild(oct)
+
+        oct = dc.makeNewButton("", "greatOct", buttonStyleDarkOutline)
+        oct.innerHTML = "C" + "2".sub()
+        this.octaveGroupTM.appendChild(oct)
+
+        oct = dc.makeNewButton("", "smallOct", buttonStyleDarkOutline)
+        oct.innerHTML = "C" + "3".sub()
+        this.octaveGroupTM.appendChild(oct)
+
+        oct = dc.makeNewButton("", "1LineOct", buttonStyleDarkOutline)
+        oct.innerHTML = "C" + "4".sub()
+        this.octaveGroupTM.appendChild(oct)
+
+        oct = dc.makeNewButton("", "2LineOct", buttonStyleDarkOutline)
+        oct.innerHTML = "C" + "5".sub()
+        this.octaveGroupTM.appendChild(oct)
+
+        oct = dc.makeNewButton("", "3LineOct", buttonStyleDarkOutline)
+        oct.innerHTML = "C" + "6".sub()
+        this.octaveGroupTM.appendChild(oct)
+
+        oct = dc.makeNewButton("", "4LineOct", buttonStyleDarkOutline)
+        oct.innerHTML = "C" + "7".sub()
+        this.octaveGroupTM.appendChild(oct)
+
+        oct = dc.makeNewButton("", "5LineOct", buttonStyleDarkOutline)
+        oct.innerHTML = "C" + "8".sub()
+        this.octaveGroupTM.appendChild(oct)
+       
+        Array.from(this.octaveGroupTM.children).forEach(btn => {
+            btn.addEventListener("click", this.exclusiveSelectHandler)
+        })
+
     }
 
     createMainToolbar(){
@@ -318,7 +361,7 @@ class Toolbar{
     exclusiveSelectHandler = (function exclusiveSelectHandler(evt: MouseEvent): void{
         var target = evt.target as Element
         var tagname = "BUTTON"
-        var allowedParentGroupIDs = ["dotGroup", "textModeGroup", "modGroup"]
+        var allowedParentGroupIDs = ["dotGroup", "chordGroupTM", "octaveGroupTM", "modGroup"]
         if(target.tagName === tagname && target.id !== "toggleSidebar"){ // this should have no effect on the sidebar
             Array.from(target.parentElement.children).forEach(btn => {
                 if(btn.tagName === tagname && btn !== target){
@@ -379,8 +422,9 @@ class Toolbar{
     }
 
     keyInsertHandler(){
-        if(this.customToolbar.querySelector("#" + this.textModeGroup.id) === null){
-            this.customToolbar.appendChild(this.textModeGroup)
+        if(this.customToolbar.querySelector("#" + this.chordGroupTM.id) === null){
+            this.customToolbar.appendChild(this.chordGroupTM)
+            this.customToolbar.appendChild(this.octaveGroupTM)
         }else{
             this.removeAllCustomGroups()
         }
