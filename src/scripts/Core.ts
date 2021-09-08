@@ -56,6 +56,7 @@ class Core {
   private musicplayer: MusicPlayer;
   private scoreGraph: ScoreGraph;
   private svgFiller: SVGFiller;
+  private lastInsertedNoteId: string
   private meiChangedCallback: (mei: string) => void;
 
   /**
@@ -146,6 +147,14 @@ class Core {
           .fillSVG(this.currentMEIDoc)
         this.musicplayer.setMEI(this.currentMEIDoc)
         this.undoStacks.push(mei)
+
+        //mark if note was inserted (enables direct manipulation)
+        document.querySelectorAll(".marked").forEach(m => {
+          m.classList.remove("marked")
+        })
+        if(this.lastInsertedNoteId != undefined){
+          document.getElementById(this.lastInsertedNoteId)?.classList.add("marked")
+        }
 
         if(this.meiChangedCallback != undefined){
           console.log(this, this.currentMEI)
@@ -260,10 +269,12 @@ class Core {
    * @param action - The editor toolkit action object.
    * @param pageURI - The URI of the selected page.
    */
-  insert  = (function insert (newNote: NewNote): Promise<boolean> {    
+  insert = (function insert (newNote: NewNote, replace: Boolean = false): Promise<boolean> {    
+    this.lastInsertedNoteId = newNote.id
+
     return new Promise((resolve): void => {
       this.getMEI("").then(mei => {
-      var updatedMEI = meiOperation.addToMEI(newNote, this.currentMEIDoc)
+        var updatedMEI = meiOperation.addToMEI(newNote, this.currentMEIDoc, replace, this.scoreGraph)
         this.loadData("", updatedMEI, false, c._TARGETDIVID_).then(() => {
             resolve(true)       
         })

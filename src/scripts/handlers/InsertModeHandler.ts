@@ -29,7 +29,7 @@ class InsertModeHandler implements Handler{
   musicPlayer: MusicPlayer;
   cursor: Cursor;
   clickInsertMode: boolean;
-  keyInsertMode: boolean;
+  keyMode: boolean;
   annotationMode: boolean;
   harmonyMode: boolean;
   phantom: PhantomElement;
@@ -47,7 +47,7 @@ class InsertModeHandler implements Handler{
 
   private currentElementToHighlight: Element
 
-  private insertCallback: (newNote: NewNote) => Promise<any> 
+  private insertCallback: (newNote: NewNote, replace: Boolean) => Promise<any> 
   private deleteCallback: (notes: Array<Element>) => Promise<any>;
   private loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>;
   
@@ -57,14 +57,14 @@ class InsertModeHandler implements Handler{
   }
 
   activateClickMode(clicked: Boolean = false){
-    if(this.keyInsertMode || this.annotationMode || this.harmonyMode){
+    if(this.keyMode || this.annotationMode || this.harmonyMode){
       this.insertDeactivate()
     }
     if(clicked){
       if(this.unselectMenuItem("clickInsert")){return}
     }
     document.body.classList.add("clickmode")
-    this.keyInsertMode = false;
+    this.keyMode = false;
     this.clickInsertMode = true;
     this.annotationMode = false;
     this.harmonyMode = false;
@@ -94,10 +94,10 @@ class InsertModeHandler implements Handler{
       this.insertDeactivate()
     }
     if(clicked){
-      if(this.unselectMenuItem("keyInsert")){return}
+      if(this.unselectMenuItem("keyMode")){return}
     }
     document.body.classList.add("textmode")
-    this.keyInsertMode = true;
+    this.keyMode = true;
     this.clickInsertMode = false;
     this.annotationMode = false;
     this.harmonyMode = false;
@@ -151,7 +151,7 @@ class InsertModeHandler implements Handler{
       .setToFront()
       .setMenuClickHandler()
 
-      this.keyInsertMode = false;
+      this.keyMode = false;
       this.clickInsertMode = false;
       this.annotationMode = true;
       this.harmonyMode = false;
@@ -173,7 +173,7 @@ class InsertModeHandler implements Handler{
       .setCurrentMEI(this.m2m.getCurrentMei())
       .setLoadDataCallback(this.loadDataCallback)
 
-    this.keyInsertMode = false;
+    this.keyMode = false;
     this.clickInsertMode = false;
     this.annotationMode = false;
     this.harmonyMode = true
@@ -185,7 +185,7 @@ class InsertModeHandler implements Handler{
     document.body.classList.remove("annotMode")
     document.body.classList.remove("harmonyMode")
 
-    this.keyInsertMode = false;
+    this.keyMode = false;
     this.clickInsertMode = false;
     this.harmonyMode = false;
     this.annotationMode = false;
@@ -242,7 +242,7 @@ class InsertModeHandler implements Handler{
               case "clickInsert":
                   that.activateClickMode(true);
                   break;
-              case "keyInsert":
+              case "keyMode":
                  that.activateKeyMode(true);
                   break;
               // case "activateSelect":
@@ -325,7 +325,7 @@ class InsertModeHandler implements Handler{
   resetModes(){
      //reset  
      if(!this.navBarLoaded) this.setListeners();
-     if(this.keyInsertMode) this.activateKeyMode();
+     if(this.keyMode) this.activateKeyMode();
      if(this.clickInsertMode) this.activateClickMode();
      if(this.annotationMode) this.activateAnnotationMode();
      if(this.harmonyMode) this.activateHarmonyMode();
@@ -379,7 +379,7 @@ class InsertModeHandler implements Handler{
     return this
   }
 
-  setInsertCallback(insertCallback: (newNote: NewNote) => Promise<any>){
+  setInsertCallback(insertCallback: (newNote: NewNote, replace: Boolean) => Promise<any>){
     this.insertCallback = insertCallback
     return this
   }

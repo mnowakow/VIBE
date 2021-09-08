@@ -46,6 +46,10 @@ class SVGFiller{
         return this
     }
 
+    /**
+     * Reload all the classes which where distributed before
+     * @returns this (for chaining convenience)
+     */
     loadClasses(){
         if(typeof this.classListMap === "undefined"){
             return this

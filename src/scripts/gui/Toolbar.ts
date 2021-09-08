@@ -3,8 +3,7 @@ import * as customType from "../utils/Types"
 import { Button, Dropdown, Collapse } from 'bootstrap'
 import { thresholdFreedmanDiaconis } from 'd3-array'
 import SidebarHandler from '../handlers/SideBarHandler'
-//import Evaluation from '../evaluation/Evaluation'    
-//import SimpleSubmit from '../evaluation/SimpleSubmit'
+import { keyIdToSig } from '../utils/mappings'
 
 const buttonStyleDarkOutline = "btn btn-outline-dark btn-md"
 const buttonStyleDark = "btn btn-dark btn-md"
@@ -19,8 +18,9 @@ class Toolbar{
     private sideBarGroup: HTMLElement;
 
     private customToolbar: HTMLElement
-    private chordGroupTM: HTMLElement
-    private octaveGroupTM: HTMLElement
+    private chordGroupKM: HTMLElement
+    private octaveGroupKM: HTMLElement
+    private insertSelectGroup: HTMLElement
     private options: customType.InstanceOptions
 
     //private task: Evaluation
@@ -112,7 +112,7 @@ class Toolbar{
         var tudatalistname = "timeUnitDatalist"
         var timeUnit = dc.makeNewInput("timeUnit", "text", "", null, tudatalistname)
 
-        //create list fpr time units
+        //create list for time units
         var tuOptionValues = new Array<string>();
         for(var i = 0; i <= 16; i++){
             if(Number.isInteger(Math.log2(i))){
@@ -151,8 +151,8 @@ class Toolbar{
         // Buttons können in eigenes package ausgelagert werden (Editor)
 
         var handlerDropdown =  dc.makeNewDiv("insertDropdown", "dropdown-menu")
-        handlerDropdown.append(dc.makeNewAElement("Click Insert", "clickInsert", "dropdown-item", "#"))
-        handlerDropdown.append(dc.makeNewAElement("Key Insert", "keyInsert", "dropdown-item", "#"))
+        handlerDropdown.append(dc.makeNewAElement("Click Mode", "clickInsert", "dropdown-item", "#"))
+        handlerDropdown.append(dc.makeNewAElement("Key Mode", "keyMode", "dropdown-item", "#"))
         //handlerDropdown.append(dc.makeNewAElement("Select Mode", "activateSelect", "dropdown-item", "#"))
         handlerDropdown.append(dc.makeNewAElement("Annotation Mode", "activateAnnot", "dropdown-item", "#"))
         handlerDropdown.append(dc.makeNewAElement("Harmony Mode", "activateHarm", "dropdown-item", "#"))
@@ -175,53 +175,81 @@ class Toolbar{
 
         this.modButtonGroup = document.getElementById("modGroup")
         this.modButtonGroup.appendChild(dc.makeNewButton("", "pauseNote", buttonStyleDarkOutline))
-    
+
     }
 
-    createButtonsCustomToolbar(){
-         
-        this.chordGroupTM  = dc.makeNewDiv("chordGroupTM", "btn-group me-2 h-100", {role: "group"}) as HTMLElement
-        this.chordGroupTM.append(dc.makeNewButton("CHORD", "chordButton", buttonStyleDarkOutline))
-        this.chordGroupTM.addEventListener("click", this.exclusiveSelectHandler)
 
-        this.octaveGroupTM = dc.makeNewDiv("octaveGroupTM", "btn-group me-2 h-100", {role: "group"}) as HTMLElement
+    createInsertSelect(){
+        //InsertSelect DropdownMenu
+        this.insertSelectGroup = dc.makeNewDiv("insertGroup", "btn-group me-2 h-100", {role: "group"}) as HTMLElement
+        var insertDropDown = dc.makeNewDiv("insertDropdownKM", "dropdown-menu")
+        var insertButton = dc.makeNewAElement("Insert", "keyInsert", "dropdown-item", "#")
+        insertDropDown.append(insertButton)
+        var replaceButton = dc.makeNewAElement("Replace", "keyReplace", "dropdown-item hide", "#")
+        insertDropDown.append(replaceButton)
+        this.insertSelectGroup.append(dc.makeNewButton("Replace", "keyInsertDropdown", buttonStyleDarkOutline , "dropdown"))
+        this.insertSelectGroup.append(insertDropDown)
+
+        Array.from(insertDropDown.children).forEach(ki => {
+            ki.addEventListener("click", function(){
+                document.getElementById("keyInsertDropdown").innerHTML = ki.textContent
+                Array.from(insertDropDown.children).forEach(el => {
+                    if(el.textContent === document.getElementById("keyInsertDropdown").innerHTML){
+                        el.classList.add("hide")
+                    }else{
+                        el.classList.remove("hide")
+                    }
+                })
+            })
+        })
+    }
+
+    createButtonsKeyMode(){
+
+        //ChordGroup
+        this.chordGroupKM  = dc.makeNewDiv("chordGroupKM", "btn-group me-2 h-100", {role: "group"}) as HTMLElement
+        this.chordGroupKM.append(dc.makeNewButton("CHORD", "chordButton", buttonStyleDarkOutline))
+        this.chordGroupKM.addEventListener("click", this.exclusiveSelectHandler)
+
+        //OctaveGroup
+        this.octaveGroupKM = dc.makeNewDiv("octaveGroupKM", "btn-group me-2 h-100", {role: "group"}) as HTMLElement
         let oct = dc.makeNewButton("", "subkontraOct", buttonStyleDarkOutline)
         oct.innerHTML = "C" + "0".sub()
-        this.octaveGroupTM.appendChild(oct)
+        this.octaveGroupKM.appendChild(oct)
 
         oct = dc.makeNewButton("", "kontraOct", buttonStyleDarkOutline)
         oct.innerHTML = "C" + "1".sub()
-        this.octaveGroupTM.appendChild(oct)
+        this.octaveGroupKM.appendChild(oct)
 
         oct = dc.makeNewButton("", "greatOct", buttonStyleDarkOutline)
         oct.innerHTML = "C" + "2".sub()
-        this.octaveGroupTM.appendChild(oct)
+        this.octaveGroupKM.appendChild(oct)
 
         oct = dc.makeNewButton("", "smallOct", buttonStyleDarkOutline)
         oct.innerHTML = "C" + "3".sub()
-        this.octaveGroupTM.appendChild(oct)
+        this.octaveGroupKM.appendChild(oct)
 
         oct = dc.makeNewButton("", "1LineOct", buttonStyleDarkOutline)
         oct.innerHTML = "C" + "4".sub()
-        this.octaveGroupTM.appendChild(oct)
+        this.octaveGroupKM.appendChild(oct)
 
         oct = dc.makeNewButton("", "2LineOct", buttonStyleDarkOutline)
         oct.innerHTML = "C" + "5".sub()
-        this.octaveGroupTM.appendChild(oct)
+        this.octaveGroupKM.appendChild(oct)
 
         oct = dc.makeNewButton("", "3LineOct", buttonStyleDarkOutline)
         oct.innerHTML = "C" + "6".sub()
-        this.octaveGroupTM.appendChild(oct)
+        this.octaveGroupKM.appendChild(oct)
 
         oct = dc.makeNewButton("", "4LineOct", buttonStyleDarkOutline)
         oct.innerHTML = "C" + "7".sub()
-        this.octaveGroupTM.appendChild(oct)
+        this.octaveGroupKM.appendChild(oct)
 
         oct = dc.makeNewButton("", "5LineOct", buttonStyleDarkOutline)
         oct.innerHTML = "C" + "8".sub()
-        this.octaveGroupTM.appendChild(oct)
+        this.octaveGroupKM.appendChild(oct)
        
-        Array.from(this.octaveGroupTM.children).forEach(btn => {
+        Array.from(this.octaveGroupKM.children).forEach(btn => {
             btn.addEventListener("click", this.exclusiveSelectHandler)
         })
 
@@ -240,7 +268,8 @@ class Toolbar{
     }
 
     createCustomToolbar(){
-        this.createButtonsCustomToolbar()
+        this.createButtonsKeyMode()
+        this.createInsertSelect()
         this.customToolbar = document.getElementById("customToolbar")
     }
 
@@ -361,7 +390,7 @@ class Toolbar{
     exclusiveSelectHandler = (function exclusiveSelectHandler(evt: MouseEvent): void{
         var target = evt.target as Element
         var tagname = "BUTTON"
-        var allowedParentGroupIDs = ["dotGroup", "chordGroupTM", "octaveGroupTM", "modGroup"]
+        var allowedParentGroupIDs = ["dotGroup", "chordGroupKM", "octaveGroupKM", "modGroup"]
         if(target.tagName === tagname && target.id !== "toggleSidebar"){ // this should have no effect on the sidebar
             Array.from(target.parentElement.children).forEach(btn => {
                 if(btn.tagName === tagname && btn !== target){
@@ -398,6 +427,9 @@ class Toolbar{
         }
     }).bind(this)
 
+    /**
+     * Creates second toolbar depending on selected option
+     */
     customToolbarHandler = (function customToolbarHandler (e: MouseEvent){
         var target = e.target as Element
         var tID = target.id
@@ -405,8 +437,8 @@ class Toolbar{
             case "clickInsert":
                 this.clickInsertHandler()
                 break;
-            case "keyInsert":
-                this.keyInsertHandler()
+            case "keyMode":
+                this.keyModeHandler()
                 break;
             case "activateAnnot":
                 this.annotHandler()
@@ -418,13 +450,18 @@ class Toolbar{
     }).bind(this)
 
     clickInsertHandler(){
-        this.removeAllCustomGroups()
+        if(this.customToolbar.querySelector("#" + this.insertSelectGroup.id) === null){
+            this.customToolbar.appendChild(this.insertSelectGroup)
+        }else{
+            this.removeAllCustomGroups()
+        }
     }
 
-    keyInsertHandler(){
-        if(this.customToolbar.querySelector("#" + this.chordGroupTM.id) === null){
-            this.customToolbar.appendChild(this.chordGroupTM)
-            this.customToolbar.appendChild(this.octaveGroupTM)
+    keyModeHandler(){
+        if(this.customToolbar.querySelector("#" + this.chordGroupKM.id) === null){
+            this.customToolbar.appendChild(this.insertSelectGroup)
+            this.customToolbar.appendChild(this.chordGroupKM)
+            this.customToolbar.appendChild(this.octaveGroupKM)
         }else{
             this.removeAllCustomGroups()
         }

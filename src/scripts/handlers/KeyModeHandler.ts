@@ -23,7 +23,7 @@ class KeyModeHandler implements Handler{
     selectRect: SVGRectElement
     startSelect: DOMRect
 
-    insertCallback: (newNote: NewNote) => Promise<any>;
+    insertCallback: (newNote: NewNote, replace: Boolean) => Promise<any>;
     deleteCallback: (notes: Array<Element>) => Promise<any>;
 
 
@@ -32,14 +32,14 @@ class KeyModeHandler implements Handler{
     }
 
   setListeners() {
-    document.addEventListener('keydown', this.keyInsertHandler)
+    document.addEventListener('keydown', this.keyModeHandler)
     document.addEventListener('keydown', this.keyInputHandler)
 
     this.cursor.setClickListener()
   }
 
   removeListeners() {
-    document.removeEventListener('keydown', this.keyInsertHandler)
+    document.removeEventListener('keydown', this.keyModeHandler)
     document.removeEventListener('keydown', this.keyInputHandler)
 
     this.cursor.flashStop()
@@ -54,11 +54,11 @@ class KeyModeHandler implements Handler{
   /**
    * Event handler for inserting Notes
    */
-  keyInsertHandler = (function keyInsertHandler (evt: KeyboardEvent): void {
+  keyModeHandler = (function keyModeHandler (evt: KeyboardEvent): void {
     if(keyCodeNoteMap.has(evt.code) && typeof this.cursor !== "undefined"){
       evt.preventDefault()
       var pname = keyCodeNoteMap.get(evt.code)
-      var oct = octToNum.get(document.querySelector("#octaveGroupTM .selected")?.id) || "4"
+      var oct = octToNum.get(document.querySelector("#octaveGroupKM .selected")?.id) || "4"
       const newNote: NewNote = this.createNewNote(pname, oct, null)
 
       var noteExists: Boolean = false
@@ -78,7 +78,8 @@ class KeyModeHandler implements Handler{
 
       
       if(!noteExists){
-        this.insertCallback(newNote).then(() => {
+        var replace = document.getElementById("keyInsertDropdown").textContent.toLowerCase() === "replace" ? true : false
+        this.insertCallback(newNote, replace).then(() => {
           this.m2m.update();
           this.resetListeners()
           var currentTargetId;
@@ -320,17 +321,15 @@ class KeyModeHandler implements Handler{
           this.navigateCursor("ArrowLeft")
         }
         
-        if(!this.scoreGraph.getCurrentNode().getLeft().isBOL()){
+        if(!this.scoreGraph.getCurrentNode().getLeft()?.isBOL()){
           this.navigateCursor("ArrowLeft")
         }else{
           this.navigateCursor("ArrowRight")
         }
         break;
     }
-    console.log(elementToDelete)
 
     currNodeId = this.scoreGraph.getCurrentNode().getId()
-    console.log(document.getElementById(currNodeId))
     if(document.querySelector(".marked") === null){
       this.deleteCallback([elementToDelete]).then(() => {
         this.m2m.update();
@@ -363,7 +362,7 @@ class KeyModeHandler implements Handler{
     return this
   }
 
-  setInsertCallback(insertCallback: (newNote: NewNote) => Promise<any>){
+  setInsertCallback(insertCallback: (newNote: NewNote, replace: Boolean) => Promise<any>){
     this.insertCallback = insertCallback
     return this
   }

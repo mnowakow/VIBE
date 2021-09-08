@@ -124,11 +124,28 @@ class SelectionHandler implements Handler{
             let note = document.getElementById(bb.id)
             note.classList.remove(marked)
         })
+        document.querySelectorAll(".note, .rest").forEach(el => {
+            el.removeEventListener("click", this.markedHandler)
+        })
     }
 
     setListeners():void{
         this.canvas.call(this.dragSelectAction);
+        document.querySelectorAll(".note, .rest, .mRest").forEach(el => {
+            el.addEventListener("click", this.markedHandler)
+        })
     }
+
+     /**
+     *  Mark clicked element
+     */
+      markedHandler = (function markedHandler(e: MouseEvent){
+        Array.from(document.querySelectorAll("." + marked)).forEach(n => {
+            n.classList.remove(marked)
+        })
+        var target = e.target as Element
+        target.classList.add(marked)
+    }).bind(this)
 
 
     ///////// GETTER/ SETTER ////////

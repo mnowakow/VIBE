@@ -13,7 +13,7 @@ class ClickModeHandler implements Handler{
     musicPlayer?: MusicPlayer;
     currentMEI?: string | Document;
     annotations: Annotations;
-    insertCallback: (newNote: NewNote) => Promise<any>;
+    insertCallback: (newNote: NewNote, replace: Boolean) => Promise<any>;
     deleteCallback: (notes: Array<Element>) => Promise<any>;
 
     setListeners(){
@@ -103,7 +103,8 @@ class ClickModeHandler implements Handler{
         }
 
         if(!pitchExists){
-            this.insertCallback(this.m2m.getNewNote())
+            var replace = document.getElementById("keyInsertDropdown").textContent.toLowerCase() === "replace" && newNote.chordElement == undefined ? true : false
+            this.insertCallback(this.m2m.getNewNote(), replace)
             this.musicPlayer.generateTone(this.m2m.getNewNote())
         }
     }).bind(this)
@@ -215,7 +216,7 @@ class ClickModeHandler implements Handler{
           return this
       }
     
-      setInsertCallback(insertCallback: (newNote: NewNote) => Promise<any>){
+      setInsertCallback(insertCallback: (newNote: NewNote, replace: Boolean) => Promise<any>){
         this.insertCallback = insertCallback
         return this
       }

@@ -5,6 +5,7 @@ import { NewChord, NewNote } from './Types'
 import { keysigToNotes, nextStepUp, nextStepDown } from './mappings'
 import MeiTemplate from '../assets/mei_template'
 import { xml } from 'd3'
+import ScoreGraph from '../datastructures/ScoreGraph'
 
 const countableNoteUnitSelector: string =  
 ":scope > note:not([grace])," +
@@ -94,11 +95,12 @@ function getMeterRatioGlobal(xmlDoc: Document): number{
  * @param newNote Information where to put new Note
  * @param mei 
  */
-export function addToMEI(newElement: NewNote | NewChord, currentMEI: Document): Document{//Promise<Document> {
+export function addToMEI(newSound: NewNote | NewChord, currentMEI: Document, replace: Boolean = false, scoreGraph: ScoreGraph = null): Document{//Promise<Document> {
   //return new Promise<Document>((resolve): void => {
+    console.log(newSound)
     var newElem: Element
-    if(newElement.hasOwnProperty("pname")){
-      var newNote = newElement as NewNote
+    if(newSound.hasOwnProperty("pname")){
+      var newNote = newSound as NewNote
       if(newNote.rest){
         newElem = currentMEI.createElement("rest")
       }else{
@@ -144,8 +146,17 @@ export function addToMEI(newElement: NewNote | NewChord, currentMEI: Document): 
         
       }else if(newNote.nearestNoteId !== null){
         var sibling: HTMLElement = currentMEI.getElementById(newNote.nearestNoteId);
+        
         if(sibling.tagName === "layer"){
-          sibling.insertBefore(newElem, sibling.firstChild)
+          if(scoreGraph !== null){
+            sibling = currentMEI.getElementById(scoreGraph.getCurrentNode().getRight().getId())?.parentElement
+          }
+          if(replace){
+            sibling.firstChild.replaceWith(newElem)
+          }else{
+            sibling.insertBefore(newElem, sibling.firstChild)
+          }
+
         }else{
           var parentLayer = sibling.closest("layer")
           var trueParent = sibling.parentElement
@@ -161,10 +172,24 @@ export function addToMEI(newElement: NewNote | NewChord, currentMEI: Document): 
                 }
               }
           }
-          if(newNote.relPosX === "left"){
-            trueSibling.parentElement.insertBefore(newElem, trueSibling)
-          }else{
-            trueSibling.parentElement.insertBefore(newElem, trueSibling.nextSibling)
+
+          //if(replace && trueSibling.nextSibling !== null){
+          if(replace){
+            if(newNote.relPosX === "left"){
+              trueSibling.replaceWith(newElem)
+            }else{
+              if(trueSibling.nextSibling !== null){
+                trueSibling.nextSibling.replaceWith(newElem)
+              }else{
+                trueSibling.parentElement.append(newElem)
+              }
+            }
+          }else{          
+            if(newNote.relPosX === "left"){
+              trueSibling.parentElement.insertBefore(newElem, trueSibling)
+            }else{
+              trueSibling.parentElement.insertBefore(newElem, trueSibling.nextSibling)
+            }
           }
         }
       
@@ -178,7 +203,7 @@ export function addToMEI(newElement: NewNote | NewChord, currentMEI: Document): 
       }
     }else{ // is newChord
       //TODO
-      var newChord = newElement as NewChord
+      var newChord = newSound as NewChord
       newElem = convertToElement(newChord, currentMEI)
       if(newChord.relPosX === "left"){
         currentMEI.getElementById(newChord.nearestNoteId).parentElement.insertBefore(newElem, currentMEI.getElementById(newChord.nearestNoteId))

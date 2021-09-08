@@ -133,6 +133,9 @@ body.clickmode  * {
     background-image: url(../images/GUI/caret-left-solid.svg);
 }
 
+#insertDropdownKM .hide{
+    display: none;
+}
 
 #sidebarContainer{
     position: absolute;

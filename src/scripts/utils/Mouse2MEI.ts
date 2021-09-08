@@ -399,6 +399,7 @@ export class Mouse2MEI{
         }
         
         var newNote: NewNote = {
+            id: uuidv4(),
             pname: pname,
             dur: this.noteNewDur,
             dots: this.noteNewDots,

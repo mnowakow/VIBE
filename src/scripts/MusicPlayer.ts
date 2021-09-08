@@ -183,7 +183,7 @@ class MusicPlayer{
             var arr: Array<any> = result.value
             arr.forEach(note => {
                 note.addEventListener("currentNote", this.setCurrentNoteHandler)
-                note.addEventListener("click", this.markedHandler)
+                note.addEventListener("click", this.startPointHandler)
             })
             result = it.next()
         }
@@ -200,7 +200,7 @@ class MusicPlayer{
             var arr: Array<any> = result.value
             arr.forEach(note => {
                 note.removeEventListener("currentNote", this.setCurrentNoteHandler)
-                note.removeEventListener("click", this.markedHandler)
+                note.removeEventListener("click", this.startPointHandler)
             })
             result = it.next()
         }
@@ -245,13 +245,9 @@ class MusicPlayer{
     /**
      *  Set last clicked element to restartpoint
      */
-    markedHandler = (function markedHandler(e: MouseEvent){
-        Array.from(document.querySelectorAll(".marked")).forEach(n => {
-            n.classList.remove("marked")
-        })
+    startPointHandler = (function startPointHandler(e: MouseEvent){
         var playingNote = e.target as Element
         playingNote = playingNote.closest(".note") || playingNote.closest(".rest") || playingNote.closest(".mRest")
-        playingNote?.classList.add("marked")
         if(playingNote !== null){
             var it = this.durationMap.values()
             var res = it.next()
