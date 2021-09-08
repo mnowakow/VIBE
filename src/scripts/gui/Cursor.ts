@@ -9,6 +9,7 @@ class Cursor{
     private cursor: SVGRectElement;
     private posx: number;
     private posy: number;
+    private height: number
     private noteBBoxes: Array<NoteBBox>;
     private measureBBox: NoteBBox;
     private interval: NodeJS.Timeout;
@@ -90,12 +91,12 @@ class Cursor{
     definePosById(id: string){
         this.flashStop()
         var element = document.getElementById(id)
-        element = element.classList.contains("layer") && element.children.length === 0 ? element.closest(".staff") : element //special rule for empty layer
+        element = element?.classList.contains("layer") ? element.closest(".staff") : element //special rule for layer (== beginning of measure)
         var svgRect = document.querySelector(c._ROOTSVGID_WITH_IDSELECTOR_).getBoundingClientRect()
 
         var elementBBox: DOMRect
         var currLayerY: number
-        var distToElement = 12
+        var distToElement = element?.querySelector(".noteHead")?.getBoundingClientRect().width + 6 || 0
         if(element !== null){
             elementBBox = element.getBoundingClientRect()
             currLayerY = element.classList.contains("staff") ? element.getBoundingClientRect().y : element.closest(".layer").getBoundingClientRect().y
@@ -104,7 +105,7 @@ class Cursor{
         }else{
             currLayerY = document.querySelector(".layer[n=\"" + (parseInt(id[id.length-1]) + 1).toString() + "\"]").getBoundingClientRect().y
             elementBBox = this.nextElement.getBoundingClientRect()
-            distToElement = distToElement * -1
+            distToElement = -distToElement
             this.isBol = true
         }
 
@@ -119,11 +120,12 @@ class Cursor{
         this.cursor.setAttribute("id", "cursor")
         if(!drawChordRect){
             this.posx = elementBBox.x + distToElement - svgRect.x //- window.pageXOffset
-            this.posy = currLayerY - svgRect.y
+            this.posy = elementBBox.y - svgRect.y//currLayerY - svgRect.y
+            this.height = elementBBox.height + 4
             this.cursor.setAttribute("width", "2px");
-            this.cursor.setAttribute("height", "30px");
+            this.cursor.setAttribute("height", this.height.toString());
             this.maxOpacity = 1
-        }else{
+        }else{ // for chord mode
             var padding = 4
             this.posx = elementBBox.x - svgRect.x //- window.pageXOffset
             this.posy = currLayerY - svgRect.y //elementBBox.y - svgRect.y - window.pageYOffset

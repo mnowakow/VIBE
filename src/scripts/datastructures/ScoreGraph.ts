@@ -1,7 +1,7 @@
 import { noteToB } from "../utils/mappings"
 import ScoreNode from "./ScoreNode"
 
-const nodeSelector = "note, rest, mRest, chord, layer"
+const nodeSelector = "note, rest, mRest, chord, layer" //, clef, keysig"
 
 class ScoreGraph{
 
@@ -23,7 +23,7 @@ class ScoreGraph{
         this.graph = new Map()
         this.midiTimes = miditimes
         xmlDoc.querySelectorAll(nodeSelector).forEach(e => {
-            if((e.tagName === "note" && e.closest("chord") !== null) || (e.tagName === "layer" && e.children.length > 0)){
+            if((e.tagName === "note" && e.closest("chord") !== null)){ // || (e.tagName === "layer" && e.children.length > 0)){
                 return
             }
             this.graph.set(e.id, new ScoreNode(e.id))
@@ -42,16 +42,16 @@ class ScoreGraph{
             layerArray = Array.from(xmlDoc.querySelectorAll("layer[n=\"" + (i+1).toString() + "\"]"))
             var elements = new Array<Element>()
             layerArray.forEach(l => {
-                if(l.children.length === 0){
+                //if(l.children.length === 0){
                     elements.push(l)
-                }else{
+                //}else{
                     l.querySelectorAll(nodeSelector).forEach(c => {
                         if(c.tagName === "note" && c.closest("chord") !== null){
                             return
                         }
                         elements.push(c)
                     })
-                }
+                //}
             })
 
             elements.forEach((el, idx) => {

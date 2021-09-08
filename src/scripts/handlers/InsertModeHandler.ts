@@ -107,6 +107,10 @@ class InsertModeHandler implements Handler{
       cursor = this.keyModeHandler.cursor
     }
     this.keyModeHandler = typeof this.keyModeHandler === "undefined" ? new KeyModeHandler() : this.keyModeHandler
+    var currNodeId: string
+    if(this.keyModeHandler.scoreGraph?.getCurrentNode() != undefined){
+      currNodeId = this.keyModeHandler.scoreGraph.getCurrentNode().getId()
+    } 
     this.keyModeHandler
       .setInsertCallback(this.insertCallback)
       .setDeleteCallback(this.deleteCallback)
@@ -114,6 +118,10 @@ class InsertModeHandler implements Handler{
       .setM2M(this.m2m)
       .setMusicPlayer(this.musicPlayer)
       .resetListeners()
+
+    if(currNodeId !=  undefined){
+      this.keyModeHandler.setCurrentNodeScoreGraph(currNodeId)
+    }
     // if(typeof this.selectionHandler !== "undefined"){
     //   this.selectionHandler.removeListeners()
     // }

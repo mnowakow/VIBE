@@ -153,7 +153,6 @@ class KeyModeHandler implements Handler{
         chordElement: targetChord,
         rest: document.getElementById("pauseNote").classList.contains("selected")
     }
-    console.log(newNote)
     return newNote
 }
 
@@ -290,16 +289,18 @@ class KeyModeHandler implements Handler{
     if(typeof this.scoreGraph.getCurrentNode() === "undefined" || elementId === null){
       var nextEl = this.cursor.getNextElement()
       if(nextEl.classList.contains("staff")){
-        nextEl = nextEl.querySelector(".layer:empty")
+        nextEl = nextEl.querySelector(".layer")
       }
       this.scoreGraph.setCurrentNodeById(nextEl.id)
     }else if(elementId !== null){
       this.scoreGraph.setCurrentNodeById(elementId)
     }
+
+    return this
   }
 
   /**
-   * Delete next element depending on Keyboad input (Backspace: left, Delete: richt)
+   * Delete next element depending on Keyboad input (Backspace: left, Delete: right)
    * @param key "Backspace" or "Delete"
    */
   deleteByKey(key: string){
@@ -313,6 +314,12 @@ class KeyModeHandler implements Handler{
         break;
       case "Backspace":
         elementToDelete = document.getElementById(this.scoreGraph.getCurrentNode().getId())
+        
+        if(this.scoreGraph.getCurrentNode().isLayer()){
+          elementToDelete = document.getElementById(this.scoreGraph.getCurrentNode().getLeft().getId())
+          this.navigateCursor("ArrowLeft")
+        }
+        
         if(!this.scoreGraph.getCurrentNode().getLeft().isBOL()){
           this.navigateCursor("ArrowLeft")
         }else{
@@ -320,10 +327,12 @@ class KeyModeHandler implements Handler{
         }
         break;
     }
+    console.log(elementToDelete)
 
     currNodeId = this.scoreGraph.getCurrentNode().getId()
+    console.log(document.getElementById(currNodeId))
     if(document.querySelector(".marked") === null){
-      this.deleteCallback([elementToDelete]).then(() => {-
+      this.deleteCallback([elementToDelete]).then(() => {
         this.m2m.update();
         this.resetListeners()
         this.cursor.definePosById(currNodeId)

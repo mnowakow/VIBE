@@ -48,6 +48,10 @@ class ScoreNode{
         return this.id.indexOf("BOL") > -1
     }
 
+    isLayer(): Boolean{
+        return document.getElementById(this.id).classList.contains("layer")
+    }
+
     getId(){
         return this.id
     }

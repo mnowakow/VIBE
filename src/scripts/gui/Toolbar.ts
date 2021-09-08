@@ -245,7 +245,7 @@ class Toolbar{
     }
 
     removeAllCustomGroups(){
-        this.customToolbar.childNodes.forEach(c => {
+        Array.from(this.customToolbar.children).forEach(c => {
             c.remove()
         })
     }

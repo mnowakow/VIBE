@@ -145,7 +145,7 @@ export function addToMEI(newElement: NewNote | NewChord, currentMEI: Document): 
       }else if(newNote.nearestNoteId !== null){
         var sibling: HTMLElement = currentMEI.getElementById(newNote.nearestNoteId);
         if(sibling.tagName === "layer"){
-          sibling.append(newElem)
+          sibling.insertBefore(newElem, sibling.firstChild)
         }else{
           var parentLayer = sibling.closest("layer")
           var trueParent = sibling.parentElement
