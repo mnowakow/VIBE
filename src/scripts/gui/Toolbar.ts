@@ -4,6 +4,7 @@ import { Button, Dropdown, Collapse } from 'bootstrap'
 import { thresholdFreedmanDiaconis } from 'd3-array'
 import SidebarHandler from '../handlers/SideBarHandler'
 import { keyIdToSig } from '../utils/mappings'
+import { interpolateZoom } from 'd3'
 
 const buttonStyleDarkOutline = "btn btn-outline-dark btn-md"
 const buttonStyleDark = "btn btn-dark btn-md"
@@ -182,32 +183,26 @@ class Toolbar{
     createInsertSelect(){
         //InsertSelect DropdownMenu
         this.insertSelectGroup = dc.makeNewDiv("insertGroup", "btn-group me-2 h-100", {role: "group"}) as HTMLElement
-        var insertDropDown = dc.makeNewDiv("insertDropdownKM", "dropdown-menu")
-        var insertButton = dc.makeNewAElement("Insert", "keyInsert", "dropdown-item", "#")
-        insertDropDown.append(insertButton)
-        var replaceButton = dc.makeNewAElement("Replace", "keyReplace", "dropdown-item hide", "#")
-        insertDropDown.append(replaceButton)
-        this.insertSelectGroup.append(dc.makeNewButton("Replace", "keyInsertDropdown", buttonStyleDarkOutline , "dropdown"))
-        this.insertSelectGroup.append(insertDropDown)
-
-        Array.from(insertDropDown.children).forEach(ki => {
-            ki.addEventListener("click", function(){
-                document.getElementById("keyInsertDropdown").innerHTML = ki.textContent
-                Array.from(insertDropDown.children).forEach(el => {
-                    if(el.textContent === document.getElementById("keyInsertDropdown").innerHTML){
-                        el.classList.add("hide")
-                    }else{
-                        el.classList.remove("hide")
-                    }
-                })
-            })
+        var toggle = dc.makeNewToggle("insertToggle", buttonStyleDarkOutline, "Replace", "insertToggleDiv")
+        toggle.addEventListener("click", function(e){
+            var label = e.target as Element
+            var input = <HTMLInputElement> label.previousElementSibling
+            if(label.textContent === "Replace"){
+                label.textContent = "Insert"
+                input.checked = false
+            }else{
+                label.textContent = "Replace"
+                input.checked = true
+            }
         })
+
+        this.insertSelectGroup.append(toggle)
     }
 
     createButtonsKeyMode(){
 
         //ChordGroup
-        this.chordGroupKM  = dc.makeNewDiv("chordGroupKM", "btn-group me-2 h-100", {role: "group"}) as HTMLElement
+        this.chordGroupKM = dc.makeNewDiv("chordGroupKM", "btn-group me-2 h-100", {role: "group"}) as HTMLElement
         this.chordGroupKM.append(dc.makeNewButton("CHORD", "chordButton", buttonStyleDarkOutline))
         this.chordGroupKM.addEventListener("click", this.exclusiveSelectHandler)
 
@@ -433,6 +428,7 @@ class Toolbar{
     customToolbarHandler = (function customToolbarHandler (e: MouseEvent){
         var target = e.target as Element
         var tID = target.id
+        this.removeAllCustomGroups()
         switch(tID){
             case "clickInsert":
                 this.clickInsertHandler()
@@ -447,25 +443,20 @@ class Toolbar{
                 this.harmHandler()
                 break;
         }
+        if(target.textContent === document.getElementById("insertMode").textContent){
+            this.removeAllCustomGroups()
+        }
     }).bind(this)
 
     clickInsertHandler(){
-        if(this.customToolbar.querySelector("#" + this.insertSelectGroup.id) === null){
-            this.customToolbar.appendChild(this.insertSelectGroup)
-        }else{
-            this.removeAllCustomGroups()
-        }
+        this.customToolbar.appendChild(this.insertSelectGroup)
     }
 
     keyModeHandler(){
-        if(this.customToolbar.querySelector("#" + this.chordGroupKM.id) === null){
-            this.customToolbar.appendChild(this.insertSelectGroup)
-            this.customToolbar.appendChild(this.chordGroupKM)
-            this.customToolbar.appendChild(this.octaveGroupKM)
-        }else{
-            this.removeAllCustomGroups()
-        }
-        //this.addElementsToBootstrap();
+        this.customToolbar.appendChild(this.insertSelectGroup)
+        this.customToolbar.appendChild(this.chordGroupKM)
+        this.customToolbar.appendChild(this.octaveGroupKM)
+
     }
 
     harmHandler(){

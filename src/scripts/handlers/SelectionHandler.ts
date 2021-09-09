@@ -144,6 +144,7 @@ class SelectionHandler implements Handler{
             n.classList.remove(marked)
         })
         var target = e.target as Element
+        target = target.closest(".note") || target
         target.classList.add(marked)
     }).bind(this)
 

@@ -103,7 +103,7 @@ class ClickModeHandler implements Handler{
         }
 
         if(!pitchExists){
-            var replace = document.getElementById("keyInsertDropdown").textContent.toLowerCase() === "replace" && newNote.chordElement == undefined ? true : false
+            var replace = (document.getElementById("insertToggle") as HTMLInputElement).checked && newNote.chordElement == undefined
             this.insertCallback(this.m2m.getNewNote(), replace)
             this.musicPlayer.generateTone(this.m2m.getNewNote())
         }

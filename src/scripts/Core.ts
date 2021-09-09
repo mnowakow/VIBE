@@ -233,6 +233,7 @@ class Core {
       .setRedoCallback(this.redo)
       .setCurrentMei(this.currentMEIDoc)
       .setMusicPlayer(this.musicplayer)
+      .setHarmonyHandlerCallback(this.insertModeHandler.activateHarmonyModeFunction)
       .setLoadDataCallback(this.loadDataFunction)
       .setScoreGraph(this.scoreGraph)
       .resetListeners()

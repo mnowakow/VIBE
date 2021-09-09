@@ -39,7 +39,8 @@ class HarmonyHandler implements Handler{
             s.remove()
         })
 
-        document.getElementById(c._ROOTSVGID_).addEventListener("click", this.setHarmonyLabelHandler, false)
+        document.getElementById(c._ROOTSVGID_).addEventListener("click", this.setHarmonyLabelHandlerClick, false)
+        document.getElementById(c._ROOTSVGID_).addEventListener("keydown", this.setHarmonyLabelHandlerKey, false)
         document.getElementById(c._ROOTSVGID_).addEventListener("mousemove", this.highlightNextHarmonyHandler)
         document.getElementById(c._ROOTSVGID_).addEventListener("keydown", this.closeModifyWindowHandler, true)
         document.querySelectorAll(".harm").forEach(h => {
@@ -50,7 +51,8 @@ class HarmonyHandler implements Handler{
     }
 
     removeListeners(): HarmonyHandler {
-        document.getElementById(c._ROOTSVGID_).removeEventListener("click", this.setHarmonyLabelHandler)
+        document.getElementById(c._ROOTSVGID_).removeEventListener("click", this.setHarmonyLabelHandlerClick)
+        document.getElementById(c._ROOTSVGID_).removeEventListener("keydown", this.setHarmonyLabelHandlerKey, false)
         document.getElementById(c._ROOTSVGID_).removeEventListener("mousemove", this.highlightNextHarmonyHandler)
         document.getElementById(c._ROOTSVGID_).removeEventListener("keydown", this.closeModifyWindowHandler)
         document.querySelectorAll(".harm").forEach(h => {
@@ -60,19 +62,37 @@ class HarmonyHandler implements Handler{
         return this
     }
 
-    setHarmonyLabelHandler = (function setHarmonyLabelHandler(e: MouseEvent){
-        //this.setHarmonyLabel(e)
-
-        var posx = coordinates.adjustToPage(e.pageX, "x")
-        var posy = coordinates.adjustToPage(e.pageY, "y")
-        var nextNoteBBox = this.m2m.findScoreTarget(posx, posy)
-
-        if(this.currentMEI.querySelector("harm[startid=\"" + nextNoteBBox.id + "\"]") === null && !this.harmonyCanvas.hasChildNodes()){
-            this.createInputBox(posx, posy, nextNoteBBox.id) 
-        }else if(this.harmonyCanvas.hasChildNodes()){
-            this.closeModifyWindow()
-        }
+    setHarmonyLabelHandlerClick = (function setHarmonyLabelHandler(e: MouseEvent){
+       if(document.body.classList.contains("harmonyMode")){
+           this.harmonyLabelHandler(e)
+       }
     }).bind(this)
+
+    setHarmonyLabelHandlerKey = (function setHarmonyLabelHandler(e: KeyboardEvent){
+        if(e.ctrlKey || e.metaKey){
+            if(e.key === "k" && Array.from(document.querySelectorAll(".note, .chord, .rest, .mrest")).some(el => el.classList.contains("marked"))){
+                this.harmonyLabelHandler(e)
+            }
+        }
+     }).bind(this)
+
+    harmonyLabelHandler(e: Event){
+
+        if(e instanceof MouseEvent){
+            var posx = coordinates.adjustToPage(e.pageX, "x")
+            var posy = coordinates.adjustToPage(e.pageY, "y")
+            
+            var nextNoteBBox = this.m2m.findScoreTarget(posx, posy)
+
+            if(this.currentMEI.querySelector("harm[startid=\"" + nextNoteBBox.id + "\"]") === null && !this.harmonyCanvas.hasChildNodes()){
+                this.createInputBox(posx, posy, nextNoteBBox.id) 
+            }else if(this.harmonyCanvas.hasChildNodes()){
+                this.closeModifyWindow()
+            }
+        }else if(e instanceof KeyboardEvent){
+            
+        }
+    }
 
     setHarmonyLabel(label: string, bboxId: string){
         var harmonyLabel = new HarmonyLabel(label,bboxId, this.currentMEI) // TODO: Make Dynamically

@@ -179,6 +179,11 @@ class InsertModeHandler implements Handler{
     this.harmonyMode = true
   }
 
+  //For Callbacks
+  activateHarmonyModeFunction = (function activateHarmonyModeFunction(clicked = false){
+    this.activateHarmonyMode(clicked)
+  }).bind(this)
+
   insertDeactivate(){
     document.body.classList.remove("textmode")
     document.body.classList.remove("clickmode")

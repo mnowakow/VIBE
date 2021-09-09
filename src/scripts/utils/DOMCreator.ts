@@ -139,3 +139,21 @@ export function makeNewSelect(id: string, optionValues: Array<string>): Element{
 
     return dataList
 }
+
+export function makeNewToggle(id: string, classNames: string, labelText: string, divId: string){
+    var input = <HTMLInputElement> makeNewInput(id, "checkBox", "btn-check")
+    input.checked = true
+    var label = document.createElement("label")
+    if(classNames.length > 0){
+        var classList = classNames.split(" ")
+        classList.forEach(c =>  label.classList.add(c))
+    }
+    label.setAttribute("for", id)
+    label.textContent = labelText
+    var div = makeNewDiv(divId, "toggleDiv")
+
+    div.append(input)
+    div.append(label)
+
+    return div
+}

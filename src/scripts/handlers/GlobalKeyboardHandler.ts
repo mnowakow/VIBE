@@ -4,7 +4,8 @@ import * as meiConverter from "../utils/MEIConverter"
 import { constants as c} from "../constants"
 import MusicPlayer from "../MusicPlayer";
 import ScoreGraph from "../datastructures/ScoreGraph";
-import { runInThisContext } from "vm";
+import HarmonyHandler from "./HarmonyHandler";
+
 
 const marked = "marked"
 
@@ -19,6 +20,8 @@ class GlobalKeyboardHandler implements Handler{
 
     scoreGraph: ScoreGraph
     copiedIds: Array<string>
+
+    harmonyHandlerCallback: (clicked?: boolean) => void
 
     constructor(){
         this.setListeners();
@@ -44,6 +47,9 @@ class GlobalKeyboardHandler implements Handler{
             if(e.key === "a"){ this.selectAllHandler(e)}
             if(e.key === "c"){ this.copyHandler(e)}
             if(e.key === "v"){ this.pasteHandler(e)}
+            if(e.key === "k" && Array.from(document.querySelectorAll(".note, .chord, .rest, .mrest")).some(el => el.classList.contains(marked))){
+                this.handleHarmony(e)
+            }
         }else if(e.key.includes("Arrow")){
             document.removeEventListener("keydown", this.keydownHandler)
             this.transposeHandler(e)
@@ -142,6 +148,11 @@ class GlobalKeyboardHandler implements Handler{
         this.loadDataCallback("", mei, false, c._TARGETDIVID_)
     }
 
+    handleHarmony(e: KeyboardEvent){
+        this.harmonyHandlerCallback()
+    }
+
+    // Helpers
     reduceDur(){
         var additionalElements = new Array<Element>();
         additionalElements.push(document.getElementById(this.scoreGraph.nextRight().getId()))
@@ -188,6 +199,11 @@ class GlobalKeyboardHandler implements Handler{
     setScoreGraph(scoreGraph: ScoreGraph) {
        this.scoreGraph = scoreGraph
        return this
+    }
+
+    setHarmonyHandlerCallback(harmonyHandlerCallback: (clicked?: boolean) => void){
+        this.harmonyHandlerCallback = harmonyHandlerCallback
+        return this
     }
 
     setLoadDataCallback(loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>){

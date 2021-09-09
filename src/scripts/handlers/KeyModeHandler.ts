@@ -78,7 +78,7 @@ class KeyModeHandler implements Handler{
 
       
       if(!noteExists){
-        var replace = document.getElementById("keyInsertDropdown").textContent.toLowerCase() === "replace" ? true : false
+        var replace = (document.getElementById("insertToggle") as HTMLInputElement).checked
         this.insertCallback(newNote, replace).then(() => {
           this.m2m.update();
           this.resetListeners()
