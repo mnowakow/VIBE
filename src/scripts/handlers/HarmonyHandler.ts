@@ -17,6 +17,7 @@ class HarmonyHandler implements Handler{
     private harmonyCanvas: SVGElement
     private root: Element
     private harmonyElements: Map<string, HarmonyLabel>
+    private isGlobal: boolean
 
     private loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>
 
@@ -39,11 +40,16 @@ class HarmonyHandler implements Handler{
             s.remove()
         })
 
-        document.getElementById(c._ROOTSVGID_).addEventListener("click", this.setHarmonyLabelHandlerClick, false)
-        document.getElementById(c._ROOTSVGID_).addEventListener("keydown", this.setHarmonyLabelHandlerKey, false)
-        document.getElementById(c._ROOTSVGID_).addEventListener("mousemove", this.highlightNextHarmonyHandler)
-        document.getElementById(c._ROOTSVGID_).addEventListener("keydown", this.closeModifyWindowHandler, true)
+        if(!this.isGlobal){
+            document.getElementById(c._ROOTSVGID_).addEventListener("click", this.setHarmonyLabelHandlerClick, false)
+            document.getElementById(c._ROOTSVGID_).addEventListener("mousemove", this.activateHarmonyHighlight)
+            document.getElementById(c._ROOTSVGID_).addEventListener("keydown", this.closeModifyWindowHandler, true)
+        }
+
+        document.addEventListener("keydown", this.setHarmonyLabelHandlerKey)
         document.querySelectorAll(".harm").forEach(h => {
+            h.addEventListener("mouseover", this.deactivateHarmonyHighlight)
+            h.addEventListener("mouseleave", this.activateHarmonyHighlight)
             h.addEventListener("dblclick", this.modifyLabelHandler)
         })
         
@@ -52,10 +58,12 @@ class HarmonyHandler implements Handler{
 
     removeListeners(): HarmonyHandler {
         document.getElementById(c._ROOTSVGID_).removeEventListener("click", this.setHarmonyLabelHandlerClick)
-        document.getElementById(c._ROOTSVGID_).removeEventListener("keydown", this.setHarmonyLabelHandlerKey, false)
-        document.getElementById(c._ROOTSVGID_).removeEventListener("mousemove", this.highlightNextHarmonyHandler)
+        document.removeEventListener("keydown", this.setHarmonyLabelHandlerKey)
+        document.getElementById(c._ROOTSVGID_).removeEventListener("mousemove", this.activateHarmonyHighlight)
         document.getElementById(c._ROOTSVGID_).removeEventListener("keydown", this.closeModifyWindowHandler)
         document.querySelectorAll(".harm").forEach(h => {
+            h.removeEventListener("mouseenter", this.deactivateHarmonyHighlight)
+            h.removeEventListener("mouseleave", this.activateHarmonyHighlight)
             h.removeEventListener("dblclick", this.modifyLabelHandler)
         })
 
@@ -69,28 +77,31 @@ class HarmonyHandler implements Handler{
     }).bind(this)
 
     setHarmonyLabelHandlerKey = (function setHarmonyLabelHandler(e: KeyboardEvent){
+        console.log(e)
         if(e.ctrlKey || e.metaKey){
-            if(e.key === "k" && Array.from(document.querySelectorAll(".note, .chord, .rest, .mrest")).some(el => el.classList.contains("marked"))){
+             if(e.key === "k" && Array.from(document.querySelectorAll(".note, .chord, .rest, .mrest")).some(el => el.classList.contains("marked"))){
                 this.harmonyLabelHandler(e)
             }
         }
      }).bind(this)
 
+    /**
+     * Open Inputbox for (first) selected Note
+     */
     harmonyLabelHandler(e: Event){
+        var root = document.getElementById(c._ROOTSVGID_)
+        var rootBBox = root.getBoundingClientRect()
+        var nextNote = document.querySelector(".note.marked, .chord.marked")
+        if(nextNote === null){return}
+        var nextNoteBBox = nextNote.getBoundingClientRect()
+        var staffBBox = nextNote.closest(".staff").getBoundingClientRect()
 
-        if(e instanceof MouseEvent){
-            var posx = coordinates.adjustToPage(e.pageX, "x")
-            var posy = coordinates.adjustToPage(e.pageY, "y")
-            
-            var nextNoteBBox = this.m2m.findScoreTarget(posx, posy)
-
-            if(this.currentMEI.querySelector("harm[startid=\"" + nextNoteBBox.id + "\"]") === null && !this.harmonyCanvas.hasChildNodes()){
-                this.createInputBox(posx, posy, nextNoteBBox.id) 
-            }else if(this.harmonyCanvas.hasChildNodes()){
-                this.closeModifyWindow()
-            }
-        }else if(e instanceof KeyboardEvent){
-            
+        var posx = nextNoteBBox.left - nextNoteBBox.width/2 - window.scrollX - rootBBox.x - root.scrollLeft
+        var posy = staffBBox.bottom - window.scrollY - rootBBox.y - root.scrollLeft
+        if(this.currentMEI.querySelector("harm[startid=\"" + nextNote.id + "\"]") === null && !this.harmonyCanvas.hasChildNodes()){
+            this.createInputBox(posx, posy, nextNote.id) 
+        }else if(this.harmonyCanvas.hasChildNodes()){
+            this.closeModifyWindow()
         }
     }
 
@@ -108,11 +119,25 @@ class HarmonyHandler implements Handler{
         })
     }
 
-    highlightNextHarmonyHandler = (function highlightNextHarmonyHandler(e: MouseEvent){
-        this.highlightNextHarmony(e)
+    activateHarmonyHighlight = (function highlightNextHarmonyHandler(e: MouseEvent){
+        if(e.type === "mouseleave" && !this.isGlobal){
+            document.getElementById(c._ROOTSVGID_).addEventListener("mousemove", this.activateHarmonyHighlight)
+        }
+        if(!this.isGlobal){
+            this.highlightNextHarmony(e)
+        }
     }).bind(this)
 
-    highlightNextHarmony(e: MouseEvent){
+    deactivateHarmonyHighlight = (function deactivateHighlight(e: MouseEvent){
+        document.querySelectorAll(".marked").forEach(m => {
+            m.classList.remove("marked")
+        })
+        document.getElementById(c._ROOTSVGID_).removeEventListener("mousemove", this.activateHarmonyHighlight)
+    }).bind(this)
+
+    highlightNextHarmony(e: MouseEvent, active = true){
+        if(!active){return}
+
         var posx = coordinates.adjustToPage(e.pageX, "x")
         var posy = coordinates.adjustToPage(e.pageY, "y")
 
@@ -139,8 +164,12 @@ class HarmonyHandler implements Handler{
     modifyLabel(e: MouseEvent){
         var target = e.target as Element
         target = target.closest(".harm")
-        var posx = coordinates.adjustToPage(e.pageX, "x")
-        var posy = coordinates.adjustToPage(e.pageY, "y")
+        target.setAttribute("visibility", "hidden")
+        var targetBBox = target.getBoundingClientRect()
+        var root = document.getElementById(c._ROOTSVGID_)
+        var rootBBox = root.getBoundingClientRect()
+        var posx = targetBBox.x - window.scrollX - rootBBox.left - root.scrollLeft //coordinates.adjustToPage(e.pageX, "x")
+        var posy = targetBBox.y - window.scrollY - rootBBox.top - root.scrollTop //coordinates.adjustToPage(e.pageY, "y")
 
         if(document.querySelector("*[refHarmId=\"" + target.id + "\"]") !== null){
             return
@@ -167,6 +196,7 @@ class HarmonyHandler implements Handler{
         })
         // clean MEI from empty harm Elements
         this.currentMEI.querySelectorAll("harm").forEach(h => {
+            document.getElementById(h.id).setAttribute("visibility", "visible")
             if(h.childElementCount > 0){
                 if(h.firstElementChild.childElementCount === 0){
                     h.remove()
@@ -264,6 +294,15 @@ class HarmonyHandler implements Handler{
     setMusicPlayer(musicPlayer: MusicPlayer){
         this.musicPlayer = musicPlayer
         return this
+    }
+
+    setGlobal(global: boolean){
+        this.isGlobal = global
+        return this
+    }
+
+    getGlobal(){
+        return this.isGlobal
     }
 
     setLoadDataCallback(loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>){

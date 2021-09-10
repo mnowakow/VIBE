@@ -21,7 +21,7 @@ class GlobalKeyboardHandler implements Handler{
     scoreGraph: ScoreGraph
     copiedIds: Array<string>
 
-    harmonyHandlerCallback: (clicked?: boolean) => void
+    harmonyHandlerCallback: (e: KeyboardEvent) => void
 
     constructor(){
         this.setListeners();
@@ -47,9 +47,9 @@ class GlobalKeyboardHandler implements Handler{
             if(e.key === "a"){ this.selectAllHandler(e)}
             if(e.key === "c"){ this.copyHandler(e)}
             if(e.key === "v"){ this.pasteHandler(e)}
-            if(e.key === "k" && Array.from(document.querySelectorAll(".note, .chord, .rest, .mrest")).some(el => el.classList.contains(marked))){
-                this.handleHarmony(e)
-            }
+            // if(e.key === "k" && Array.from(document.querySelectorAll(".note, .chord, .rest, .mrest")).some(el => el.classList.contains(marked))){
+            //      this.handleHarmony(e)
+            // }
         }else if(e.key.includes("Arrow")){
             document.removeEventListener("keydown", this.keydownHandler)
             this.transposeHandler(e)
@@ -59,9 +59,9 @@ class GlobalKeyboardHandler implements Handler{
     }).bind(this)
 
     changeHandler = (function handler(e: KeyboardEvent){
-        if(e.code === "Semicolon"){
+        if(e.code === "Semicolon"){ // Deutsch: Ä
             this.reduceDur()
-        }else if(e.code === "Quote"){
+        }else if(e.code === "Quote"){ // Deutsch: Ö
             this.prolongDur()
         }
     }).bind(this)
@@ -149,7 +149,7 @@ class GlobalKeyboardHandler implements Handler{
     }
 
     handleHarmony(e: KeyboardEvent){
-        this.harmonyHandlerCallback()
+        this.harmonyHandlerCallback(e)
     }
 
     // Helpers
@@ -201,7 +201,7 @@ class GlobalKeyboardHandler implements Handler{
        return this
     }
 
-    setHarmonyHandlerCallback(harmonyHandlerCallback: (clicked?: boolean) => void){
+    setHarmonyHandlerCallback(harmonyHandlerCallback: (e: KeyboardEvent) => void){
         this.harmonyHandlerCallback = harmonyHandlerCallback
         return this
     }

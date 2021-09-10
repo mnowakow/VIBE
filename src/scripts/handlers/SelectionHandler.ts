@@ -4,6 +4,7 @@ import Handler from './Handler';
 import MusicPlayer from '../MusicPlayer';
 import {numToNoteButtonId, numToDotButtonId} from '../utils/mappings'
 import { constants as c } from "../constants"
+import HarmonyHandler from './HarmonyHandler';
 
 const marked = "marked"
 
@@ -14,7 +15,7 @@ class SelectionHandler implements Handler{
     private initialY: number;
     m2m: Mouse2MEI;
     private dragSelectAction: any
-
+    private harmonyHandler: HarmonyHandler
 
     constructor(){
 
@@ -29,10 +30,13 @@ class SelectionHandler implements Handler{
             var container = document.getElementById(c._ROOTSVGID_).parentElement
             that.initialX = d3.event.x + container.scrollLeft 
             that.initialY = d3.event.y + container.scrollTop
-            that.m2m.getNoteBBoxes().forEach(bb => {
-                let note = document.getElementById(bb.id)
-                note.classList.remove(marked)
-            })
+            if(!document.body.classList.contains("harmonyMode")){ //!that.harmonyHandler.getGlobal()){
+                that.m2m.getNoteBBoxes().forEach(bb => {
+                    let note = document.getElementById(bb.id)
+                    note.classList.remove(marked)
+                })
+            }
+            that.harmonyHandler.closeModifyWindow()
             that.initRect(that.initialX, that.initialY)
         }
 
@@ -83,7 +87,7 @@ class SelectionHandler implements Handler{
         }
 
         function selEnd(){
-            document.querySelector("#selectRect").remove();
+            document.querySelector("#selectRect")?.remove();
             var firstMarkedNote = document.querySelector(".chord.marked, .note.marked")?.id
             var meiNote = that.m2m.getCurrentMei().getElementById(firstMarkedNote)
             document.querySelectorAll("#noteGroup *, #dotGroup *").forEach(b => b.classList.remove("selected"))
@@ -134,6 +138,10 @@ class SelectionHandler implements Handler{
         document.querySelectorAll(".note, .rest, .mRest").forEach(el => {
             el.addEventListener("click", this.markedHandler)
         })
+    }
+
+    setHarmonyHandler(hh: HarmonyHandler){
+        this.harmonyHandler = hh
     }
 
      /**

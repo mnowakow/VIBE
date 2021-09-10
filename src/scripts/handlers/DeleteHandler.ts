@@ -54,7 +54,7 @@ class DeleteHandler implements Handler{
      */
     backSpaceHandler = (function backSpaceHandler(e: KeyboardEvent){
         Array.from(document.querySelectorAll("." + this.deleteFlag)).forEach(el => this.selectedElements.push(el))
-        if((e.code === "Backspace" || e.code === "Delete") && this.selectedElements.length > 0){
+        if((e.code === "Backspace" || e.code === "Delete") && this.selectedElements.length > 0 && document.querySelectorAll(".harmonyDiv").length === 0){
             this.deleteCallback(this.selectedElements).then(() => {
                 this.selectedElements.length = 0
             }) 

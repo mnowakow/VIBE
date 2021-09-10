@@ -32,6 +32,7 @@ class InsertModeHandler implements Handler{
   keyMode: boolean;
   annotationMode: boolean;
   harmonyMode: boolean;
+  isGlobal: boolean;
   phantom: PhantomElement;
   currentMEI: string;
   navBarLoaded: boolean
@@ -53,6 +54,7 @@ class InsertModeHandler implements Handler{
   
 
   constructor () {
+    this.isGlobal = true
     this.annotations = new Annotations()
   }
 
@@ -129,10 +131,13 @@ class InsertModeHandler implements Handler{
   }
 
   activateSelectionMode(){
-    this.insertDeactivate()
+    //this.insertDeactivate()
     this.selectionHandler = new SelectionHandler()
     this.selectionHandler.setM2M(this.m2m)
-    this.deleteHandler.setListeners()
+    this.selectionHandler.setHarmonyHandler(this.harmonyHandler)
+    //this.deleteHandler.setListeners()
+
+    return this
   }
 
   activateAnnotationMode(clicked = false){
@@ -165,8 +170,15 @@ class InsertModeHandler implements Handler{
     if(typeof this.harmonyHandler === "undefined"){
       this.harmonyHandler = new HarmonyHandler()
     }
-    document.body.classList.add("harmonyMode")
+    if(document.querySelector("#activateHarm.selected")){
+      document.body.classList.add("harmonyMode")
+      this.isGlobal = false
+    }else{
+      this.isGlobal = true
+    }
+
     this.harmonyHandler
+      .setGlobal(this.isGlobal)
       .setListeners()
       .setM2M(this.m2m)
       .setMusicPlayer(this.musicPlayer)
@@ -177,6 +189,8 @@ class InsertModeHandler implements Handler{
     this.clickInsertMode = false;
     this.annotationMode = false;
     this.harmonyMode = true
+
+    return this
   }
 
   //For Callbacks
@@ -250,9 +264,6 @@ class InsertModeHandler implements Handler{
               case "keyMode":
                  that.activateKeyMode(true);
                   break;
-              // case "activateSelect":
-              //   that.activateSelectionMode();
-              //   break;
               case "activateAnnot":
                 that.activateAnnotationMode(true);
                 break;
@@ -364,8 +375,8 @@ class InsertModeHandler implements Handler{
 
   setM2M(m2m: Mouse2MEI){
     this.m2m = m2m
-    this.selectionHandler = new SelectionHandler()
-    this.selectionHandler.setM2M(this.m2m)
+    //this.selectionHandler = new SelectionHandler()
+    //this.selectionHandler?.setM2M(this.m2m)
     return this
   }
 
@@ -381,6 +392,11 @@ class InsertModeHandler implements Handler{
 
   setDeleteHandler(deleteHandler: DeleteHandler){
     this.deleteHandler = deleteHandler
+    return this
+  }
+
+  setHarmonyHandler(harmonyHandler: HarmonyHandler) {
+    this.harmonyHandler = harmonyHandler
     return this
   }
 

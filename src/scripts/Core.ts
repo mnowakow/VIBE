@@ -15,7 +15,8 @@ import SVGFiller from "./utils/SVGFiller"
 import ScoreGraph from './datastructures/ScoreGraph';
 import WindowHandler from "./handlers/WindowHandler"
 import SidebarHandler from './handlers/SideBarHandler';
-import * as utf8 from "utf8"
+import HarmonyHandler from './handlers/HarmonyHandler';
+
 
 /**
  * A cache is used to keep track of what has happened
@@ -49,6 +50,7 @@ class Core {
   private noteDragHandler: NoteDragHandler;
   private sidebarHandler: SidebarHandler
   private windowHandler: WindowHandler;
+  private harmonyHandler: HarmonyHandler
   private currentMEI: string;
   private currentMEIDoc: Document
   private currentMidi: string;
@@ -198,18 +200,22 @@ class Core {
     this.noteDragHandler = new NoteDragHandler()
     this.keyboardHandler = typeof this.keyboardHandler === "undefined" ? new GlobalKeyboardHandler() : this.keyboardHandler
     this.sidebarHandler = typeof this.sidebarHandler === "undefined" ? new SidebarHandler() : this.sidebarHandler
+    this.harmonyHandler = this.harmonyHandler == undefined ? new HarmonyHandler() : this.harmonyHandler
 
     this.dispatchFunctions()
   }
 
   /**
-   * distribute Callback functions for each element which uses some information from of the Core (Handlers, Musicplayer, etc)
+   * distribute Callback functions for each element which uses some information from of the Core (Handlers, Musicplayer, Callbacks, etc)
    */
   dispatchFunctions(){
     this.insertModeHandler
       .setM2M(this.m2m)
       .setMusicPlayer(this.musicplayer)
       .setDeleteHandler(this.deleteHandler)
+      .setHarmonyHandler(this.harmonyHandler)
+      .activateHarmonyMode()
+      .activateSelectionMode()
       .setInsertCallback(this.insert)
       .setDeleteCallback(this.delete)
       .setLoadDataCallback(this.loadDataFunction)
@@ -233,7 +239,7 @@ class Core {
       .setRedoCallback(this.redo)
       .setCurrentMei(this.currentMEIDoc)
       .setMusicPlayer(this.musicplayer)
-      .setHarmonyHandlerCallback(this.insertModeHandler.activateHarmonyModeFunction)
+      .setHarmonyHandlerCallback(this.harmonyHandler.setHarmonyLabelHandlerKey)
       .setLoadDataCallback(this.loadDataFunction)
       .setScoreGraph(this.scoreGraph)
       .resetListeners()
