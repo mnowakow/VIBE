@@ -209,6 +209,8 @@ class Core {
    * distribute Callback functions for each element which uses some information from of the Core (Handlers, Musicplayer, Callbacks, etc)
    */
   dispatchFunctions(){
+    this.harmonyHandler.reset()
+
     this.insertModeHandler
       .setM2M(this.m2m)
       .setMusicPlayer(this.musicplayer)
@@ -272,9 +274,7 @@ class Core {
   }).bind(this)
 
   /**
-   * Perform an editor action on a specific page.
-   * @param action - The editor toolkit action object.
-   * @param pageURI - The URI of the selected page.
+   * 
    */
   insert = (function insert (newNote: NewNote, replace: Boolean = false): Promise<boolean> {    
     this.lastInsertedNoteId = newNote.id

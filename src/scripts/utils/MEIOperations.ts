@@ -91,10 +91,13 @@ function getMeterRatioGlobal(xmlDoc: Document): number{
 
 //////// INSERT ////////// 
   /**
- * Update Mei according to action}
- * @param newNote Information where to put new Note
- * @param mei 
- */
+   * Insert given sound event into MEI
+   * @param newSound NewNote or NewChord to be inserted 
+   * @param currentMEI MEI as Document
+   * @param replace Switching to replaceMode (default: False)
+   * @param scoreGraph 
+   * @returns mei
+   */
 export function addToMEI(newSound: NewNote | NewChord, currentMEI: Document, replace: Boolean = false, scoreGraph: ScoreGraph = null): Document{//Promise<Document> {
   //return new Promise<Document>((resolve): void => {
     console.log(newSound)
@@ -147,14 +150,14 @@ export function addToMEI(newSound: NewNote | NewChord, currentMEI: Document, rep
       }else if(newNote.nearestNoteId !== null){
         var sibling: HTMLElement = currentMEI.getElementById(newNote.nearestNoteId);
         
+        //specil rule for first element in layer
         if(sibling.tagName === "layer"){
           if(scoreGraph !== null){
             sibling = currentMEI.getElementById(scoreGraph.getCurrentNode().getRight().getId())?.parentElement
           }
+          sibling.insertBefore(newElem, sibling.firstChild)
           if(replace){
-            sibling.firstChild.replaceWith(newElem)
-          }else{
-            sibling.insertBefore(newElem, sibling.firstChild)
+            changeDuration(currentMEI, "reduce", [(sibling.firstChild as Element)], newElem)
           }
 
         }else{
@@ -176,10 +179,18 @@ export function addToMEI(newSound: NewNote | NewChord, currentMEI: Document, rep
           //if(replace && trueSibling.nextSibling !== null){
           if(replace){
             if(newNote.relPosX === "left"){
-              trueSibling.replaceWith(newElem)
+              let ms = Array.from(trueSibling.parentElement.querySelectorAll("note:not(chord note), chord, rest, mRest")) as Element[]
+              trueSibling.parentElement.insertBefore(newElem, trueSibling)
+              var measureSiblings = ms.filter((v, i) => i >= ms.indexOf(trueSibling))
+              changeDuration(currentMEI, "reduce", measureSiblings, newElem)
+              //changeDuration(currentMEI, "reduce", [(trueSibling as Element)], newElem)
             }else{
               if(trueSibling.nextSibling !== null){
-                trueSibling.nextSibling.replaceWith(newElem)
+                let ms = Array.from(trueSibling.parentElement.querySelectorAll("note:not(chord note), chord, rest, mRest")) as Element[]
+                trueSibling.parentElement.insertBefore(newElem, trueSibling.nextSibling)
+                var measureSiblings = ms.filter((v, i) => i >= ms.indexOf(trueSibling.nextSibling as Element))
+                changeDuration(currentMEI, "reduce", measureSiblings, newElem)
+                //changeDuration(currentMEI, "reduce", [(trueSibling.nextSibling as Element)], newElem)
               }else{
                 trueSibling.parentElement.append(newElem)
               }
@@ -354,12 +365,35 @@ function getAbsoluteRatio(el: Element): number{
   arr.forEach(node => {
     i += 1/parseInt(node.getAttribute("dur"))
     let baseDur: number = parseInt(node.getAttribute("dur"));
-    if(node.getAttribute("dots")!== null){
+    if(node.getAttribute("dots") !== null){
       let dots = parseInt(node.getAttribute("dots"))
-      i += (dots * 2 - 1) / (baseDur * 2 * dots);
+      i += dots == 0 ? 0: (dots * 2 - 1) / (baseDur * 2 * dots);
     }
   })
   return i;
+}
+
+function ratioToDur(ratio: number): Array<number>{
+  var dur: number
+  var dots: number = 0
+
+  //1. next smallest ratio of basedur
+  var basedur = 1
+  while(basedur > ratio){
+    basedur = basedur/2
+  }
+  dur = 1/basedur
+  ratio -= basedur
+
+  if(ratio > 0){
+    if(ratio > dur/2){
+      dots = 2
+    }else{
+      dots = 1
+    }
+  }
+
+  return [dur, dots]
 }
 
 /**
@@ -857,7 +891,7 @@ function replaceWithRest(element: Element, xmlDoc: Document){
   elmei.remove()
 }
 
-export function changeDuration(xmlDoc: Document, mode: string, additionalElements: Array<Element> = new Array()){
+export function changeDuration(xmlDoc: Document, mode: string, additionalElements: Array<Element> = new Array(), refElement: Element = null){
   var changedFlag = "changed"
   var multiplier: number
   switch(mode){
@@ -890,20 +924,38 @@ export function changeDuration(xmlDoc: Document, mode: string, additionalElement
     var dur = parseInt(elmei.getAttribute("dur"))
     if(dur > 0){
       dur = dur*multiplier
-      elmei.setAttribute("dur", dur.toString())
 
-      if(mode === "reduce"){
-        var layerRatio = getAbsoluteRatio(elmei.closest("layer")) // find measure border
+      if(mode === "reduce"){ 
         var globalRatio = getMeterRatioGlobal(xmlDoc)
-        if(layerRatio < globalRatio){
-          var newRest = xmlDoc.createElementNS(c._MEINS_, "rest")
-          if(globalRatio - layerRatio < (1/dur)){
-            dur = 1/(globalRatio - layerRatio)
+        var layerRatio = getAbsoluteRatio(elmei.closest("layer"))
+        if(refElement == null){ // in this mode, also click replacements are handled
+          elmei.setAttribute("dur", dur.toString())
+          if(layerRatio < globalRatio){
+            var newRest = xmlDoc.createElementNS(c._MEINS_, "rest")
+            if(globalRatio - layerRatio < (1/dur)){
+              dur = 1/(globalRatio - layerRatio)
+            }
+            newRest.setAttribute("dur", dur.toString())
+            elmei.parentElement.insertBefore(newRest, elmei.nextElementSibling)
           }
-          newRest.setAttribute("dur", dur.toString())
-          elmei.parentElement.insertBefore(newRest, elmei.nextElementSibling)
+        }else if(layerRatio > globalRatio){
+          var refRatio = getAbsoluteRatio(xmlDoc.getElementById(refElement.id))
+          var elmeiRatio = getAbsoluteRatio(elmei)
+          if(refRatio === elmeiRatio){
+            elmei.remove()
+          }
+          if(refRatio < elmeiRatio){
+            elmeiRatio -= refRatio
+            var elmeiDurDots = ratioToDur(elmeiRatio)
+            elmei.setAttribute("dur", elmeiDurDots[0].toString())
+            elmei.setAttribute("dots", elmeiDurDots[1].toString())
+          }
+          if(refRatio > elmeiRatio){
+            elmei.remove()
+          }
         }
       }else if(mode === "prolong"){ // overwrite next siblings in layer
+        elmei.setAttribute("dur", dur.toString())
         var remainDur = 1/(dur*2)
         while(remainDur > 0){
 

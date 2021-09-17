@@ -24,6 +24,8 @@ class HarmonyLabel{
     }
 
     checkFormat(inputString: string){
+        this.isBassoContinuo = false
+        this.isText = false
         var letters = /[Aa]|[C-Zc-z]+$/ // b is allowed character in bc
         if(inputString.match(letters)){
             this.isText = true
@@ -57,6 +59,11 @@ class HarmonyLabel{
     }
 
     parseText(inputString: string){
+
+        inputString = inputString.replace("b", "♭")
+        inputString = inputString.replace("#", "♯")
+        inputString = inputString.replace("|", "♮")
+    
         this.harmElement.textContent = inputString
     }
 
@@ -65,6 +72,7 @@ class HarmonyLabel{
         var splitArray: Array<string> = inputString.split(" ")
         splitArray = splitArray.filter(s => s !== "")
         var fb = this.currentMEI.createElementNS(c._MEINS_, "fb")
+        this.harmElement.textContent = ""
         this.harmElement.appendChild(fb)
 
         splitArray.forEach(sa => {

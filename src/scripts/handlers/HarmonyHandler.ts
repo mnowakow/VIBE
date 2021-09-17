@@ -8,6 +8,7 @@ import { uuidv4 } from "../utils/random";
 import HarmonyLabel from "../gui/HarmonyLabel";
 import MusicPlayer from "../MusicPlayer";
 import * as coordinates from "../utils/coordinates"
+import { theWindow } from "tone/build/esm/core/context/AudioContext";
 
 class HarmonyHandler implements Handler{
     m2m?: Mouse2MEI;
@@ -18,6 +19,7 @@ class HarmonyHandler implements Handler{
     private root: Element
     private harmonyElements: Map<string, HarmonyLabel>
     private isGlobal: boolean
+    private harmId: string
 
     private loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>
 
@@ -41,7 +43,7 @@ class HarmonyHandler implements Handler{
         })
 
         if(!this.isGlobal){
-            document.getElementById(c._ROOTSVGID_).addEventListener("click", this.setHarmonyLabelHandlerClick, false)
+            document.getElementById(c._ROOTSVGID_).addEventListener("click", this.setHarmonyLabelHandlerClick, true)
             document.getElementById(c._ROOTSVGID_).addEventListener("mousemove", this.activateHarmonyHighlight)
             document.getElementById(c._ROOTSVGID_).addEventListener("keydown", this.closeModifyWindowHandler, true)
         }
@@ -77,9 +79,9 @@ class HarmonyHandler implements Handler{
     }).bind(this)
 
     setHarmonyLabelHandlerKey = (function setHarmonyLabelHandler(e: KeyboardEvent){
-        console.log(e)
         if(e.ctrlKey || e.metaKey){
              if(e.key === "k" && Array.from(document.querySelectorAll(".note, .chord, .rest, .mrest")).some(el => el.classList.contains("marked"))){
+                e.preventDefault()
                 this.harmonyLabelHandler(e)
             }
         }
@@ -105,7 +107,7 @@ class HarmonyHandler implements Handler{
         }
     }
 
-    setHarmonyLabel(label: string, bboxId: string){
+    setHarmonyLabel(label: string, bboxId: string): HarmonyLabel{
         var harmonyLabel = new HarmonyLabel(label,bboxId, this.currentMEI) // TODO: Make Dynamically
         this.harmonyElements.set(harmonyLabel.getHarmElement().id, harmonyLabel)
 
@@ -117,6 +119,8 @@ class HarmonyHandler implements Handler{
         this.loadDataCallback("", mei, false, c._TARGETDIVID_).then(() => {
             this.reset()
         })
+
+        return harmonyLabel
     }
 
     activateHarmonyHighlight = (function highlightNextHarmonyHandler(e: MouseEvent){
@@ -165,6 +169,7 @@ class HarmonyHandler implements Handler{
         var target = e.target as Element
         target = target.closest(".harm")
         target.setAttribute("visibility", "hidden")
+        this.harmId = target.id
         var targetBBox = target.getBoundingClientRect()
         var root = document.getElementById(c._ROOTSVGID_)
         var rootBBox = root.getBoundingClientRect()
@@ -196,7 +201,7 @@ class HarmonyHandler implements Handler{
         })
         // clean MEI from empty harm Elements
         this.currentMEI.querySelectorAll("harm").forEach(h => {
-            document.getElementById(h.id).setAttribute("visibility", "visible")
+            document.getElementById(h.id)?.setAttribute("visibility", "visible")
             if(h.childElementCount > 0){
                 if(h.firstElementChild.childElementCount === 0){
                     h.remove()
@@ -216,7 +221,11 @@ class HarmonyHandler implements Handler{
             var currentHarm = this.currentMEI.getElementById(harmLabel.getHarmElement().id)
             currentHarm.parentElement.replaceChild(harmLabel.getHarmElement(), currentHarm)
         }else{
-            this.setHarmonyLabel(harmonyDiv.textContent, harmonyDiv.closest("g").getAttribute("refHarmId"))
+            harmLabel = this.setHarmonyLabel(harmonyDiv.textContent, harmonyDiv.closest("g").getAttribute("refHarmId"))
+            var oldLabel = this.currentMEI.getElementById(this.harmId)
+            harmLabel.getHarmElement().setAttribute("tstamp", oldLabel.getAttribute("tstamp"))
+            harmLabel.getHarmElement().setAttribute("startid", oldLabel.getAttribute("startid"))
+            oldLabel.remove()
         }
 
         this.closeModifyWindow()
@@ -274,6 +283,26 @@ class HarmonyHandler implements Handler{
         textDiv.addEventListener("keydown", this.submitLabelHandler)
 
         textDiv.focus()
+    }
+
+    getTimestamp(note: Element){
+        var layer = note.closest("layer")
+        var elements = Array.from(layer.querySelectorAll("*[dur]"))
+        elements = elements.filter((v, i) => i <= elements.indexOf(note))
+        var tstamp: number
+        elements.forEach(e => {
+            var dur = parseInt(e.getAttribute("dur"))
+            tstamp += 4/dur
+            var dots = e.getAttribute("dots")
+            var add = dur
+            if(dots !== null){
+                for(var i = 0; i < parseInt(dots) ; i++){
+                    add = add/2
+                    tstamp += add
+                }
+            }
+        })
+        return tstamp
     }
 
     reset(){

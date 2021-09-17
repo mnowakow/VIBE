@@ -18,7 +18,7 @@ body.waiting * {
 }
 
 body.textmode  * {
-    cursor: text !important;
+    cursor: text;
 }
 
 body.clickmode  * {
@@ -42,7 +42,7 @@ body.clickmode  * {
     overflow: scroll;
 }
 
-.note, .staff, .measure, .manipulator{
+.note, .note *, .staff, .measure, .manipulator *{
     cursor: pointer !important; 
 }
 

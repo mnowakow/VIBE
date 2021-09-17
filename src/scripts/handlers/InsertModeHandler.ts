@@ -163,14 +163,14 @@ class InsertModeHandler implements Handler{
   }
 
   activateHarmonyMode(clicked = false){
-    this.insertDeactivate()
     if(clicked){
       if(this.unselectMenuItem("activateHarm")){return}
     }
     if(typeof this.harmonyHandler === "undefined"){
       this.harmonyHandler = new HarmonyHandler()
     }
-    if(document.querySelector("#activateHarm.selected")){
+    if(document.querySelector("#activateHarm.selected") !== null){
+      this.insertDeactivate()
       document.body.classList.add("harmonyMode")
       this.isGlobal = false
     }else{
@@ -185,9 +185,9 @@ class InsertModeHandler implements Handler{
       .setCurrentMEI(this.m2m.getCurrentMei())
       .setLoadDataCallback(this.loadDataCallback)
 
-    this.keyMode = false;
-    this.clickInsertMode = false;
-    this.annotationMode = false;
+    //this.keyMode = false;
+    //this.clickInsertMode = false;
+    //this.annotationMode = false;
     this.harmonyMode = true
 
     return this

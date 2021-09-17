@@ -271,14 +271,14 @@ class MusicPlayer{
         var eventTracks = this.player.getEvents()
         eventTracks.forEach(eventArray => {
             //@ts-ignore
-            Array.from(eventArray).forEach(event => {
+            Array.from(eventArray).forEach((event, eventIdx) => {
                 var e: any = event
                 if(e.name === "Set Tempo"){
                     this.pulse = (60000/ (e.data * 24))/10000 //duration is in seconds
                 }
                 if(e.name === "Note on"){
                     var time = e.tick * this.pulse * 1000 * 2
-                    var notes = this.midiTimes.get(time)
+                    var notes = this.midiTimes.get(time) || this.midiTimes.get(Math.floor(time)) || this.getClosestEntry(time)
                     if(typeof notes === "undefined"){
                         return
                     }
@@ -291,14 +291,20 @@ class MusicPlayer{
                                 if(!meiNote.hasAttribute("dur")){
                                     meiNote = meiNote.closest("chord")
                                 }
-                                var baseDur = 4/ parseInt(meiNote.getAttribute("dur")) // 4 = base for tempo
-                                if(meiNote.hasAttribute("dots")){
-                                    var add = baseDur
-                                    for(var i = 0; i < parseInt(meiNote.getAttribute("dots")); i++){
-                                        add = add/2
-                                        baseDur += add
-                                    }
+                                var baseDur = this.getDur(parseInt(meiNote.getAttribute("dur")), parseInt(meiNote.getAttribute("dots")) || 0 , 4)
+
+                                //find any prolongated Notes
+                                var tie = this.mei.querySelector("tie[startid='#" + note.id +"']")
+                                if(tie !== null){
+                                    var endid = tie.getAttribute("endid") //endid alway includes # at beginnig
+                                    var prolongNote = this.mei.querySelector(endid)
+                                    var pnDur = prolongNote.getAttribute("dur")
+                                    var pnDot = prolongNote.getAttribute("dots")
+                                    baseDur += this.getDur(parseInt(pnDur), parseInt(pnDot) || 0, 4)
+
                                 }
+
+                                //concat duration
                                 var dur =  baseDur * this.tempo * this.pulse 
                                 var valueFound = false
                                 var it = durationMap.values()
@@ -323,7 +329,35 @@ class MusicPlayer{
         })
         this.durationMap = durationMap
         this.durationMapByNote = mapByNote
+        //console.log(this.durationMap, this.durationMapByNote)
     }
+
+    getClosestEntry(time: number){
+        var targetEntry
+        var temp = Infinity
+        for(const [key, value] of this.midiTimes.entries()){
+            if(Math.abs(time - key) < temp ){
+                targetEntry = value
+                temp = Math.abs(time - key)
+            }else{
+                break
+            } 
+        }
+        return targetEntry
+    }
+
+    getDur(dur: number, dots: number, base: number): number{
+        var baseDur = base/ dur
+        var add = baseDur
+        if(dots > 0){
+            for(var i = 0; i < dots ; i++){
+                add = add/2
+                baseDur += add
+            }
+        }
+        return baseDur
+    }
+
 
     setAudioContext(): Promise<void>{
         var that = this
@@ -344,8 +378,7 @@ class MusicPlayer{
      * @param duration Duration of Element (in ms)
      */
     highlight(time: number, duration: number){
-        time = Math.floor(time)
-        var notes: Array<Element> = this.midiTimes.get(time)
+        var notes = this.midiTimes.get(time) || this.midiTimes.get(Math.floor(time)) || this.getClosestEntry(time)
         this.timeouts = new Array()
         notes.forEach(n => {
             this.addClass(n, currentlyPlayingFlag).then(() => {
