@@ -419,7 +419,7 @@ class MusicPlayer{
             this.canvasG.appendChild(followerRect)
         }
         var margin = 5
-        var currentNoteRect =this.currentNote.getBoundingClientRect()
+        var currentNoteRect = this.currentNote.getBoundingClientRect()
         var parentMeasureRect = this.currentNote.closest(".measure").getBoundingClientRect()
         var upperBound = parentMeasureRect.top - margin - rectBBox.y
         var lowerBound = parentMeasureRect.bottom + margin - rectBBox.y

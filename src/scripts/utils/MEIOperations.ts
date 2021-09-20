@@ -155,9 +155,10 @@ export function addToMEI(newSound: NewNote | NewChord, currentMEI: Document, rep
           if(scoreGraph !== null){
             sibling = currentMEI.getElementById(scoreGraph.getCurrentNode().getRight().getId())?.parentElement
           }
-          sibling.insertBefore(newElem, sibling.firstChild)
+          var firstChild = sibling.firstChild as Element
+          sibling.insertBefore(newElem, firstChild)
           if(replace){
-            changeDuration(currentMEI, "reduce", [(sibling.firstChild as Element)], newElem)
+            changeDuration(currentMEI, "reduce", [firstChild], newElem)
           }
 
         }else{

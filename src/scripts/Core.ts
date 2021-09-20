@@ -147,6 +147,7 @@ class Core {
         this.svgFiller
           .loadClasses()
           .fillSVG(this.currentMEIDoc)
+          .clearTspan()
         this.musicplayer.setMEI(this.currentMEIDoc)
         this.undoStacks.push(mei)
 

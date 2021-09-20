@@ -13,6 +13,7 @@ class SVGFiller{
      */
     fillSVG(mei: Document){
         this.fillSystemCounts(mei)
+        return this
     }
 
     /**
@@ -68,6 +69,32 @@ class SVGFiller{
                 })
             }
         }
+        return this
+    }
+
+    clearTspan(){
+        var gelements = document.querySelectorAll("g .harm")
+        gelements.forEach(g => {
+            var textEl = g.querySelector("text")
+            var textTspan = g.querySelectorAll("tspan")
+            var text = ""
+            if(textTspan.length <= 2){
+                return
+            }
+            textTspan.forEach((tp, idx) => {
+                if(idx === 0) text += tp.textContent
+            })
+            text = text.replace(/ /g,'')
+            text = text.replace(/\n/g,'')
+            console.log(text)
+            textEl.querySelector("tspan").firstElementChild.textContent = text
+            textEl.querySelector("tspan").firstElementChild.setAttribute("font-family", "VerovioText")
+            textTspan.forEach((tp, idx) => {
+                if(idx >= 2){
+                    tp.remove()
+                }
+            })
+        })
         return this
     }
 }
