@@ -8,7 +8,7 @@ const manipFlag = "manipulator"
 
 class ScoreManipulator{
 
-    private lastBline: Element
+    private lastBline: HTMLElement
     private mei: Document
     constructor(){}
 
@@ -72,9 +72,9 @@ class ScoreManipulator{
     }
 
     drawMeasureAdder(){
-        this.lastBline = Array.from(document.querySelectorAll(".barLine")).reverse()[0]
+        this.lastBline = Array.from(document.querySelectorAll(".barLine")).reverse()[0] as HTMLElement
         var lastBlineRect = this.lastBline.getBoundingClientRect()
-        var root = document.getElementById(c._ROOTSVGID_)
+        var root = document.getElementById(c._ROOTSVGID_) as HTMLElement
         var rootBBox = root.getBoundingClientRect()
         var blineTop = lastBlineRect.top - rootBBox.y - root.scrollTop
         var blineRight = lastBlineRect.right + rootBBox.height*0.007 - rootBBox.x + root.scrollLeft
@@ -85,7 +85,7 @@ class ScoreManipulator{
     }
 
     drawMeasureRemover(){
-        this.lastBline = Array.from(document.querySelectorAll(".barLine")).reverse()[0]
+        this.lastBline = Array.from(document.querySelectorAll(".barLine")).reverse()[0] as HTMLElement
         var lastBlineRect = this.lastBline.getBoundingClientRect()
         var root = document.getElementById(c._ROOTSVGID_)
         var rootBBox = root.getBoundingClientRect()

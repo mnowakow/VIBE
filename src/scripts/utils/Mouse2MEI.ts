@@ -3,6 +3,7 @@ import { NoteBBox, StaffLineBBox, NewNote, Staff } from './Types';
 import { uuidv4 } from './random';
 import {idxNoteMapGClef, idxNoteMapFClef, idxNotePhantomMapBelowG, idxNotePhantomMapAboveG, idxNotePhantomMapBelowF, idxNotePhantomMapAboveF,idxNotePhantomMapBelowC, idxNotePhantomMapAboveC, keysigToNotes, idxNoteMapCClef } from './mappings';
 import MeasureMatrix from '../datastructures/MeasureMatrix'
+import * as meiOperation from "../utils/MEIOperations"
 
 
 //@ts-ignore
@@ -480,6 +481,19 @@ export class Mouse2MEI{
             }
             retVal = true
         })
+        // let isReplace = true
+        // let inserToggleBtn = document.getElementById("insertToggle")
+        // if(inserToggleBtn){
+        //     isReplace = inserToggleBtn.nextElementSibling.textContent === "Replace"
+        // }
+        // if(isReplace && markedElements.length === 1 && reduce){
+        //     let meiElement = this.currentMEI.getElementById(markedElements[0].id)
+        //     let ms = Array.from(meiElement.closest("layer").querySelectorAll("note:not(chord note), chord, rest, mRest")) as Element[]
+        //     let measureSiblings = ms.filter((v, i) => i > ms.indexOf(meiElement))
+        //     meiOperation.changeDuration(this.currentMEI, "reduce", measureSiblings, meiElement)
+        // }else{
+        //     // Do something with prolong
+        // }
 
         return retVal
     }

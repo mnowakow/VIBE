@@ -2,9 +2,6 @@ import { NoteBBox } from "../utils/Types";
 import { constants as c } from "../constants"
 import { Mouse2MEI } from "../utils/Mouse2MEI";
 
-//@ts-ignore
-//const $ = H5P.jQuery;
-
 class Cursor{
     private cursor: SVGRectElement;
     private posx: number;
@@ -96,10 +93,12 @@ class Cursor{
 
         var elementBBox: DOMRect
         var currLayerY: number
-        var distToElement = element?.querySelector(".noteHead")?.getBoundingClientRect().width + 6 || 0
+        var distToElement = ["note", "keySig", "clef", "meterSig"].some(e => {
+            return element?.classList.contains(e)
+        }) ? element.getBoundingClientRect().width + 6 : 0 
         if(element !== null){
             elementBBox = element.getBoundingClientRect()
-            currLayerY = element.classList.contains("staff") ? element.getBoundingClientRect().y : element.closest(".layer").getBoundingClientRect().y
+            currLayerY = element.classList.contains("staff") ? element.getBoundingClientRect().y : element.closest(".layer")?.getBoundingClientRect().y || 0
             this.nextElement = element
             this.isBol = false
         }else{

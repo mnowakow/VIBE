@@ -72,6 +72,10 @@ class SVGFiller{
         return this
     }
 
+    /**
+     * Merge all tspans in a harm object in the top tspan to avoid columns for (especially in Firefox browsers)
+     * @returns 
+     */
     clearTspan(){
         var gelements = document.querySelectorAll("g .harm")
         gelements.forEach(g => {
@@ -81,12 +85,9 @@ class SVGFiller{
             if(textTspan.length <= 2){
                 return
             }
-            textTspan.forEach((tp, idx) => {
-                if(idx === 0) text += tp.textContent
-            })
+            text = textTspan[0].textContent
             text = text.replace(/ /g,'')
             text = text.replace(/\n/g,'')
-            console.log(text)
             textEl.querySelector("tspan").firstElementChild.textContent = text
             textEl.querySelector("tspan").firstElementChild.setAttribute("font-family", "VerovioText")
             textTspan.forEach((tp, idx) => {

@@ -92,7 +92,6 @@ class VerovioScoreEditor{
             ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             // CUSTOM TOOLBAR
         
-
             // parentElement for customToolbar
             this.container.append(dc.makeNewDiv("customToolbar", "btn-toolbar align-items-stretch", {role: "toolbar"}))
 

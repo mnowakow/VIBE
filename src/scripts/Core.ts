@@ -16,6 +16,7 @@ import ScoreGraph from './datastructures/ScoreGraph';
 import WindowHandler from "./handlers/WindowHandler"
 import SidebarHandler from './handlers/SideBarHandler';
 import HarmonyHandler from './handlers/HarmonyHandler';
+import ModHandler from './handlers/ModHandler';
 
 
 /**
@@ -50,7 +51,8 @@ class Core {
   private noteDragHandler: NoteDragHandler;
   private sidebarHandler: SidebarHandler
   private windowHandler: WindowHandler;
-  private harmonyHandler: HarmonyHandler
+  private harmonyHandler: HarmonyHandler;
+  private modHandler: ModHandler;
   private currentMEI: string;
   private currentMEIDoc: Document
   private currentMidi: string;
@@ -102,7 +104,7 @@ class Core {
           u = isUrl
           break;
         case 'XMLDocument':
-          data = meiOperation.disableFeatures(["grace", "arpeg", "slur"], (data as Document)) // for Debugging
+          data = meiOperation.disableFeatures(["grace", "arpeg"], (data as Document)) // for Debugging
           d = new XMLSerializer().serializeToString(data as Document);
           u = false;
           break;
@@ -137,7 +139,7 @@ class Core {
       }catch(ignore){
         console.log("Fehler bei einfügen von SVG")
       }
-
+    
       document.body.classList.remove(waitingFlag)
     
       this.getMEI("").then(mei => {
@@ -147,7 +149,7 @@ class Core {
         this.svgFiller
           .loadClasses()
           .fillSVG(this.currentMEIDoc)
-          .clearTspan()
+          //.clearTspan()
         this.musicplayer.setMEI(this.currentMEIDoc)
         this.undoStacks.push(mei)
 
@@ -202,6 +204,7 @@ class Core {
     this.keyboardHandler = typeof this.keyboardHandler === "undefined" ? new GlobalKeyboardHandler() : this.keyboardHandler
     this.sidebarHandler = typeof this.sidebarHandler === "undefined" ? new SidebarHandler() : this.sidebarHandler
     this.harmonyHandler = this.harmonyHandler == undefined ? new HarmonyHandler() : this.harmonyHandler
+    this.modHandler = this.modHandler == undefined ? new ModHandler : this.modHandler
 
     this.dispatchFunctions()
   }
@@ -257,6 +260,11 @@ class Core {
       .setLoadDataCallback(this.loadDataFunction)
       .loadMeter()
       .makeScoreElementsClickable()
+
+    this.modHandler
+      .resetListeners()
+      .setCurrentMEI(this.currentMEIDoc)
+      .setLoadDataCallback(this.loadDataFunction)
   }
 
   /**

@@ -32,6 +32,7 @@ body.clickmode  * {
     position: absolute;
 }
 
+
 #svg_output, .annotText, .annotText *{
     white-space: pre;
 }
@@ -93,6 +94,15 @@ body.clickmode  * {
 
 #pauseNote{
     background-image: url(../images/bravura_notes/pauseNote.svg);
+}
+
+#tieNotes{
+    background-image: url(../images/bravura_notes/tie.svg);
+    transform: scaleY(-1);
+}
+
+#organizeBeams{
+    background-image: url(../images/bravura_notes/beams.svg);
 }
 
 .btn{

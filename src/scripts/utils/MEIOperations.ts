@@ -6,6 +6,8 @@ import { keysigToNotes, nextStepUp, nextStepDown } from './mappings'
 import MeiTemplate from '../assets/mei_template'
 import { xml } from 'd3'
 import ScoreGraph from '../datastructures/ScoreGraph'
+import { removeAllListeners } from 'process'
+import { NOTIMP } from 'dns'
 
 const countableNoteUnitSelector: string =  
 ":scope > note:not([grace])," +
@@ -100,7 +102,6 @@ function getMeterRatioGlobal(xmlDoc: Document): number{
    */
 export function addToMEI(newSound: NewNote | NewChord, currentMEI: Document, replace: Boolean = false, scoreGraph: ScoreGraph = null): Document{//Promise<Document> {
   //return new Promise<Document>((resolve): void => {
-    console.log(newSound)
     var newElem: Element
     if(newSound.hasOwnProperty("pname")){
       var newNote = newSound as NewNote
@@ -181,15 +182,15 @@ export function addToMEI(newSound: NewNote | NewChord, currentMEI: Document, rep
           if(replace){
             if(newNote.relPosX === "left"){
               let ms = Array.from(trueSibling.parentElement.querySelectorAll("note:not(chord note), chord, rest, mRest")) as Element[]
-              trueSibling.parentElement.insertBefore(newElem, trueSibling)
               var measureSiblings = ms.filter((v, i) => i >= ms.indexOf(trueSibling))
+              trueSibling.parentElement.insertBefore(newElem, trueSibling)
               changeDuration(currentMEI, "reduce", measureSiblings, newElem)
               //changeDuration(currentMEI, "reduce", [(trueSibling as Element)], newElem)
             }else{
               if(trueSibling.nextSibling !== null){
                 let ms = Array.from(trueSibling.parentElement.querySelectorAll("note:not(chord note), chord, rest, mRest")) as Element[]
-                trueSibling.parentElement.insertBefore(newElem, trueSibling.nextSibling)
                 var measureSiblings = ms.filter((v, i) => i >= ms.indexOf(trueSibling.nextSibling as Element))
+                trueSibling.parentElement.insertBefore(newElem, trueSibling.nextSibling)
                 changeDuration(currentMEI, "reduce", measureSiblings, newElem)
                 //changeDuration(currentMEI, "reduce", [(trueSibling.nextSibling as Element)], newElem)
               }else{
@@ -359,6 +360,14 @@ function getAbsoluteRatio(el: Element): number{
 
   if(el.tagName !== "layer"){ //if single Element is given, eg. chord, note
     arr = [el]
+    //if element is tied to another
+    // el.closest("measure")?.querySelectorAll("tie").forEach(t => {
+    //   if(t.getAttribute("startid").includes(el.id)){
+    //     if(el.closest("layer").querySelector(t.getAttribute("endid")) !== null){
+    //       arr.push(el.closest("mei").querySelector(t.getAttribute("endid")))
+    //     }
+    //   }
+    // })
   }else{
     arr = Array.from(el.querySelectorAll(countableNoteUnitSelector))
   }
@@ -789,6 +798,7 @@ export function changeMeter(xmlDoc: Document): Document {
  * @returns 
  */
 export function disableFeatures(features: Array<string>, xmlDoc: Document){
+  console.log("Features disabled:", features)
   features.forEach(f => {
     
     var elements = Array.from(xmlDoc.getElementsByTagName(f))
@@ -892,6 +902,15 @@ function replaceWithRest(element: Element, xmlDoc: Document){
   elmei.remove()
 }
 
+/**
+ * Change duration of the following sound events. Elements to change duration are determined by the class "marked". 
+ * @param xmlDoc Current MEI as Document
+ * @param mode "prolong" or "reduce"
+ * @param additionalElements Elements to be considered to be changed.
+ * @param refElement Reference Element by which all determined elements (.marked and additionElements) will be changed (e.g. replacing duration during a note insert)
+ * @param marked Consider marked elements
+ * @returns 
+ */
 export function changeDuration(xmlDoc: Document, mode: string, additionalElements: Array<Element> = new Array(), refElement: Element = null){
   var changedFlag = "changed"
   var multiplier: number
@@ -906,13 +925,20 @@ export function changeDuration(xmlDoc: Document, mode: string, additionalElement
       console.error(mode, "No such operation")
       return
   }
+  var refRatio = getAbsoluteRatio(xmlDoc.getElementById(refElement.id))
   var elements: Array<Element> = new Array();
-  elements = Array.from(document.querySelectorAll(".note.marked"))
-  elements = elements.concat(additionalElements)
+  elements = Array.from(document.querySelectorAll(".note.marked")).map(nm => {
+    if(!(additionalElements.some(ae => {ae.id === nm.id})) && nm.id !== refElement.id){
+      return xmlDoc.getElementById(nm.id)
+    }
+  })
+  elements = elements[0] == undefined ? additionalElements : elements.concat(additionalElements)
 
-  elements.forEach(el => {
-    var elmei = xmlDoc.getElementById(el.id) as Element
+  for(var i = 0; i < elements.length; i++){
+    var elmei = xmlDoc.getElementById(elements[i].id) as Element
+    var elmeiRatio = getAbsoluteRatio(elmei)
     var chord = elmei.closest("chord")
+
     //Dur is attribute of chord and all notes will be changed accordingly
     if(chord !== null){
       if(chord.classList.contains(changedFlag)){
@@ -939,19 +965,23 @@ export function changeDuration(xmlDoc: Document, mode: string, additionalElement
             newRest.setAttribute("dur", dur.toString())
             elmei.parentElement.insertBefore(newRest, elmei.nextElementSibling)
           }
-        }else if(layerRatio > globalRatio){
-          var refRatio = getAbsoluteRatio(xmlDoc.getElementById(refElement.id))
-          var elmeiRatio = getAbsoluteRatio(elmei)
+        }else if(layerRatio !== globalRatio){
+
           if(refRatio === elmeiRatio){
             elmei.remove()
-          }
-          if(refRatio < elmeiRatio){
+            //break
+          }else if(refRatio < elmeiRatio){
             elmeiRatio -= refRatio
+            refRatio += elmeiRatio
             var elmeiDurDots = ratioToDur(elmeiRatio)
             elmei.setAttribute("dur", elmeiDurDots[0].toString())
             elmei.setAttribute("dots", elmeiDurDots[1].toString())
-          }
-          if(refRatio > elmeiRatio){
+          }else if(refRatio > elmeiRatio){
+            var tie = elmei.closest("measure").querySelector("tie[startid='#" + elmei.id + "']")
+            if(tie !== null){
+              tie.remove()
+            }
+            refRatio = elmeiRatio
             elmei.remove()
           }
         }
@@ -981,7 +1011,7 @@ export function changeDuration(xmlDoc: Document, mode: string, additionalElement
         }
       }
     }
-  })
+  }
   //clean up after changing durations
   xmlDoc.querySelectorAll(".changed").forEach(c => c.classList.remove(changedFlag))
   cleanUp(xmlDoc)
@@ -1072,6 +1102,24 @@ function reorganizeBeams(xmlDoc: Document){
         cn.remove()
       }
     })
+  })
+}
+
+/**
+ * Remove tie from all layers if length of layer exceeds global Ratio
+ * @param xmlDoc 
+ */
+function removeTiesFromDoc(xmlDoc: Document){
+  var globalRatio = getMeterRatioGlobal(xmlDoc)
+  xmlDoc.querySelectorAll("layer").forEach(l => {
+    var layerRatio = getAbsoluteRatio(l)
+    if(layerRatio > globalRatio){
+      var m = l.closest("measure")
+      m.querySelectorAll("tie").forEach(t => {
+        l.querySelector(t.getAttribute("endid"))?.remove()
+        t.remove()
+      })
+    }
   })
 }
 

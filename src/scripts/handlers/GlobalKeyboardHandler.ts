@@ -144,8 +144,10 @@ class GlobalKeyboardHandler implements Handler{
             default:
                 console.log(this, "Sorry, wrong turn")
         }
-        mei = meiConverter.restoreXmlIdTags(mei)
-        this.loadDataCallback("", mei, false, c._TARGETDIVID_)
+        if(mei != undefined){
+            mei = meiConverter.restoreXmlIdTags(mei)
+            this.loadDataCallback("", mei, false, c._TARGETDIVID_)
+        }
     }
 
     handleHarmony(e: KeyboardEvent){

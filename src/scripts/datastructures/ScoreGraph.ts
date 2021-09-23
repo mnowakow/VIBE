@@ -1,7 +1,8 @@
 import { noteToB } from "../utils/mappings"
 import ScoreNode from "./ScoreNode"
 
-const nodeSelector = "note, rest, mRest, chord, layer" //, clef, keysig"
+const meiNodeSelector = "note, rest, mRest, chord, layer"
+const documentNodeSelector = ".clef, .meterSig, .keySig"
 
 class ScoreGraph{
 
@@ -22,10 +23,13 @@ class ScoreGraph{
     private populate(xmlDoc: Document, miditimes: Map<number, Array<Element>>){
         this.graph = new Map()
         this.midiTimes = miditimes
-        xmlDoc.querySelectorAll(nodeSelector).forEach(e => {
+        xmlDoc.querySelectorAll(meiNodeSelector).forEach(e => {
             if((e.tagName === "note" && e.closest("chord") !== null)){ // || (e.tagName === "layer" && e.children.length > 0)){
                 return
             }
+            this.graph.set(e.id, new ScoreNode(e.id))
+        })
+        document.querySelectorAll(documentNodeSelector).forEach(e => {
             this.graph.set(e.id, new ScoreNode(e.id))
         })
 
@@ -42,18 +46,23 @@ class ScoreGraph{
             layerArray = Array.from(xmlDoc.querySelectorAll("layer[n=\"" + (i+1).toString() + "\"]"))
             var elements = new Array<Element>()
             layerArray.forEach(l => {
-                //if(l.children.length === 0){
-                    elements.push(l)
-                //}else{
-                    l.querySelectorAll(nodeSelector).forEach(c => {
-                        if(c.tagName === "note" && c.closest("chord") !== null){
-                            return
-                        }
-                        elements.push(c)
-                    })
-                //}
-            })
+                let staff = document.getElementById(l.id).closest(".measure").querySelector(".staff[n='" + l.closest("staff").getAttribute("n") + "']")
+                let clef = staff.querySelector(".clef")
+                let meterSig = staff.querySelector(".meterSig")
+                let keySig = staff.querySelector(".keySig")
 
+                elements.push(l)
+                if(clef !== null) elements.push(clef)
+                if(meterSig !== null) elements.push(meterSig)
+                if(keySig !== null) elements.push(keySig)
+                l.querySelectorAll(meiNodeSelector).forEach(c => {
+                    if(c.tagName === "note" && c.closest("chord") !== null){
+                        return
+                    }
+                    elements.push(c)
+                })
+            })
+            
             elements.forEach((el, idx) => {
                 var currentNode = this.graph.get(el.id)
                 var prevSibling: ScoreNode = idx === 0 ? null : this.graph.get(elements[idx-1].id)
@@ -184,6 +193,11 @@ class ScoreGraph{
                 currentNode.setDown(downSet)
             }
         }
+
+        // for(const[key, value] of this.graph.entries()){
+        //     console.log(document.getElementById(key))
+        // }
+       
     }
 
     targetNodeIsLeftOrRight(startNode: ScoreNode, targetNode: ScoreNode): Boolean{

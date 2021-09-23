@@ -9,7 +9,6 @@ import { constants as c } from "../constants"
 import Handler from "./Handler";
 import * as coord from "../utils/coordinates"
 
-
 const marked = "marked"
 
 class KeyModeHandler implements Handler{
@@ -235,12 +234,12 @@ class KeyModeHandler implements Handler{
       this.selectRect.setAttribute("y", cursorY.toString())
       //this.selectRect.setAttribute("height", Math.abs(cursorPos.y - coord.adjustToPage(this.startSelect.top, "y")).toString())
       this.selectRect.setAttribute("height", Math.abs(cursorY - startSelectY).toString())
-      console.log(cursorY, startSelectY,  this.selectRect.getAttribute("height"))
+      //console.log(cursorY, startSelectY,  this.selectRect.getAttribute("height"))
     }else{ // else bottom
       this.selectRect.setAttribute("y", startSelectY.toString())
       this.selectRect.setAttribute("height",  Math.abs(coord.adjustToPage(this.startSelect.bottom, "y") - cursorY).toString())
       //this.selectRect.setAttribute("height",  Math.abs(coord.adjustToPage(this.startSelect.top, "y") - coord.adjustToPage(cursorPos.y, "y")).toString())
-      console.log(cursorY, startSelectY, this.selectRect.getAttribute("height"))
+      //console.log(cursorY, startSelectY, this.selectRect.getAttribute("height"))
     }
 
     var rectBBox = this.selectRect.getBoundingClientRect()

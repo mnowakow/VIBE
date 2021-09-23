@@ -1,10 +1,11 @@
 import * as dc from '../utils/DOMCreator'
 import * as customType from "../utils/Types"
 import { Button, Dropdown, Collapse } from 'bootstrap'
-import { thresholdFreedmanDiaconis } from 'd3-array'
 import SidebarHandler from '../handlers/SideBarHandler'
 import { keyIdToSig } from '../utils/mappings'
 import { interpolateZoom } from 'd3'
+import KeyModeHandler from '../handlers/KeyModeHandler'
+import ModHandler from '../handlers/ModHandler'
 
 const buttonStyleDarkOutline = "btn btn-outline-dark btn-md"
 const buttonStyleDark = "btn btn-dark btn-md"
@@ -176,6 +177,8 @@ class Toolbar{
 
         this.modButtonGroup = document.getElementById("modGroup")
         this.modButtonGroup.appendChild(dc.makeNewButton("", "pauseNote", buttonStyleDarkOutline))
+        this.modButtonGroup.appendChild(dc.makeNewButton("", "tieNotes", buttonStyleDarkOutline))
+        this.modButtonGroup.appendChild(dc.makeNewButton("", "organizeBeams", buttonStyleDarkOutline))
 
     }
 

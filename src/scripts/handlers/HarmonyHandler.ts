@@ -133,9 +133,9 @@ class HarmonyHandler implements Handler{
     }).bind(this)
 
     deactivateHarmonyHighlight = (function deactivateHighlight(e: MouseEvent){
-        document.querySelectorAll(".marked").forEach(m => {
-            m.classList.remove("marked")
-        })
+        // document.querySelectorAll(".marked").forEach(m => {
+        //     m.classList.remove("marked")
+        // })
         document.getElementById(c._ROOTSVGID_).removeEventListener("mousemove", this.activateHarmonyHighlight)
     }).bind(this)
 
@@ -161,6 +161,9 @@ class HarmonyHandler implements Handler{
     }
 
     modifyLabelHandler = (function modifyLabelHandler(e: MouseEvent){
+        document.querySelectorAll(".marked").forEach(m => {
+            m.classList.remove("marked")
+        })
         this.modifyLabel(e)
     }).bind(this)
 
