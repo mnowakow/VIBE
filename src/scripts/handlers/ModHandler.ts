@@ -21,18 +21,14 @@ class ModHandler implements Handler{
     }
 
     setListeners(){
-       this.tieNotesButton.addEventListener("click", function(e){
-           this.connectNotes(e)
-       }.bind(this))
-
-       this.organizeBeamsButton.addEventListener("click", function(e){
-           this.organizeBeams(e)
-       }.bind(this))
+       this.tieNotesButton.addEventListener("click", this.connectNotesFunction)
+       this.organizeBeamsButton.addEventListener("click", this.organizeBeamsFunction)
     }
 
 
     removeListeners(){
-    
+        this.tieNotesButton.removeEventListener("click", this.connectNotesFunction)
+        this.organizeBeamsButton.removeEventListener("click", this.organizeBeamsFunction)    
     }
 
     resetListeners(){
@@ -40,6 +36,19 @@ class ModHandler implements Handler{
         this.setListeners()
         return this
     }
+
+
+    /** Wrapperfunction for Eventslistener */
+    connectNotesFunction = (function connectNotesFunction(e: MouseEvent){
+        e.preventDefault()
+        this.connectNotes(e)
+    }).bind(this)
+
+    /** Wrapperfunction for Eventslistener */
+    organizeBeamsFunction = (function organizeBeamsFunction(e: MouseEvent){
+        e.preventDefault()
+        this.organizeBeams(e)
+    }).bind(this)
 
     /**
      * Make slur or tie for 2 or more elements when tie button is clicked
@@ -83,8 +92,70 @@ class ModHandler implements Handler{
      * @param e 
      */
     organizeBeams(e: MouseEvent){
+        var markedElements = Array.from(document.querySelectorAll(".note.marked"))
+        markedElements = markedElements.filter(me => me.closest(".layer").getAttribute("n") === markedElements[0].closest(".layer").getAttribute("n"))
+        if(markedElements.length === 0){return}
+        
+        var haveRightDur = markedElements.every(me => {
+            var dur = this.currentMEI.getElementById(me.id)?.getAttribute("dur")
+            return parseInt(dur) > 4
+        })
 
-    }
+        if(haveRightDur){
+            var firstMeiElement= this.currentMEI.getElementById(markedElements[0].id)
+            var newBeam = this.currentMEI.createElementNS(c._MEINS_, "beam")
+            var oldBeam = firstMeiElement.closest("beam")
+            firstMeiElement.parentElement.insertBefore(newBeam, firstMeiElement)
+            markedElements.forEach(me => {
+                newBeam.append(this.currentMEI.getElementById(me.id))
+            })
+            if(oldBeam !== null && oldBeam.childElementCount > 1){
+                var beamCandidates = new Array<Element>()
+                var bc: Element
+                oldBeam.querySelectorAll(":scope > *").forEach(cn => {
+                    if(cn.tagName.toLowerCase() === "beam"){
+                        if(beamCandidates.length > 0){
+                            if(beamCandidates.length === 1){
+                                bc = beamCandidates[0]
+                            }else if(beamCandidates.length > 1){
+                                bc = this.currentMEI.createElementNS(c._MEINS_, "beam")
+                                beamCandidates.forEach(b => bc.append(b))
+                            }
+                            oldBeam.parentElement.insertBefore(bc, oldBeam)
+                            beamCandidates = new Array<Element>()
+                        }
+                        oldBeam.parentElement.insertBefore(cn, oldBeam)
+                    }else{
+                        beamCandidates.push(cn)
+                    }
+                })
+
+                if(beamCandidates.length > 0){ // if array is still full after loop
+                    if(beamCandidates.length === 1){
+                        bc = beamCandidates[0]
+                    }else if(beamCandidates.length > 1){
+                        bc = this.currentMEI.createElementNS(c._MEINS_, "beam")
+                        beamCandidates.forEach(b => bc.append(b))
+                    }
+                    oldBeam.parentElement.insertBefore(bc, oldBeam)
+                }
+            }else if(oldBeam?.childElementCount === 1){
+                if(oldBeam.firstElementChild.tagName.toLowerCase() === "beam"){
+                    Array.from(oldBeam.firstElementChild.children).forEach(c => {
+                        oldBeam.parentElement.insertBefore(c, oldBeam)
+                    })
+                }else{
+                    oldBeam.parentElement.insertBefore(oldBeam.firstElementChild, oldBeam)
+                }
+                oldBeam.remove()
+               
+
+            }
+            
+            var mei = meiConverter.restoreXmlIdTags(this.currentMEI)
+            this.loadDataCallback("", mei, false, c._TARGETDIVID_)
+        }
+    }   
 
     setCurrentMEI(mei: Document){
         this.currentMEI = mei
