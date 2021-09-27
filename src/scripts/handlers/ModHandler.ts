@@ -4,6 +4,9 @@ import Handler from "./Handler";
 import { constants as c} from "../constants"
 import { uuidv4 } from "../utils/random";
 import * as meiConverter from "../utils/MEIConverter"
+import { noteToB } from "../utils/mappings";
+
+const modSelector = ".slur, .tie, .accid"
 
 class ModHandler implements Handler{
 
@@ -13,22 +16,42 @@ class ModHandler implements Handler{
 
     private tieNotesButton: Element
     private organizeBeamsButton: Element
+    private alterUpButton: Element
+    private alterDownButton: Element
+    private alterNeutralButton: Element
+    private alterDDownButton: Element
+    private alterDUpButton: Element
+    private alterButtons: Array<Element>
     private loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>;
   
     constructor(){
         this.tieNotesButton = document.getElementById("tieNotes")
         this.organizeBeamsButton = document.getElementById("organizeBeams")
+        var a = this.alterUpButton = document.getElementById("alterUp")
+        var b = this.alterDownButton = document.getElementById("alterDown")
+        var c = this.alterNeutralButton = document.getElementById("alterNeutral")
+        var d = this.alterDUpButton = document.getElementById("alterDUp")
+        var e = this.alterDDownButton = document.getElementById("alterDDown")
+        this.alterButtons = [a, b, c, d, e]
+
     }
 
     setListeners(){
        this.tieNotesButton.addEventListener("click", this.connectNotesFunction)
        this.organizeBeamsButton.addEventListener("click", this.organizeBeamsFunction)
+       this.alterButtons.forEach(ab => {
+           ab.addEventListener("click", this.alterFunction)
+       })
+       this.makeScoreElementsClickable()
     }
 
 
     removeListeners(){
         this.tieNotesButton.removeEventListener("click", this.connectNotesFunction)
-        this.organizeBeamsButton.removeEventListener("click", this.organizeBeamsFunction)    
+        this.organizeBeamsButton.removeEventListener("click", this.organizeBeamsFunction)  
+        this.alterButtons.forEach(ab => {
+            ab.removeEventListener("click", this.alterFunction)
+        })  
     }
 
     resetListeners(){
@@ -48,6 +71,11 @@ class ModHandler implements Handler{
     organizeBeamsFunction = (function organizeBeamsFunction(e: MouseEvent){
         e.preventDefault()
         this.organizeBeams(e)
+    }).bind(this)
+
+    alterFunction = (function alterFunction(e: MouseEvent){
+        e.preventDefault()
+        this.alterNotes(e)
     }).bind(this)
 
     /**
@@ -88,7 +116,7 @@ class ModHandler implements Handler{
     }
 
     /**
-     * Pack selected elements in own beam element. Only for dur = 8, 16, 32 etc.
+     * Pack selected elements in own beam element. Only for dur > 4
      * @param e 
      */
     organizeBeams(e: MouseEvent){
@@ -148,15 +176,71 @@ class ModHandler implements Handler{
                     oldBeam.parentElement.insertBefore(oldBeam.firstElementChild, oldBeam)
                 }
                 oldBeam.remove()
-               
-
             }
             
             var mei = meiConverter.restoreXmlIdTags(this.currentMEI)
             this.loadDataCallback("", mei, false, c._TARGETDIVID_)
         }
-    }   
+    } 
 
+    /**
+     * Alter Notes (accid) according to button.
+     * @param e 
+     * @returns 
+     */
+    alterNotes(e: MouseEvent){
+        var target = e.target as Element
+        var accidSig: string
+
+        switch(target.id){
+            case "alterUp":
+                accidSig = "s"
+                break;
+            case "alterDown":
+                accidSig = "f"
+                break;
+            case "alterDUp":
+                accidSig = "ss"
+                break;
+            case "alterDDown":
+                accidSig = "ff"
+                break;
+            case "alterNeutral":
+                accidSig = "n"
+                break;
+            default:
+                console.error(target.id, "No such option for accid alteration")
+                return
+        }
+
+        document.querySelectorAll(".note.marked").forEach(nm => {
+            var meiElement = this.currentMEI.getElementById(nm.id)
+            meiElement.setAttribute("accid", accidSig)
+            meiElement.removeAttribute("accid.ges")
+        })
+
+        var mei = meiConverter.restoreXmlIdTags(this.currentMEI)
+        this.loadDataCallback("", mei, false, c._TARGETDIVID_)
+    }
+
+    /**
+     * Make Score Elements Clickable (and mark them), which are important for functions in the modulation toolbar group
+     * @returns this
+     */
+     makeScoreElementsClickable(){
+        document.querySelectorAll(modSelector).forEach(c => {
+            c.addEventListener("click", function(){
+                document.querySelectorAll(modSelector).forEach(c => c.classList.remove("marked"))
+                if(c.classList.contains("marked")){
+                    c.classList.remove("marked")
+                }else{
+                    c.classList.add("marked")
+                }
+            })
+        })
+     }
+
+    //GETTER/ SETTER
     setCurrentMEI(mei: Document){
         this.currentMEI = mei
         return this

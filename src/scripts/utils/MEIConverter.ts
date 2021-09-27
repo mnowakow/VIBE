@@ -32,6 +32,24 @@ export function meiToDoc(mei: string): Document{
     return parser.parseFromString(meiCopy, "text/xml")
 }
 
+/**
+ * Copys all accid attributes into the note Element, if it has accid Element
+ * @param xmlDoc 
+ * @returns xmlDoc
+ */
+export function standardizeAccid(xmlDoc: Document){
+    xmlDoc.querySelectorAll("accid").forEach(a => {
+        var note = a.closest("note")
+        var aAccid =  a.getAttribute("accid")
+        if(aAccid !== null) note.setAttribute("accid", aAccid)
+        var aAccidGes = a.getAttribute("accid.ges")
+        if(aAccidGes !== null) note.setAttribute("accid.ges",aAccidGes)
+        a.remove()
+    })
+
+    return xmlDoc
+}
+
 export function restoreXmlIdTags(xmlDoc: Document){
     var parser: DOMParser = new DOMParser();
     var mei = new XMLSerializer().serializeToString(xmlDoc).replace(/\ id/gi, " xml:id");

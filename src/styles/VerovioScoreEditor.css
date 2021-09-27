@@ -43,7 +43,7 @@ body.clickmode  * {
     overflow: scroll;
 }
 
-.note, .note *, .staff, .measure, .manipulator *{
+.note, .note *, .staff, .measure, .manipulator, .slur, .tie *{
     cursor: pointer !important; 
 }
 
@@ -103,6 +103,22 @@ body.clickmode  * {
 
 #organizeBeams{
     background-image: url(../images/bravura_notes/beams.svg);
+}
+
+#alterUp{
+    background-image: url(../images/bravura_notes/alterUp.svg)
+}
+#alterDown{
+    background-image: url(../images/bravura_notes/alterDown.svg)
+}
+#alterNeutral{
+    background-image: url(../images/bravura_notes/alterNeutral.svg)
+}
+#alterDUp{
+    background-image: url(../images/bravura_notes/alterDUp.svg)
+}
+#alterDDown{
+    background-image: url(../images/bravura_notes/alterDDown.svg)
 }
 
 .btn{

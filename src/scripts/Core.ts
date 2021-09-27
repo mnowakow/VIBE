@@ -149,7 +149,6 @@ class Core {
         this.svgFiller
           .loadClasses()
           .fillSVG(this.currentMEIDoc)
-          //.clearTspan()
         this.musicplayer.setMEI(this.currentMEIDoc)
         this.undoStacks.push(mei)
 
@@ -478,7 +477,9 @@ class Core {
 
   getCurrentMEI(asDocument: boolean = false): string | Document {
     if(asDocument){
-      return meiConverter.meiToDoc(this.currentMEI)
+      var meiDoc = meiConverter.meiToDoc(this.currentMEI)
+      meiDoc = meiConverter.standardizeAccid(meiDoc)
+      return meiDoc
     }
     return this.currentMEI;
   }

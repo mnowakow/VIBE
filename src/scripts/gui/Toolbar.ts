@@ -179,7 +179,11 @@ class Toolbar{
         this.modButtonGroup.appendChild(dc.makeNewButton("", "pauseNote", buttonStyleDarkOutline))
         this.modButtonGroup.appendChild(dc.makeNewButton("", "tieNotes", buttonStyleDarkOutline))
         this.modButtonGroup.appendChild(dc.makeNewButton("", "organizeBeams", buttonStyleDarkOutline))
-
+        this.modButtonGroup.appendChild(dc.makeNewButton("", "alterDown", buttonStyleDarkOutline))
+        this.modButtonGroup.appendChild(dc.makeNewButton("", "alterUp", buttonStyleDarkOutline))
+        this.modButtonGroup.appendChild(dc.makeNewButton("", "alterNeutral", buttonStyleDarkOutline))
+        this.modButtonGroup.appendChild(dc.makeNewButton("", "alterDDown", buttonStyleDarkOutline))
+        this.modButtonGroup.appendChild(dc.makeNewButton("", "alterDUp", buttonStyleDarkOutline))
     }
 
 
