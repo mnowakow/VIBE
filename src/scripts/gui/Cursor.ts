@@ -85,6 +85,10 @@ class Cursor{
         return element
     }
 
+    /**
+     * Define position of Cursor by ID of Elements. Cursor will then be placed right of the Elements
+     * @param id 
+     */
     definePosById(id: string){
         this.flashStop()
         var element = document.getElementById(id)
@@ -93,7 +97,7 @@ class Cursor{
 
         var elementBBox: DOMRect
         var currLayerY: number
-        var distToElement = ["note", "keySig", "clef", "meterSig"].some(e => {
+        var distToElement = ["note", "rest", "chord", "keySig", "clef", "meterSig"].some(e => {
             return element?.classList.contains(e)
         }) ? element.getBoundingClientRect().width + 6 : 0 
         if(element !== null){

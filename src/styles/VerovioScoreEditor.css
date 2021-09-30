@@ -304,8 +304,6 @@ body.clickmode  * {
     fill: red;
     fill-opacity: 0.3;
     outline-style: none;
-    height: 10%;
-    width: 4%;
 }
 
 .marked{

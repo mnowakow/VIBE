@@ -62,6 +62,7 @@ class SelectionHandler implements Handler{
             noteBBoxes.forEach(bb => {
                 var note = document.getElementById(bb.id)
                 let stem = note.querySelector(".stem") as HTMLElement
+                let accid = note.querySelector(".accid") as HTMLElement
                 if( bb.x >= rx && 
                     bb.x <= rx + rectBBox.width &&
                     bb.y >= ry &&
@@ -78,9 +79,10 @@ class SelectionHandler implements Handler{
                         }
                     }else{
                         note.classList.remove(marked)
-                        if(stem !== null) stem.classList.remove(marked)
+                        stem?.classList.remove(marked)
+                        accid?.classList.remove(marked)
                         var chord = note.closest(".chord")
-                        if(chord !== null) chord.classList.remove(marked)
+                        chord?.classList.remove(marked)
                     }
             })
             

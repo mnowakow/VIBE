@@ -144,7 +144,7 @@ class ClickModeHandler implements Handler{
 
             //snap only when within boundaries of target Chord
             if(cx > left && cx < right){
-                var snapTarget = elementToHighlight.querySelector(".noteHead")|| elementToHighlight
+                var snapTarget = elementToHighlight.querySelector(".notehead")|| elementToHighlight
                 var snapTargetBBox = snapTarget.getBoundingClientRect()
                 var phantomSnapX = snapTargetBBox.x + snapTargetBBox.width/2 - window.scrollX - rootBBox.x - root.scrollLeft
                 phantom.setAttribute("cx", phantomSnapX.toString())

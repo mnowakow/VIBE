@@ -50,7 +50,7 @@ class DeleteHandler implements Handler{
     }).bind(this)
 
     /**
-     * Handler for nested Action if Note is clicked
+     * Delete all Elements which are marked
      */
     backSpaceHandler = (function backSpaceHandler(e: KeyboardEvent){
         Array.from(document.querySelectorAll("." + this.deleteFlag)).forEach(el => this.selectedElements.push(el))

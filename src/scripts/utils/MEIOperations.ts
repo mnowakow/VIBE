@@ -16,21 +16,37 @@ const countableNoteUnitSelector: string =
 ":scope > beam > note:not([grace])," +
 ":scope > rest"
 
-//@ts-ignore
-//const $ = H5P.jQuery
-
 ////// DELETE //////
-export function removeFromMEI(notes: Array<Element>, currentMEI: Document): Promise<Document> {
+/**
+ * Remove Elements from MEI. 
+ * Some Elements (such as accid...) could are not represeented as elements in the current MEI.
+ * These have to be found in the parent element which have these as an attribute.
+ * @param scoreElements Array of Elements which are marked in the SVG Representation (notes, chords, slur, tie, accid etc..)
+ * @param currentMEI 
+ * @returns 
+ */
+export function removeFromMEI(scoreElements: Array<Element>, currentMEI: Document): Promise<Document> {
   return new Promise<Document>((resolve): void => {
 
-    notes.forEach(note => {
-      if(currentMEI.getElementById(note.id) !== null){
+    scoreElements.forEach(se => {
+      if(currentMEI.getElementById(se.id) !== null){ // this only applies for <note> and <rest>
         //do not remove completely, replace with rest
         //currentMEI.getElementById(note.id).remove()
-        if(!note.classList.contains("rest")){
-          replaceWithRest(note, currentMEI)
+        if(!se.classList.contains("rest")){
+          replaceWithRest(se, currentMEI)
         }else{
-          currentMEI.getElementById(note.id).remove() // possibility to remove rests entirely
+          currentMEI.getElementById(se.id).remove() // possibility to remove rests entirely
+        }
+      }else{
+        //may be some of the following: accid
+        var closestNote = currentMEI.getElementById(se.closest(".note").id)
+        if(closestNote !== null){
+          console.log("removing ", se)
+          var attrName = se.classList.item(0).toLowerCase()
+          closestNote.removeAttribute(attrName)
+          if(attrName === "accid"){
+            closestNote.removeAttribute("accid.ges")
+          }
         }
       }
     })

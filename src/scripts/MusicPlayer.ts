@@ -5,7 +5,6 @@ import MidiPlayer from 'midi-player-js';
 import * as Soundfont from 'soundfont-player'
 import { constants as c } from './constants'
 import ScoreGraph from './datastructures/ScoreGraph';
-import { timeThursdays } from 'd3';
 
 const currentlyPlayingFlag = "currentlyPlaying"
 const followerRectID = "followerRect"
@@ -471,6 +470,7 @@ class MusicPlayer{
         }
 
         if(!note.includes("undefined") && !dur.includes("undefined")){
+            dur = "16n"
             synth.triggerAttackRelease(note, dur);
             Tone.start();
         }

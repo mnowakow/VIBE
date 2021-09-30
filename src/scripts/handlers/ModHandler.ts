@@ -75,6 +75,7 @@ class ModHandler implements Handler{
 
     alterFunction = (function alterFunction(e: MouseEvent){
         e.preventDefault()
+        e.stopPropagation()
         this.alterNotes(e)
     }).bind(this)
 
@@ -229,7 +230,8 @@ class ModHandler implements Handler{
      */
      makeScoreElementsClickable(){
         document.querySelectorAll(modSelector).forEach(c => {
-            c.addEventListener("click", function(){
+            c.addEventListener("click", function(e: MouseEvent){
+                e.stopImmediatePropagation()
                 document.querySelectorAll(modSelector).forEach(c => c.classList.remove("marked"))
                 if(c.classList.contains("marked")){
                     c.classList.remove("marked")
