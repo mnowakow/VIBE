@@ -118,7 +118,7 @@ class ClickModeHandler implements Handler{
 
         var elementToHighlight: Element = this.findScoreTarget(posx, posy)
         if(typeof this.prevElementToHighlight === "undefined" || this.currentElementToHighlight !== elementToHighlight){
-        
+            
             // in css: elements get highlight color according to layer
             document.querySelectorAll(".highlighted").forEach(h => {
                 h.classList.remove("highlighted")
@@ -127,7 +127,7 @@ class ClickModeHandler implements Handler{
                 elementToHighlight.classList.add("highlighted")
             }else{
                 elementToHighlight.querySelectorAll(".note").forEach((c: Element) => {
-                c.classList.add("highlighted")
+                    c.classList.add("highlighted")
                 })
             }
 
@@ -144,9 +144,23 @@ class ClickModeHandler implements Handler{
 
             //snap only when within boundaries of target Chord
             if(cx > left && cx < right){
-                var snapTarget = elementToHighlight.querySelector(".notehead")|| elementToHighlight
-                var snapTargetBBox = snapTarget.getBoundingClientRect()
-                var phantomSnapX = snapTargetBBox.x + snapTargetBBox.width/2 - window.scrollX - rootBBox.x - root.scrollLeft
+                var snapTarget: Element
+                var snapTargetBBox: DOMRect
+                var phantomSnapX: number
+                var targetwidth: number
+                if(navigator.userAgent.toLowerCase().indexOf("firefox") > -1){
+                    targetwidth = elementToHighlight.querySelector(".notehead").getBoundingClientRect().width
+                    snapTarget = elementToHighlight.classList.contains("chord") ?  elementToHighlight : elementToHighlight.querySelector(".note") || elementToHighlight
+                    snapTargetBBox = snapTarget.getBoundingClientRect()
+                    phantomSnapX = snapTargetBBox.x - window.scrollX - rootBBox.x - root.scrollLeft
+                }else{
+                    snapTarget = elementToHighlight.querySelector(".notehead")|| elementToHighlight
+                    snapTargetBBox = snapTarget.getBoundingClientRect()
+                    phantomSnapX = snapTargetBBox.x + snapTargetBBox.width/2 - window.scrollX - rootBBox.x - root.scrollLeft
+                }
+                if(elementToHighlight.querySelector(".chord") != null){
+                    console.log(phantomSnapX)
+                }
                 phantom.setAttribute("cx", phantomSnapX.toString())
                 if(!phantom.classList.contains("onChord")){
                     phantom.classList.add("onChord")

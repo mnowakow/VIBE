@@ -90,6 +90,7 @@ class Cursor{
      * @param id 
      */
     definePosById(id: string){
+        console.log("NextElement: ", document.getElementById(id))
         this.flashStop()
         var element = document.getElementById(id)
         element = element?.classList.contains("layer") ? element.closest(".staff") : element //special rule for layer (== beginning of measure)
@@ -97,9 +98,18 @@ class Cursor{
 
         var elementBBox: DOMRect
         var currLayerY: number
-        var distToElement = ["note", "rest", "chord", "keySig", "clef", "meterSig"].some(e => {
-            return element?.classList.contains(e)
-        }) ? element.getBoundingClientRect().width + 6 : 0 
+        var distToElement: number
+        var elementHeight: number 
+        if(navigator.userAgent.toLowerCase().indexOf("firefox") > -1){
+            distToElement =["note", "rest", "chord", "keySig", "clef", "meterSig"].some(e => {
+                return element?.classList.contains(e)
+            }) ? 30 : 0
+        }else{
+            distToElement =["note", "rest", "chord", "keySig", "clef", "meterSig"].some(e => {
+                return element?.classList.contains(e)
+            }) ? element.getBoundingClientRect().width + 6 : 0 
+        }
+
         if(element !== null){
             elementBBox = element.getBoundingClientRect()
             currLayerY = element.classList.contains("staff") ? element.getBoundingClientRect().y : element.closest(".layer")?.getBoundingClientRect().y || 0
@@ -112,6 +122,13 @@ class Cursor{
             this.isBol = true
         }
 
+        if(navigator.userAgent.toLowerCase().indexOf("firefox") > -1){
+            elementHeight = element.querySelector(".stem")?.getBoundingClientRect().height || element.querySelector("barLine")?.getBoundingClientRect().height || 11
+        }else{
+            elementHeight = elementBBox.height
+        }
+
+
         var drawChordRect: Boolean
         if(document.getElementById("chordButton").classList.contains("selected")){
             drawChordRect = true
@@ -121,10 +138,10 @@ class Cursor{
 
         // set width and height
         this.cursor.setAttribute("id", "cursor")
-        if(!drawChordRect){
+        if(!drawChordRect || navigator.userAgent.toLowerCase().indexOf("firefox") > -1){ // Firefox only gets the normal text cursor :(
             this.posx = elementBBox.x + distToElement - svgRect.x //- window.pageXOffset
             this.posy = elementBBox.y - svgRect.y//currLayerY - svgRect.y
-            this.height = elementBBox.height + 4
+            this.height = elementHeight + 4
             this.cursor.setAttribute("width", "2px");
             this.cursor.setAttribute("height", this.height.toString());
             this.maxOpacity = 1
@@ -133,7 +150,7 @@ class Cursor{
             this.posx = elementBBox.x - svgRect.x //- window.pageXOffset
             this.posy = currLayerY - svgRect.y //elementBBox.y - svgRect.y - window.pageYOffset
             this.cursor.setAttribute("width", (elementBBox.width + padding).toString());
-            this.cursor.setAttribute("height", (elementBBox.height + padding).toString());
+            this.cursor.setAttribute("height", (elementHeight + padding).toString());
             this.maxOpacity = 0.5
         }
         this.cursor.setAttribute("x", this.posx.toString());        

@@ -33,9 +33,11 @@ body.clickmode  * {
 }
 
 
+/*
 #svg_output, .annotText, .annotText *{
     white-space: pre;
 }
+*/
 
 #svg_output{
     position: relative;

@@ -429,7 +429,16 @@ export class Mouse2MEI{
         var tempDist: number = Math.pow(10, 10)
         var rootBBox = document.getElementById(c._ROOTSVGID_).getBoundingClientRect()
         notes.forEach(n => {
-            var dist = Math.sqrt(Math.abs(n.x - rootBBox.x - window.pageXOffset - posx)**2 + Math.abs(n.y - rootBBox.y - window.pageYOffset - posy)**2)
+            var x: number
+            var y: number
+            if(document.getElementById(n.id).closest(".chord") && navigator.userAgent.toLowerCase().indexOf("firefox") > -1){ // special rule for firefox browsers
+                x = document.getElementById(n.id).closest(".chord").getBoundingClientRect().x
+                y = document.getElementById(n.id).closest(".chord").getBoundingClientRect().y
+            }else{
+                x = n.x
+                y = n.y
+            }
+            var dist = Math.sqrt(Math.abs(x - rootBBox.x - window.pageXOffset - posx)**2 + Math.abs(y - rootBBox.y - window.pageYOffset - posy)**2)
             if(dist < tempDist){
                 tempDist = dist
                 nextNote = n

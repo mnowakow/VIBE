@@ -1,6 +1,5 @@
 import { stackOffsetNone } from 'd3';
 import { parse } from 'path';
-import { createClassExpression } from 'typescript';
 import {constants as c} from '../constants';
 import * as meiOperation from '../utils/MEIOperations'
 
@@ -10,7 +9,12 @@ class ScoreManipulator{
 
     private lastBline: HTMLElement
     private mei: Document
-    constructor(){}
+    private staffManipulatorX: number
+    private staffManipilatorY: number
+
+    constructor(){
+        
+    }
 
     drawButton(id: string = null, classNames: string = null, sign: string, posX: number, posY: number, size: number, targetParent: Element, refId: string, tooltip = null){
 
@@ -89,8 +93,8 @@ class ScoreManipulator{
         var lastBlineRect = this.lastBline.getBoundingClientRect()
         var root = document.getElementById(c._ROOTSVGID_)
         var rootBBox = root.getBoundingClientRect()
-        var blineTop = lastBlineRect.top + rootBBox.height*0.01 - rootBBox.y + root.scrollTop
-        var blineRight = lastBlineRect.right + rootBBox.height*0.007 - rootBBox.x + root.scrollLeft
+        var blineTop = lastBlineRect.top + rootBBox.height*0.01 - rootBBox.y + root.scrollTop 
+        var blineRight = lastBlineRect.right + rootBBox.height*0.007 - rootBBox.x + root.scrollLeft 
 
         var containerSize = (lastBlineRect.height * 0.1)
 
@@ -99,30 +103,67 @@ class ScoreManipulator{
 
     drawStaffManipulators(){
         document.querySelector(".measure").querySelectorAll(".staff").forEach(s => {
-            var clefBBox = s.querySelector(".clef").getBoundingClientRect()
+            //var clefBBox = s.querySelector(".clef").getBoundingClientRect()
             var rootSVG = document.getElementById(c._ROOTSVGID_)
             var rootBBox = rootSVG.getBoundingClientRect()
-            var posX = clefBBox.left - rootBBox.x //-  staffBBox.x
-            var topY = clefBBox.top - rootBBox.height*0.01 - rootBBox.y //- staffBBox.y
 
-            var containerSize = ((clefBBox.width) * 0.1)
+            var refStaffCoords = this.getStaffManipulatorCoords(s)
+            var refStaffX = refStaffCoords.x
+            var refStaffYTop = refStaffCoords.yTop
+            var refStaffYBottom = refStaffCoords.yBottom
+            var refStaffWidth = refStaffCoords.width
+            var refStaffHeight = refStaffCoords.height
+
+            var posX = refStaffX - rootBBox.x  //-  staffBBox.x
+            var topY = refStaffYTop - rootBBox.height*0.01 - rootBBox.y //- staffBBox.y
+
+            var containerSize = ((refStaffWidth) * 0.1)
             this.drawButton(null, "addStaff above", "+", posX, topY, containerSize, rootSVG, s.id, "Add Staff Above")
             if(parseInt(s.getAttribute("n")) > 1){
-                posX = clefBBox.left + rootBBox.height*0.01 - rootBBox.x
+                posX = refStaffX + rootBBox.height*0.01 - rootBBox.x 
                 this.drawButton(null, "removeStaff above", "-", posX, topY, containerSize, rootSVG, s.id, "Remove Staff Above")
             }
 
-            posX = clefBBox.left - rootBBox.x //- staffBBox.x
-            var bottomY = clefBBox.bottom + 2 - rootBBox.y //- staffBBox.y
+            posX = refStaffX - rootBBox.x //- staffBBox.x
+            var bottomY = refStaffYBottom + 2 - rootBBox.y  //- staffBBox.y
 
-            var containerSize = (clefBBox.height * 0.1)
+            var containerSize = (refStaffHeight * 0.1)
             this.drawButton(null, "addStaff below", "+", posX, bottomY, containerSize, rootSVG, s.id, "Add Staff Below")
             var staffCount =  s.parentElement.querySelectorAll(".staff")
             if(parseInt(s.getAttribute("n")) !== staffCount.length){
-                posX = clefBBox.left + rootBBox.height*0.01 - rootBBox.x
+                posX = refStaffX + rootBBox.height*0.01 - rootBBox.x 
                 this.drawButton(null, "removeStaff below", "-", posX, bottomY, containerSize, rootSVG, s.id, "Remove Staff Below")
             }
         })
+    }
+
+    /**
+     * Get Coords for staf manipulators, since some browsers (Firefox) have problems with bounding boxes
+     * @param referenceStaff Staff beside which the staff manipulator should be placed
+     * @returns 
+     */
+    getStaffManipulatorCoords(referenceStaff: Element){
+        var x: number
+        var yTop: number
+        var yBottom: number
+        var bbox: DOMRect
+        var width: number
+        var height: number
+        if(navigator.userAgent.toLowerCase().indexOf("firefox") != -1){
+            bbox = referenceStaff.querySelector(".staffLine").getBoundingClientRect()
+            x = bbox.left
+            yTop = bbox.top
+            yBottom = Array.from(referenceStaff.querySelectorAll(".staffLine")).reverse()[0].getBoundingClientRect().bottom
+        }else{
+            bbox = referenceStaff.querySelector(".clef").getBoundingClientRect()
+            x = bbox.left
+            yTop = bbox.top
+            yBottom =  bbox.bottom
+        }
+        height = referenceStaff.querySelector(".clef").getBoundingClientRect().height
+        width = referenceStaff.querySelector(".clef").getBoundingClientRect().width
+
+        return{x: x, yTop: yTop, yBottom: yBottom, width: width, height: height}
     }
 
     setMEI(mei: Document){

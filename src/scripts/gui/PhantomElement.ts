@@ -4,8 +4,6 @@ import {constants as c} from '../constants'
 import { Mouse2MEI } from '../utils/Mouse2MEI';
 
 const svgNS = "http://www.w3.org/2000/svg";
-//@ts-ignore
-//const $ = H5P.jQuery;
 
 class PhantomElement{
 

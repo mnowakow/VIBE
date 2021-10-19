@@ -36,12 +36,18 @@ class MusicPlayer{
     private durationMapByNote: Map<Element, {duration: number, tick: number}>
 
     private scoreGraph: ScoreGraph
+    private isFirefox: boolean
 
     constructor(){
         this.noteEvent = new Event("currentNote")
         this.restartTime = 0
 
         this.setPlayListener()
+        if(navigator.userAgent.toLocaleLowerCase().indexOf("firefox") > 0){
+            this.isFirefox = true
+        }else{
+            this.isFirefox = false
+        }
     }
 
     /**
@@ -78,7 +84,9 @@ class MusicPlayer{
                 var duration = that.durationMap.get(key).duration
                 that.restartTime = event.tick
                 that.highlight(time, duration * 1000 * 2)
-                that.drawFollowerRect()
+                if(!that.isFirefox){
+                    that.drawFollowerRect()
+                }
 
                 var instr = that.instruments[track - 2]
                 if(typeof instr !== "undefined"){
