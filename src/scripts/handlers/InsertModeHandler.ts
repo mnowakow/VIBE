@@ -6,7 +6,7 @@ import PhantomElement from '../gui/PhantomElement';
 import SelectionHandler from './SelectionHandler';
 import Handler from './Handler';
 import Annotations from '../gui/Annotations';
-import HarmonyHandler from './HarmonyHandler';
+import LabelHandler from './LabelHandler';
 import DeleteHandler from './DeleteHandler';
 import ScoreGraph from '../datastructures/ScoreGraph';
 import KeyModeHandler from './KeyModeHandler';
@@ -37,7 +37,7 @@ class InsertModeHandler implements Handler{
   currentMEI: string;
   navBarLoaded: boolean
   selectionHandler: SelectionHandler
-  harmonyHandler: HarmonyHandler
+  harmonyHandler: LabelHandler
   deleteHandler: DeleteHandler;
   scoreGraph: ScoreGraph;
   keyModeHandler: KeyModeHandler;
@@ -134,7 +134,7 @@ class InsertModeHandler implements Handler{
     //this.insertDeactivate()
     this.selectionHandler = new SelectionHandler()
     this.selectionHandler.setM2M(this.m2m)
-    this.selectionHandler.setHarmonyHandler(this.harmonyHandler)
+    //this.selectionHandler.setHarmonyHandler(this.harmonyHandler)
     //this.deleteHandler.setListeners()
 
     return this
@@ -167,8 +167,9 @@ class InsertModeHandler implements Handler{
       if(this.unselectMenuItem("activateHarm")){return}
     }
     if(typeof this.harmonyHandler === "undefined"){
-      this.harmonyHandler = new HarmonyHandler()
+      this.harmonyHandler = new LabelHandler()
     }
+    //Activate/ Deactivate Global functions according to selected harmonymode
     if(document.querySelector("#activateHarm.selected") !== null){
       this.insertDeactivate()
       document.body.classList.add("harmonyMode")
@@ -395,7 +396,7 @@ class InsertModeHandler implements Handler{
     return this
   }
 
-  setHarmonyHandler(harmonyHandler: HarmonyHandler) {
+  setHarmonyHandler(harmonyHandler: LabelHandler) {
     this.harmonyHandler = harmonyHandler
     return this
   }

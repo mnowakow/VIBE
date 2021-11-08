@@ -1,55 +1,84 @@
-import * as meiOperation from "../utils/MEIOperations"
 import * as meiConverter from "../utils/MEIConverter"
 import { Mouse2MEI } from "../utils/Mouse2MEI";
 import Handler from "./Handler";
-import { NoteBBox } from "../utils/Types";
 import { constants as c } from "../constants"
 import { uuidv4 } from "../utils/random";
 import HarmonyLabel from "../gui/HarmonyLabel";
+import TempoLabel from "../gui/TempoLabel"
 import MusicPlayer from "../MusicPlayer";
 import * as coordinates from "../utils/coordinates"
-import { theWindow } from "tone/build/esm/core/context/AudioContext";
+import Label from '../gui/Label'
 
-class HarmonyHandler implements Handler{
+const labelClasses = ["harm", "tempo", "note"]
+const labelSelectors = "." + labelClasses.join(",.")
+
+class LabelHandler implements Handler{
     m2m?: Mouse2MEI;
     musicPlayer?: MusicPlayer
     currentMEI?: Document;
 
-    private harmonyCanvas: SVGElement
+    private labelCanvas: SVGElement
     private root: Element
-    private harmonyElements: Map<string, HarmonyLabel>
+    private labels: Map<string, Label>
     private isGlobal: boolean
-    private harmId: string
+    private elementId: string
 
     private loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>
 
     constructor(){
         this.addCanvas()
-        this.harmonyElements = new Map()
     }
 
+    /**
+     * Set own canvas for manipulating labels
+     */
     addCanvas(){
-        if(typeof this.harmonyCanvas === "undefined"){
-            this.harmonyCanvas = document.createElementNS(c._SVGNS_, "svg")
-            this.harmonyCanvas.setAttribute("id", "harmonyCanvas")
+        if(typeof this.labelCanvas === "undefined"){
+            this.labelCanvas = document.createElementNS(c._SVGNS_, "svg")
+            this.labelCanvas.setAttribute("id", "labelCanvas")
         }
         this.root = document.getElementById(c._ROOTSVGID_)
-        this.root.insertBefore(this.harmonyCanvas, this.root.firstChild)
+        this.root.insertBefore(this.labelCanvas, this.root.firstChild)
+
+        return this
     }
 
-    setListeners(): HarmonyHandler {
+    /**
+     * Create label instances for elements already present in the score.
+     */
+    initLabels(){
+        this.labels = new Map()
+        document.querySelectorAll(labelSelectors).forEach(el => {
+            var className = labelClasses.filter(l => document.getElementById(el.id).classList.contains(l))[0]
+            var inputString: string 
+            switch(className){
+                case "harm":
+                    inputString = Array.from(document.getElementById(el.id).querySelectorAll(".text")).filter(el => el.textContent !== null)[0].textContent.trim()
+                    this.labels.set(el.id, new HarmonyLabel(inputString, el.id, this.currentMEI))
+                    break;
+                case "tempo":
+                    inputString = Array.from(document.getElementById(el.id).querySelectorAll(".text")).filter(e => /\d+/.test(e.textContent))[0].textContent.match(/\d+/).join("") || ""
+                    this.labels.set(el.id, new TempoLabel(inputString, el.id, this.currentMEI))
+                    break;
+            }
+        })
+    }
+
+    setListeners(): LabelHandler {
         document.querySelectorAll(".sylTextRect").forEach(s => {
             s.remove()
         })
 
+        // isGlobal = false: Editor is not in harmony mode
         if(!this.isGlobal){
             document.getElementById(c._ROOTSVGID_).addEventListener("click", this.setHarmonyLabelHandlerClick, true)
             document.getElementById(c._ROOTSVGID_).addEventListener("mousemove", this.activateHarmonyHighlight)
             document.getElementById(c._ROOTSVGID_).addEventListener("keydown", this.closeModifyWindowHandler, true)
         }
 
+        document.getElementById(c._ROOTSVGID_).addEventListener("click", this.closeModifyWindowHandler)
         document.addEventListener("keydown", this.setHarmonyLabelHandlerKey)
-        document.querySelectorAll(".harm").forEach(h => {
+        document.querySelectorAll(labelSelectors).forEach(h => {
             h.addEventListener("mouseover", this.deactivateHarmonyHighlight)
             h.addEventListener("mouseleave", this.activateHarmonyHighlight)
             h.addEventListener("dblclick", this.modifyLabelHandler)
@@ -58,12 +87,13 @@ class HarmonyHandler implements Handler{
         return this
     }
 
-    removeListeners(): HarmonyHandler {
+    removeListeners(): LabelHandler {
+        document.getElementById(c._ROOTSVGID_).removeEventListener("click", this.closeModifyWindowHandler)
         document.getElementById(c._ROOTSVGID_).removeEventListener("click", this.setHarmonyLabelHandlerClick)
         document.removeEventListener("keydown", this.setHarmonyLabelHandlerKey)
         document.getElementById(c._ROOTSVGID_).removeEventListener("mousemove", this.activateHarmonyHighlight)
         document.getElementById(c._ROOTSVGID_).removeEventListener("keydown", this.closeModifyWindowHandler)
-        document.querySelectorAll(".harm").forEach(h => {
+        document.querySelectorAll(labelSelectors).forEach(h => {
             h.removeEventListener("mouseenter", this.deactivateHarmonyHighlight)
             h.removeEventListener("mouseleave", this.activateHarmonyHighlight)
             h.removeEventListener("dblclick", this.modifyLabelHandler)
@@ -78,6 +108,10 @@ class HarmonyHandler implements Handler{
        }
     }).bind(this)
 
+    setTempoLabelHandlerClick = (function setTempoLabelHandlerClick(e: MouseEvent){
+        this.tempoLabelHandler(e)
+    }).bind(this)
+
     setHarmonyLabelHandlerKey = (function setHarmonyLabelHandler(e: KeyboardEvent){
         if(e.ctrlKey || e.metaKey){
              if(e.key === "k" && Array.from(document.querySelectorAll(".note, .chord, .rest, .mrest")).some(el => el.classList.contains("marked"))){
@@ -86,6 +120,8 @@ class HarmonyHandler implements Handler{
             }
         }
      }).bind(this)
+
+    // HARMONY LABELS
 
     /**
      * Open Inputbox for (first) selected Note
@@ -100,27 +136,34 @@ class HarmonyHandler implements Handler{
 
         var posx = nextNoteBBox.left - nextNoteBBox.width/2 - window.scrollX - rootBBox.x - root.scrollLeft
         var posy = staffBBox.bottom - window.scrollY - rootBBox.y - root.scrollLeft
-        if(this.currentMEI.querySelector("harm[startid=\"" + nextNote.id + "\"]") === null && !this.harmonyCanvas.hasChildNodes()){
-            this.createInputBox(posx, posy, nextNote.id) 
-        }else if(this.harmonyCanvas.hasChildNodes()){
+        if(this.currentMEI.querySelector("harm[startid=\"" + nextNote.id + "\"]") === null && !this.labelCanvas.hasChildNodes()){
+            this.createInputBox(posx, posy, nextNote.id, "harm") 
+        }else if(this.labelCanvas.hasChildNodes()){
             this.closeModifyWindow()
         }
     }
 
-    setHarmonyLabel(label: string, bboxId: string): HarmonyLabel{
-        var harmonyLabel = new HarmonyLabel(label,bboxId, this.currentMEI) // TODO: Make Dynamically
-        this.harmonyElements.set(harmonyLabel.getHarmElement().id, harmonyLabel)
+    
+    setLabel(labelString: string, bboxId: string): Label{
+        var className = labelClasses.filter(l => document.getElementById(bboxId).classList.contains(l))[0]
+        var label: Label
+        switch(className){
+            case "note":
+            case "chord":
+            case "harm":
+                label = new HarmonyLabel(labelString, bboxId, this.currentMEI)
+                break;
+            case "tempo":
+                label = new TempoLabel(labelString, bboxId, this.currentMEI)
+                break;
+            default:
+                return
+        }
+        if(this.labels.get(label.getElement().id) == undefined){
+            this.labels.set(label.getElement().id, label)       
+        }
 
-        var measure = this.currentMEI.getElementById(bboxId).closest("measure")
-        measure.appendChild(harmonyLabel.getHarmElement())
-
-        var mei = meiConverter.restoreXmlIdTags(this.currentMEI)
-
-        this.loadDataCallback("", mei, false, c._TARGETDIVID_).then(() => {
-            this.reset()
-        })
-
-        return harmonyLabel
+        return label
     }
 
     activateHarmonyHighlight = (function highlightNextHarmonyHandler(e: MouseEvent){
@@ -160,6 +203,7 @@ class HarmonyHandler implements Handler{
         }
     }
 
+
     modifyLabelHandler = (function modifyLabelHandler(e: MouseEvent){
         document.querySelectorAll(".marked").forEach(m => {
             m.classList.remove("marked")
@@ -168,67 +212,76 @@ class HarmonyHandler implements Handler{
     }).bind(this)
 
 
+    /**
+     * modify existing label
+     * @param e 
+     * @returns 
+     */
     modifyLabel(e: MouseEvent){
         var target = e.target as Element
-        target = target.closest(".harm")
+        target = target.closest(labelSelectors)
         target.setAttribute("visibility", "hidden")
-        this.harmId = target.id
         var targetBBox = target.getBoundingClientRect()
         var root = document.getElementById(c._ROOTSVGID_)
         var rootBBox = root.getBoundingClientRect()
         var posx = targetBBox.x - window.scrollX - rootBBox.left - root.scrollLeft //coordinates.adjustToPage(e.pageX, "x")
         var posy = targetBBox.y - window.scrollY - rootBBox.top - root.scrollTop //coordinates.adjustToPage(e.pageY, "y")
 
-        if(document.querySelector("*[refHarmId=\"" + target.id + "\"]") !== null){
+        // prevent double input boxes for same Element
+        this.elementId = target.id
+        if(document.querySelector("*[refElementId=\"" + target.id + "\"]") !== null){
             return
         }
-
-        this.createInputBox(posx, posy, target.id)
+        var className = labelClasses.filter(l =>  target.classList.contains(l))[0] //assume only one output, therefore alway return idx 0  
+        this.createInputBox(posx, posy, target.id, className)
     }
 
     submitLabelHandler = (function submitHandler(e: KeyboardEvent){
-        if(e.key === "Enter" && this.harmonyCanvas.hasChildNodes()){
+        if(e.key === "Enter" && this.labelCanvas.hasChildNodes()){
             this.submitLabel()
         }
     }).bind(this)
 
-    closeModifyWindowHandler = (function closeModifyWindow(e: KeyboardEvent){
-        if(e.key === "Escape"){
+
+    closeModifyWindowHandler = (function closeModifyWindow(e: Event){
+        if(e instanceof KeyboardEvent){
+            if(e.key === "Escape"){
+                this.closeModifyWindow()
+            }
+        }else if(e instanceof MouseEvent && (e.target as HTMLElement).id === c._ROOTSVGID_){
+            console.log(e.target)
             this.closeModifyWindow()
         }
     }).bind(this)
 
+    /**
+     * Close the modification Window and make the hidden Element visible again
+     */
     closeModifyWindow(){
-        Array.from(this.harmonyCanvas.children).forEach(c => {
+        Array.from(this.labelCanvas.children).forEach(c => {
             c.remove()
         })
         // clean MEI from empty harm Elements
-        this.currentMEI.querySelectorAll("harm").forEach(h => {
-            document.getElementById(h.id)?.setAttribute("visibility", "visible")
-            if(h.childElementCount > 0){
-                if(h.firstElementChild.childElementCount === 0){
-                    h.remove()
-                }
-            }else if(h.textContent.length === 0){
-                h.remove()
-            }
+        this.currentMEI.querySelectorAll(labelClasses.join(",")).forEach(h => {
+            document.getElementById(h.id)?.setAttribute("visibility", "visible")            
         })
     }
         
     submitLabel(){
-        var harmonyDiv = this.harmonyCanvas.getElementsByClassName("harmonyDiv")[0]
-        var text = harmonyDiv.textContent
-        var harmLabel = this.harmonyElements.get(harmonyDiv.closest("g").getAttribute("refHarmId"))
-        if(typeof harmLabel !== "undefined"){
+        var labelDiv = this.labelCanvas.getElementsByClassName("labelDiv")[0]
+        var text = labelDiv.textContent
+        var refElementClass = labelClasses.filter(l => document.getElementById(labelDiv.closest("g").getAttribute("refElementId")).classList.contains(l))[0] // assume only one result
+        var label = this.labels.get(labelDiv.closest("g").getAttribute("refElementId"))
+        if(refElementClass === "harm"){ // change existing harm
+            let harmLabel = label as HarmonyLabel
             harmLabel.modifyLabel(text)
-            var currentHarm = this.currentMEI.getElementById(harmLabel.getHarmElement().id)
-            currentHarm.parentElement.replaceChild(harmLabel.getHarmElement(), currentHarm)
-        }else{
-            harmLabel = this.setHarmonyLabel(harmonyDiv.textContent, harmonyDiv.closest("g").getAttribute("refHarmId"))
-            var oldLabel = this.currentMEI.getElementById(this.harmId)
-            harmLabel.getHarmElement().setAttribute("tstamp", oldLabel.getAttribute("tstamp"))
-            harmLabel.getHarmElement().setAttribute("startid", oldLabel.getAttribute("startid"))
-            oldLabel.remove()
+            //this.currentMEI.getElementById(harmLabel.getElement().id).replaceWith(harmLabel.getElement())
+        }else if(["note", "chord"].some(cn => refElementClass === cn )){ //create new harm
+            let harmLabel = this.setLabel(labelDiv.textContent, labelDiv.closest("g").getAttribute("refElementId")) as HarmonyLabel
+            this.currentMEI.getElementById(harmLabel.getStartId()).closest("measure").append(harmLabel.getElement())
+        }else if(refElementClass === "tempo"){ // change existing tempo
+            var tempoLabel = label as TempoLabel
+            tempoLabel.modifyLabel(text)
         }
 
         this.closeModifyWindow()
@@ -238,21 +291,31 @@ class HarmonyHandler implements Handler{
         })
     }
 
-    createInputBox(posx: number, posy: number, targetId: string){
-
+    createInputBox(posx: number, posy: number, targetId: string, targetClass: string){
         var textGroup = document.createElementNS(c._SVGNS_, "g")
         textGroup.setAttribute("id", uuidv4())
-        textGroup.setAttribute("refHarmId", targetId)
+        textGroup.setAttribute("refElementId", targetId)
 
         var text = document.createElementNS(c._SVGNS_, "svg")
-        text.classList.add("harmonyText")
+        text.classList.add("labelText")
 
         var textForeignObject = document.createElementNS(c._SVGNS_, "foreignObject")
-        textForeignObject.classList.add("harmonyFO")
+        textForeignObject.classList.add("labelFO")
         var textDiv = document.createElement("div")
         textDiv.setAttribute("contenteditable", "true")
-        textDiv.textContent = typeof this.harmonyElements.get(targetId) !== "undefined" ? this.harmonyElements.get(targetId).getInputString() : ""
-        textDiv.classList.add("harmonyDiv")
+        
+        switch(targetClass){
+            case "harm":
+                textDiv.textContent = this.labels.get(targetId)?.getInput() || ""
+                break;
+            case "tempo":
+                textDiv.textContent = Array.from(document.getElementById(targetId).querySelectorAll(".text")).filter(el => /\d+/.test(el.textContent))[0].textContent.match(/\d+/).join("") || ""       
+                break;
+            default:
+                return
+        }
+        
+        textDiv.classList.add("labelDiv")
         text.append(textForeignObject)
 
         document.body.appendChild(textDiv)
@@ -267,17 +330,17 @@ class HarmonyHandler implements Handler{
         textForeignObject.setAttribute("height", (textDiv.clientHeight + 2*rectPadding).toString())
         textForeignObject.setAttribute("width", (100+2*rectPadding).toString())
 
-        this.harmonyCanvas.appendChild(textGroup)
+        this.labelCanvas.appendChild(textGroup)
         textGroup.appendChild(text)
         textForeignObject.appendChild(textDiv)
 
         // Special Listeners while Editing Harmonies
         var that = this
         textDiv.addEventListener("focus", function(){
-                that.removeListeners()
-                that.musicPlayer.removePlayListener()
-            })
-    
+            that.removeListeners()
+            that.musicPlayer.removePlayListener()
+        })
+
         textDiv.addEventListener("blur", function(){
             that.setListeners()
             that.musicPlayer.setPlayListener()
@@ -311,6 +374,7 @@ class HarmonyHandler implements Handler{
     reset(){
         this.setListeners()
         this.addCanvas()
+        this.initLabels()
     }
 
     setM2M(m2m: Mouse2MEI){
@@ -344,4 +408,4 @@ class HarmonyHandler implements Handler{
 
 }
 
-export default HarmonyHandler
+export default LabelHandler

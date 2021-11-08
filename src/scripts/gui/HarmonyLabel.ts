@@ -1,26 +1,28 @@
 import { uuidv4 } from "../utils/random"
 import { constants as c } from "../constants"
+import Label from "./Label"
 
 
-class HarmonyLabel{
+class HarmonyLabel implements Label{
 
     private isBassoContinuo: Boolean = false
     private isText: Boolean = false
 
-    private harmElement: Element
-    private inputString: string
-    private startid: string
-
-    private currentMEI: Document
+    inputString: string
+    startid: string
+    currentMEI: Document
+    element: Element
 
     constructor(inputString: string, startid: string, mei: Document){
         this.startid = startid
         this.currentMEI = mei
         this.inputString = inputString
+        this.element = this.currentMEI.getElementById(startid)
 
-        this.checkFormat(inputString)        
-        this.createLabel(inputString)
-        
+        if(this.element.tagName === "note"){
+            this.checkFormat(inputString)        
+            this.createElement(inputString)
+        }
     }
 
     checkFormat(inputString: string){
@@ -34,28 +36,35 @@ class HarmonyLabel{
         }
     }
     
+    /**
+     * Change text of already existing label
+     * @param inputString 
+     */
     modifyLabel(inputString: string){
         this.checkFormat(inputString)
-        this.inputString = inputString
-        this.createLabel(inputString)
+        this.parseInput(inputString)
+       
     }
 
-    createLabel(inputString: string){
-        if(typeof this.harmElement === "undefined"){
-            this.harmElement = this.currentMEI.createElement("harm")
-            this.harmElement.setAttribute("id", uuidv4())
-        }
-        Array.from(this.harmElement.children).forEach(c => {
+    createElement(inputString: string){
+        
+        this.element = this.currentMEI.createElement("harm")
+        this.element.setAttribute("id", uuidv4())
+        
+        Array.from(this.element.children).forEach(c => {
             c.remove()
         })
+        this.parseInput(inputString)
+        this.setStartId()
+    }
+
+    parseInput(inputString){
         if(this.isBassoContinuo){
             this.parseFB(inputString)
         }
         if(this.isText){
             this.parseText(inputString)
         }
-
-        this.setStartId(this.startid)
     }
 
     parseText(inputString: string){
@@ -63,8 +72,7 @@ class HarmonyLabel{
         inputString = inputString.replace("b", "♭")
         inputString = inputString.replace("#", "♯")
         inputString = inputString.replace("|", "♮")
-    
-        this.harmElement.textContent = inputString
+        this.element.textContent = inputString
     }
 
     
@@ -72,8 +80,8 @@ class HarmonyLabel{
         var splitArray: Array<string> = inputString.split(" ")
         splitArray = splitArray.filter(s => s !== "")
         var fb = this.currentMEI.createElementNS(c._MEINS_, "fb")
-        this.harmElement.textContent = ""
-        this.harmElement.appendChild(fb)
+        this.element.textContent = ""
+        this.element.appendChild(fb)
 
         splitArray.forEach(sa => {
             var f = this.currentMEI.createElementNS(c._MEINS_, "f")
@@ -92,19 +100,23 @@ class HarmonyLabel{
      * Has to be set by HarmonyHandler
      * @param el 
      */
-    setStartId(startId: string){
-        this.harmElement.setAttribute("startid", startId)
+    setStartId(startId: string = this.startid){
+        this.element.setAttribute("startid", startId)
         return this
     }
 
 
     ////////////// GETTER/ SETTERT ////////////
-    getHarmElement(){
-        return this.harmElement
+    getElement(){
+        return this.element
     }
 
-    getInputString(){
+    getInput(){
         return this.inputString
+    }
+
+    getStartId(){
+        return this.startid
     }
 
     setCurrentMEI(mei: Document){

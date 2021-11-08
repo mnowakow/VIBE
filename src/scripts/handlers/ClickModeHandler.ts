@@ -5,8 +5,6 @@ import { constants as c } from '../constants'
 import Annotations from "../gui/Annotations";
 import { NewNote } from "../utils/Types";
 
-//@ts-ignore
-//const $ = H5P.jQuery;
 
 class ClickModeHandler implements Handler{
     m2m?: Mouse2MEI;
@@ -148,7 +146,7 @@ class ClickModeHandler implements Handler{
                 var snapTargetBBox: DOMRect
                 var phantomSnapX: number
                 var targetwidth: number
-                if(navigator.userAgent.toLowerCase().indexOf("firefox") > -1){
+                if(navigator.userAgent.toLowerCase().indexOf("firefox") > -1){ // special rules for buggy firefox
                     targetwidth = elementToHighlight.querySelector(".notehead").getBoundingClientRect().width
                     snapTarget = elementToHighlight.classList.contains("chord") ?  elementToHighlight : elementToHighlight.querySelector(".note") || elementToHighlight
                     snapTargetBBox = snapTarget.getBoundingClientRect()

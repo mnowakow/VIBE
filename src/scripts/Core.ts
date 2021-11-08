@@ -15,7 +15,7 @@ import SVGFiller from "./utils/SVGFiller"
 import ScoreGraph from './datastructures/ScoreGraph';
 import WindowHandler from "./handlers/WindowHandler"
 import SidebarHandler from './handlers/SideBarHandler';
-import HarmonyHandler from './handlers/HarmonyHandler';
+import LabelHandler from './handlers/LabelHandler';
 import ModHandler from './handlers/ModHandler';
 
 
@@ -51,7 +51,7 @@ class Core {
   private noteDragHandler: NoteDragHandler;
   private sidebarHandler: SidebarHandler
   private windowHandler: WindowHandler;
-  private harmonyHandler: HarmonyHandler;
+  private labelHandler: LabelHandler;
   private modHandler: ModHandler;
   private currentMEI: string;
   private currentMEIDoc: Document
@@ -202,7 +202,7 @@ class Core {
     this.noteDragHandler = new NoteDragHandler()
     this.keyboardHandler = typeof this.keyboardHandler === "undefined" ? new GlobalKeyboardHandler() : this.keyboardHandler
     this.sidebarHandler = typeof this.sidebarHandler === "undefined" ? new SidebarHandler() : this.sidebarHandler
-    this.harmonyHandler = this.harmonyHandler == undefined ? new HarmonyHandler() : this.harmonyHandler
+    this.labelHandler = this.labelHandler == undefined ? new LabelHandler() : this.labelHandler
     this.modHandler = this.modHandler == undefined ? new ModHandler : this.modHandler
 
     this.dispatchFunctions()
@@ -212,13 +212,16 @@ class Core {
    * distribute Callback functions for each element which uses some information from of the Core (Handlers, Musicplayer, Callbacks, etc)
    */
   dispatchFunctions(){
-    this.harmonyHandler.reset()
+    this.labelHandler
+      .setCurrentMEI(this.currentMEIDoc)
+      .addCanvas()
+      .initLabels()
 
     this.insertModeHandler
       .setM2M(this.m2m)
       .setMusicPlayer(this.musicplayer)
       .setDeleteHandler(this.deleteHandler)
-      .setHarmonyHandler(this.harmonyHandler)
+      .setHarmonyHandler(this.labelHandler)
       .activateHarmonyMode()
       .activateSelectionMode()
       .setInsertCallback(this.insert)
@@ -244,7 +247,7 @@ class Core {
       .setRedoCallback(this.redo)
       .setCurrentMei(this.currentMEIDoc)
       .setMusicPlayer(this.musicplayer)
-      .setHarmonyHandlerCallback(this.harmonyHandler.setHarmonyLabelHandlerKey)
+      .setHarmonyHandlerCallback(this.labelHandler.setHarmonyLabelHandlerKey)
       .setLoadDataCallback(this.loadDataFunction)
       .setScoreGraph(this.scoreGraph)
       .resetListeners()

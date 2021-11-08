@@ -4,7 +4,7 @@ import * as meiConverter from "../utils/MEIConverter"
 import { constants as c} from "../constants"
 import MusicPlayer from "../MusicPlayer";
 import ScoreGraph from "../datastructures/ScoreGraph";
-import HarmonyHandler from "./HarmonyHandler";
+import LabelHandler from "./LabelHandler";
 
 
 const marked = "marked"

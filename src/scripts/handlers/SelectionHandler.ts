@@ -4,7 +4,7 @@ import Handler from './Handler';
 import MusicPlayer from '../MusicPlayer';
 import {numToNoteButtonId, numToDotButtonId} from '../utils/mappings'
 import { constants as c } from "../constants"
-import HarmonyHandler from './HarmonyHandler';
+import LabelHandler from './LabelHandler';
 
 const marked = "marked"
 
@@ -15,7 +15,6 @@ class SelectionHandler implements Handler{
     private initialY: number;
     m2m: Mouse2MEI;
     private dragSelectAction: any
-    private harmonyHandler: HarmonyHandler
 
     constructor(){
 
@@ -36,7 +35,6 @@ class SelectionHandler implements Handler{
                     note.classList.remove(marked)
                 })
             }
-            that.harmonyHandler.closeModifyWindow()
             that.initRect(that.initialX, that.initialY)
         }
 
@@ -140,10 +138,6 @@ class SelectionHandler implements Handler{
         document.querySelectorAll(".note, .rest, .mRest").forEach(el => {
             el.addEventListener("click", this.markedHandler)
         })
-    }
-
-    setHarmonyHandler(hh: HarmonyHandler){
-        this.harmonyHandler = hh
     }
 
      /**

@@ -32,6 +32,10 @@ body.clickmode  * {
     position: absolute;
 }
 
+text{
+    cursor: text;
+}
+
 
 /*
 #svg_output, .annotText, .annotText *{
@@ -317,9 +321,9 @@ body.clickmode  * {
 }
 
 
-/* HARMONY */
+/* LABELS */
 
-.harmonyDiv{
+.labelDiv{
     border: 2px solid black;
     border-radius: 10px;
     height: fit-content;
