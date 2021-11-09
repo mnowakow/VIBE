@@ -5,6 +5,9 @@ import * as meiOperation from '../utils/MEIOperations'
 
 const manipFlag = "manipulator"
 
+/**
+ * Class for all manipulators (Buttons, Lists, etc) directly visible in the score
+ */
 class ScoreManipulator{
 
     private lastBline: HTMLElement

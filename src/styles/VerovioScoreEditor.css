@@ -228,17 +228,22 @@ text{
 * ANNOTATIONS
 */
 
-#canvasG.back *{
+#annotationCanvas.back *{
    opacity: 0.5;
 }
 
-#canvasG.front *{
+#annotationCanvas.front *{
     opacity: 1;
  }
  
 .annotFO{
     background-color: rgba(255, 255, 153, 0.8);
     border-radius: 0px 10px 10px 10px;
+}
+
+.annotDiv{
+    height: 40px;
+    width: 100%;
 }
 
 .annotLine{
@@ -292,8 +297,11 @@ text{
     outline-color: black; 
 }
 
-.annotText.selected{
-    box-shadow: 10px 10px 15px silver;
+
+.annotText.selected > .annotFO{
+    border-color:cornflowerblue;
+    border-width: 1;
+    border-style: dashed;
 }
 
 [contentEditable=false]:empty:not(:focus):before{
@@ -330,6 +338,8 @@ text{
     width: fit-content;
     min-width: 50px;
     background-color: beige;
+    font-size: 40px;
+    font-family: 'Times New Roman', Times, serif;
 }
 
 /* KEYMODE */

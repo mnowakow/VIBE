@@ -249,7 +249,6 @@ class LabelHandler implements Handler{
                 this.closeModifyWindow()
             }
         }else if(e instanceof MouseEvent && (e.target as HTMLElement).id === c._ROOTSVGID_){
-            console.log(e.target)
             this.closeModifyWindow()
         }
     }).bind(this)
@@ -372,9 +371,11 @@ class LabelHandler implements Handler{
     }
 
     reset(){
-        this.setListeners()
         this.addCanvas()
         this.initLabels()
+        this.removeListeners()
+        this.setListeners()
+        return this
     }
 
     setM2M(m2m: Mouse2MEI){

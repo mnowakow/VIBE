@@ -47,7 +47,7 @@ class PhantomElement{
         if(document.body.classList.contains("clickmode")){
             new Promise((resolve): void => {
                 var line = document.createElementNS(svgNS, "line")
-                document.querySelector("#canvasG").insertBefore(line, document.querySelector("#canvasG").firstChild);
+                document.getElementById("annotationCanvas").insertBefore(line, document.getElementById("annotationCanvas").firstChild);
                 var width = 10
                 var x1, x2, y1, y2
                 y1 = y2 = options.lineY

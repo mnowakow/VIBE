@@ -214,14 +214,13 @@ class Core {
   dispatchFunctions(){
     this.labelHandler
       .setCurrentMEI(this.currentMEIDoc)
-      .addCanvas()
-      .initLabels()
+      .reset()
 
     this.insertModeHandler
       .setM2M(this.m2m)
       .setMusicPlayer(this.musicplayer)
       .setDeleteHandler(this.deleteHandler)
-      .setHarmonyHandler(this.labelHandler)
+      .setLabelHandler(this.labelHandler)
       .activateHarmonyMode()
       .activateSelectionMode()
       .setInsertCallback(this.insert)

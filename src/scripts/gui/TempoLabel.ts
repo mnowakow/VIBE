@@ -67,11 +67,11 @@ class TempoLabel implements Label{
 
 
     ////////////// GETTER/ SETTERT ////////////
-    getElement(){
+    getElement(): Element{
         return this.element
     }
 
-    getInput(){
+    getInput(): string{
         return this.inputString
     }
 

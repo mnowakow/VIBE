@@ -37,7 +37,7 @@ class InsertModeHandler implements Handler{
   currentMEI: string;
   navBarLoaded: boolean
   selectionHandler: SelectionHandler
-  harmonyHandler: LabelHandler
+  labelHandler: LabelHandler
   deleteHandler: DeleteHandler;
   scoreGraph: ScoreGraph;
   keyModeHandler: KeyModeHandler;
@@ -166,8 +166,8 @@ class InsertModeHandler implements Handler{
     if(clicked){
       if(this.unselectMenuItem("activateHarm")){return}
     }
-    if(typeof this.harmonyHandler === "undefined"){
-      this.harmonyHandler = new LabelHandler()
+    if(typeof this.labelHandler === "undefined"){
+      this.labelHandler = new LabelHandler()
     }
     //Activate/ Deactivate Global functions according to selected harmonymode
     if(document.querySelector("#activateHarm.selected") !== null){
@@ -178,7 +178,7 @@ class InsertModeHandler implements Handler{
       this.isGlobal = true
     }
 
-    this.harmonyHandler
+    this.labelHandler
       .setGlobal(this.isGlobal)
       .setListeners()
       .setM2M(this.m2m)
@@ -232,8 +232,10 @@ class InsertModeHandler implements Handler{
       this.annotationMode = false
     }
 
-    if(typeof this.harmonyHandler !== "undefined"){
-      this.harmonyHandler.removeListeners()
+    if(typeof this.labelHandler !== "undefined"){
+      //this.labelHandler.removeListeners()
+      this.isGlobal = true
+      this.labelHandler.reset()
     }
 
     if(typeof this.deleteHandler !== "undefined"){
@@ -396,8 +398,8 @@ class InsertModeHandler implements Handler{
     return this
   }
 
-  setHarmonyHandler(harmonyHandler: LabelHandler) {
-    this.harmonyHandler = harmonyHandler
+  setLabelHandler(labelHandler: LabelHandler) {
+    this.labelHandler = labelHandler
     return this
   }
 
@@ -418,7 +420,7 @@ class InsertModeHandler implements Handler{
 
   resetCanvas(){
     if(typeof this.annotations !== "undefined"){
-      document.getElementById(c._ROOTSVGID_).append(this.annotations.getCanvasGroup())
+      document.getElementById(c._ROOTSVGID_).append(this.annotations.getAnnotationCanvas())
       this.annotations.addCanvas()
     }
     return this

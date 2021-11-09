@@ -1,4 +1,7 @@
-
+/**
+ * Interface for all changeable Labels in the Score.
+ * E.g. Tempo, Harmony, Instrumentnames...
+ */
 interface Label{
 
     inputString: string
@@ -9,8 +12,8 @@ interface Label{
     checkFormat(input: any)
     createElement(input: any)
     modifyLabel(input: any)
-    getInput(): any
-    getElement(): any
+    getInput(): string
+    getElement(): Element
 
 }
 

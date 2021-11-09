@@ -38,7 +38,7 @@ class ClickModeHandler implements Handler{
             element.removeEventListener('click', this.clickHandler)
             element.removeEventListener("mousemove", this.mouseOverChordHandler)
             if(typeof this.annotations !== "undefined"){
-            var highLightElements: NodeListOf<Element> = this.annotations.getCanvasGroup().querySelectorAll(".highlightChord")
+            var highLightElements: NodeListOf<Element> = this.annotations.getAnnotationCanvas().querySelectorAll(".highlightChord")
             Array.from(highLightElements).forEach(el => {
                 el.remove()
             })

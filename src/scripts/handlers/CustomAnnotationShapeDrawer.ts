@@ -1,11 +1,11 @@
 import * as d3 from 'd3';
-import Handler from "../handlers/Handler";
+import Handler from "./Handler";
 import MusicPlayer from "../MusicPlayer";
 import { Mouse2MEI } from "../utils/Mouse2MEI";
 import {uuidv4} from '../utils/random'
 import { constants as c } from "../constants"
 
-class CustomAnnotationDrawer implements Handler{
+class CustomAnnotationShapeDrawer implements Handler{
     m2m?: Mouse2MEI;
     musicPlayer?: MusicPlayer;
     currentMEI?: string | Document;
@@ -67,7 +67,7 @@ class CustomAnnotationDrawer implements Handler{
             var elToRemove = document.getElementById(this.shapeID)
             if(elToRemove !== null){elToRemove.remove()}
         }else{
-            document.getElementById("canvasG").appendChild(this.shape)
+            document.getElementById("annotationCanvas").appendChild(this.shape)
             this.shapes.push(this.shape.cloneNode(true) as HTMLElement)
         }
         this.shape = undefined
@@ -146,4 +146,4 @@ class CustomAnnotationDrawer implements Handler{
 
 }
 
-export default CustomAnnotationDrawer
+export default CustomAnnotationShapeDrawer
