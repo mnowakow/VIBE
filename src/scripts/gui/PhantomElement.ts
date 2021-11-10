@@ -8,9 +8,11 @@ const svgNS = "http://www.w3.org/2000/svg";
 class PhantomElement{
 
     noteR: number
+    phantomCanvas: SVGSVGElement;
 
-    constructor(elementName: string, options = null){
+    constructor(elementName: string, options = null, canvas = undefined){
         elementName = elementName.toLowerCase();
+        this.phantomCanvas = canvas || document.getElementById("phantomCanvas")
         switch(elementName){
         case "note":
             this.makeNewPhantomNote();
@@ -29,7 +31,8 @@ class PhantomElement{
         this.removePhantomNote()
         if(document.body.classList.contains("clickmode")){
             var circle = document.createElementNS(svgNS, "circle")
-            document.querySelector(c._ROOTSVGID_WITH_IDSELECTOR_).insertBefore(circle, document.querySelector(c._ROOTSVGID_WITH_IDSELECTOR_).firstChild);
+            //document.querySelector(c._ROOTSVGID_WITH_IDSELECTOR_).insertBefore(circle, document.querySelector(c._ROOTSVGID_WITH_IDSELECTOR_).firstChild);
+            this.phantomCanvas.insertBefore(circle, this.phantomCanvas.firstChild);
             circle.setAttribute("id", "phantomNote");
             var r = 5
             circle.setAttribute("r", r.toString());
@@ -47,7 +50,7 @@ class PhantomElement{
         if(document.body.classList.contains("clickmode")){
             new Promise((resolve): void => {
                 var line = document.createElementNS(svgNS, "line")
-                document.getElementById("annotationCanvas").insertBefore(line, document.getElementById("annotationCanvas").firstChild);
+                this.phantomCanvas.insertBefore(line, this.phantomCanvas.firstChild);
                 var width = 10
                 var x1, x2, y1, y2
                 y1 = y2 = options.lineY
@@ -72,6 +75,11 @@ class PhantomElement{
 
     setNoteRadius(r: number){
         this.noteR = r
+    }
+
+    setPhantomCanvas(canvas: SVGSVGElement){
+        this.phantomCanvas = canvas
+        return this
     }
 }
 export default PhantomElement;

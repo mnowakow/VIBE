@@ -115,6 +115,7 @@ export class Mouse2MEI{
     findBBoxes(){
         var notes = document.querySelectorAll(".note, .rest, .mRest") ;
         var root = document.getElementById(c._ROOTSVGID_)
+        var rootBBox = root.getBoundingClientRect()
         Array.from(notes).forEach(element => {
             let bb: NoteBBox = {
                 id: element.id,

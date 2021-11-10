@@ -27,18 +27,25 @@ class Annotations implements Handler{
     }
     
     addCanvas(){
+        this.root = document.getElementById(c._ROOTSVGID_)
+        this.rootBBox = this.root.getBoundingClientRect()
+        var rootWidth = this.rootBBox.width.toString()
+        var rootHeigth = this.rootBBox.height.toString()
+        
+
         if(typeof this.annotationCanvas === "undefined"){
             this.annotationCanvas = document.createElementNS(c._SVGNS_, "svg")
             this.annotationCanvas.setAttribute("id", "annotationCanvas")
+            this.annotationCanvas.setAttribute("preserveAspectRatio", "xMinYMin meet")
+            this.annotationCanvas.setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))
             this.annotationCanvas.classList.add("back")
-        }      
-        this.root = document.getElementById(c._ROOTSVGID_)
+        }
+
         if(this.annotationCanvas.classList.contains("back")){
             this.root.insertBefore(this.annotationCanvas, this.root.lastChild.nextSibling)
         }else{
             this.root.insertBefore(this.annotationCanvas, this.root.firstChild)
         }
-        this.rootBBox = this.root.getBoundingClientRect()
     }
 
     setMenuClickHandler(){
@@ -57,7 +64,7 @@ class Annotations implements Handler{
             .setM2M(this.m2m)
             .setAnnotations(this.annotations)
 
-        document.getElementById(c._ROOTSVGID_).addEventListener("click", this.createAnnotationHandler)
+        document.getElementById(c._ROOTSVGID_).addEventListener("dblclick", this.createAnnotationHandler)
         var that = this
         document.querySelectorAll(".annotDiv").forEach(ad => {
             ad.addEventListener("click", this.selectHandler)
@@ -83,7 +90,7 @@ class Annotations implements Handler{
     removeListeners() {
         document.getElementById("activateAnnot").removeEventListener("click", this.clickHandler)
         this.setMenuClickHandler()
-        document.getElementById(c._ROOTSVGID_).removeEventListener("click", this.createAnnotationHandler)
+        document.getElementById(c._ROOTSVGID_).removeEventListener("dblclick", this.createAnnotationHandler)
         document.querySelectorAll(".annotDiv").forEach(ad => {
             ad.setAttribute("contenteditable", "false")
             ad.removeEventListener("click", this.selectHandler)
@@ -182,10 +189,10 @@ class Annotations implements Handler{
 
         var line = document.createElementNS(c._SVGNS_, "line")
         line.classList.add("annotLine")
-        line.setAttribute("x1", textForeignObject.x.baseVal.valueAsString)
-        line.setAttribute("y1", textForeignObject.y.baseVal.valueAsString)
-        line.setAttribute("x2", (annotationTarget.x - this.rootBBox.x - window.pageXOffset).toString())
-        line.setAttribute("y2", (annotationTarget.y - this.rootBBox.y - window.pageYOffset).toString())
+        line.setAttribute("x2", textForeignObject.x.baseVal.valueAsString)
+        line.setAttribute("y2", textForeignObject.y.baseVal.valueAsString)
+        line.setAttribute("x1", (annotationTarget.x - this.rootBBox.x - window.pageXOffset).toString())
+        line.setAttribute("y1", (annotationTarget.y - this.rootBBox.y - window.pageYOffset).toString())
         line.classList.add("annotLine")
 
         textForeignObject.append(textDiv)
@@ -243,6 +250,7 @@ class Annotations implements Handler{
             //this.AnnotationLineHandler.initDragRects()
         }
         t.classList.add("selected")
+        this.annotationChangeHandler.resetListeners()
     }
 
     /**

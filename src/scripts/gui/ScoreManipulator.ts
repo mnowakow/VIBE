@@ -20,9 +20,11 @@ class ScoreManipulator{
     }
 
     drawButton(id: string = null, classNames: string = null, sign: string, posX: number, posY: number, size: number, targetParent: Element, refId: string, tooltip = null){
+        
 
-        size = targetParent.getBoundingClientRect().height * 0.012
+        size = targetParent.getBoundingClientRect().height * 0.01
         var newSVG = document.createElementNS(c._SVGNS_, "svg")
+        //newSVG.setAttribute("viewBox", [posX.toString(), posY.toString(), size.toString(), size.toString()].join(" "))
         if(id !== null) newSVG.setAttribute("id", id)
         if(document.getElementById(newSVG.id)){return}
         
@@ -31,6 +33,7 @@ class ScoreManipulator{
         newSVG.setAttribute("y", posY.toString())
         newSVG.setAttribute("height", size.toString())
         newSVG.setAttribute("width", size.toString())
+
         if(classNames !== null){
             var cn = classNames.split(" ")
             cn.forEach(c => {
@@ -52,6 +55,7 @@ class ScoreManipulator{
             horizonal.setAttribute("y1", "50%")
             horizonal.setAttribute("x2", "80%")
             horizonal.setAttribute("y2", "50%")
+
             newSVG.append(horizonal)
         }
 
@@ -75,7 +79,7 @@ class ScoreManipulator{
         }
 
         newSVG.setAttribute("refId", refId)
-        targetParent.appendChild(newSVG)
+        document.getElementById("manipulatorCanvas")?.appendChild(newSVG)
     }
 
     drawMeasureAdder(){

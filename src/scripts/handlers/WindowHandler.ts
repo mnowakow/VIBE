@@ -3,12 +3,15 @@ import { Mouse2MEI } from "../utils/Mouse2MEI";
 import Handler from "./Handler";
 import ScoreManipulatorHandler from "./ScoreManipulatorHandler";
 import { constants as c } from "../constants"
+import Annotations from "../gui/Annotations";
 
 
 class WindowHandler implements Handler{
     m2m?: Mouse2MEI;
     musicPlayer?: MusicPlayer;
     currentMEI?: string | Document;
+    annotations: Annotations;
+    loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>;
     //smHandler: ScoreManipulatorHandler
 
     setListeners(){
@@ -50,6 +53,7 @@ class WindowHandler implements Handler{
 
         var isScrolling = setTimeout(function(){
             that.m2m.update()
+            that.annotations.update()
         }, 100)  
     }).bind(this)
 
@@ -69,6 +73,21 @@ class WindowHandler implements Handler{
         this.m2m = m2m
         return this
     }
+
+    setAnnotations(annotations: Annotations){
+        this.annotations = annotations
+        return this
+    }
+
+    setCurrentMEI(mei: Document){
+        this.currentMEI = mei
+        return this
+    }
+
+    setLoadDataCallback(loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>){
+        this.loadDataCallback = loadDataCallback
+        return this
+      }
 
     // setSMHandler(smHandler: ScoreManipulatorHandler){
     //     this.smHandler = smHandler

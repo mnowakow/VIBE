@@ -8,6 +8,9 @@ import { noteToB } from "../utils/mappings";
 
 const modSelector = ".slur, .tie, .accid"
 
+/**
+ * Handler for all options which could modulate the given score
+ */
 class ModHandler implements Handler{
 
     m2m?: Mouse2MEI;

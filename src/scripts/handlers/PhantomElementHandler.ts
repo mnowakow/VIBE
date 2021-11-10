@@ -13,11 +13,32 @@ class PhantomElementHandler implements Handler{
 
     private phantom: Element
     private phantomLines: Array<PhantomElement>
+    private phantomCanvas: SVGSVGElement
+    root: HTMLElement;
+    rootBBox: DOMRect;
 
     constructor(){
         this.phantom = document.getElementById("phantomNote")
+        this.addCanvas()
     }
     
+    
+    addCanvas(){
+        this.root = document.getElementById(c._ROOTSVGID_)
+        this.rootBBox = this.root.getBoundingClientRect()
+        var rootWidth = this.rootBBox.width.toString()
+        var rootHeigth = this.rootBBox.height.toString()
+        
+
+        if(typeof this.phantomCanvas === "undefined"){
+            this.phantomCanvas = document.createElementNS(c._SVGNS_, "svg")
+            this.phantomCanvas.setAttribute("id", "phantomCanvas")
+            this.phantomCanvas.setAttribute("preserveAspectRatio", "xMinYMin meet")
+            this.phantomCanvas.setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))
+        }
+
+        this.root.append(this.phantomCanvas)
+    }
 
     setListeners() {
         document.getElementById("rootSVG").addEventListener("mousemove", this.trackMouseHandler)
@@ -92,7 +113,7 @@ class PhantomElementHandler implements Handler{
         if(typeof this.m2m.getPhantomLines() !== "undefined"){
             this.phantomLines = new Array();
             this.m2m.getPhantomLines().forEach(pl => {
-                this.phantomLines.push(new PhantomElement("line", {lineX: relX - window.pageXOffset, lineY: pl - window.pageYOffset - rootBBox.y}))
+                this.phantomLines.push(new PhantomElement("line", {lineX: relX - window.pageXOffset, lineY: pl - window.pageYOffset - rootBBox.y}, this.phantomCanvas))
             })
             this.setPhantomLineListeners()
         }
@@ -111,6 +132,12 @@ class PhantomElementHandler implements Handler{
 
     setM2M(m2m: Mouse2MEI){
         this.m2m = m2m
+        return this
+    }
+
+    setPhantomNote(note: Element = undefined){
+        this.phantom = note || document.getElementById("phantomNote")
+        return this
     }
 
 }

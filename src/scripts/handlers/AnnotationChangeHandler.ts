@@ -19,6 +19,7 @@ class AnnotationChangeHandler implements Handler{
     private snapCoords: { obj: Element; x: number; y: number; };
     private annotations: Annotation[];
     private dragedRect: SVGRectElement
+    private scale: number
 
     constructor(){
         this.update()
@@ -73,6 +74,7 @@ class AnnotationChangeHandler implements Handler{
                 })
             ]
         })
+
     }
 
     removeListeners(): void {
@@ -172,7 +174,6 @@ class AnnotationChangeHandler implements Handler{
 
         target.setAttribute('data-x', x.toString())
         target.setAttribute('data-y', y.toString())
-        //target.textContent = Math.round(event.rect.width) + '\u00D7' + Math.round(event.rect.height)
         
         var targetParent = target.closest("g")
         var line = targetParent.querySelector(".annotLine")
@@ -250,8 +251,8 @@ class AnnotationChangeHandler implements Handler{
         // var rectX = (parseFloat(target.getAttribute("x")) + x).toString()
         // var rectY = (parseFloat(target.getAttribute("y")) + y).toString()
 
-        var rectX = (target.getBoundingClientRect().x - this.rootBBox.x).toString()
-        var rectY = (target.getBoundingClientRect().y - this.rootBBox.y).toString()
+        var rectX = ((target.getBoundingClientRect().x - this.rootBBox.x) * this.scale).toString()
+        var rectY = ((target.getBoundingClientRect().y - this.rootBBox.y) * this.scale).toString()
 
         if(target.classList.contains("x1")){
             line.setAttribute("x1", rectX)
@@ -267,14 +268,13 @@ class AnnotationChangeHandler implements Handler{
      * @returns 
      */
     highlightNextAttachObject(lineDragRect: SVGRectElement): Element{
-        var posx = lineDragRect.getBoundingClientRect().x
-        var posy =  lineDragRect.getBoundingClientRect().y
+        var posx = lineDragRect.getBoundingClientRect().x - this.rootBBox.x - window.pageXOffset - this.root.scrollLeft
+        var posy =  lineDragRect.getBoundingClientRect().y - this.rootBBox.y - window.pageYOffset - this.root.scrollTop
         var nextScoreObj = this.m2m.findScoreTarget(posx, posy)
         var nextShapeObj = this.findCustomShapeTarget(posx, posy)
         var possibleCoords = new Array<Coord>()
 
         var shapeCoord: Coord
-        console.log(nextShapeObj)
         if(nextShapeObj !== null){
             shapeCoord = {
                 obj: nextShapeObj,
@@ -307,15 +307,16 @@ class AnnotationChangeHandler implements Handler{
 
         var tempDist: number = Math.pow(10, 10)
         var objToHighlight: Element; 
+        var objCoord: Coord
         possibleCoords.forEach(coord => {
             var dist = Math.sqrt(Math.abs(coord.x - posx)**2 + Math.abs(coord.y - posy)**2)
             if(dist < tempDist){
                 tempDist = dist
                 objToHighlight = coord.obj
+                objCoord = coord
             }
         })
-        console.log(posx, posy, objToHighlight)
-        this.updateAnnotationIDs(objToHighlight, lineDragRect)
+        this.updateAnnotationIDs(objToHighlight, lineDragRect, objCoord)
         return objToHighlight
     }
 
@@ -348,7 +349,7 @@ class AnnotationChangeHandler implements Handler{
      * @param objToAttach 
      * @param lineDragRect 
      */
-     updateAnnotationIDs(objToAttach: Element, lineDragRect: SVGRectElement){
+     updateAnnotationIDs(objToAttach: Element, lineDragRect: SVGRectElement, objCoord: Coord){
         var line: Element
         var targetx: number
         var targety: number
@@ -357,9 +358,8 @@ class AnnotationChangeHandler implements Handler{
         this.annotations.some(annot => {
             if(annot.sourceID = parentGroup.id){
                 annot.targetID = objToAttach.id
-                targetx = objToAttach.getBoundingClientRect().x - this.rootBBox.x - window.pageXOffset - this.root.scrollLeft
-                targety = objToAttach.getBoundingClientRect().y - this.rootBBox.y - window.pageYOffset - this.root.scrollTop
-                line = document.getElementById(annot.sourceID).querySelector(".annotLine")
+                targetx = (objToAttach.getBoundingClientRect().x - this.rootBBox.x - window.pageXOffset - this.root.scrollLeft) * this.scale
+                targety = (objToAttach.getBoundingClientRect().y - this.rootBBox.y - window.pageYOffset - this.root.scrollTop) * this.scale
 
 
                 // draw rect for highlighting
@@ -374,8 +374,8 @@ class AnnotationChangeHandler implements Handler{
                 highlightRect.classList.add("highlightAnnotation")
                 highlightRect.setAttribute("x", (targetx - highlightMargin).toString())
                 highlightRect.setAttribute("y", (targety - highlightMargin).toString())
-                highlightRect.setAttribute("height", (objToAttach.getBoundingClientRect().height + 2*highlightMargin).toString())
-                highlightRect.setAttribute("width", (objToAttach.getBoundingClientRect().width + 2*highlightMargin).toString())
+                highlightRect.setAttribute("height", ((objToAttach.getBoundingClientRect().height + 2*highlightMargin) * this.scale).toString())
+                highlightRect.setAttribute("width", ((objToAttach.getBoundingClientRect().width + 2*highlightMargin) * this.scale).toString())
 
                 return annot.sourceID === parentGroup.id
             }
@@ -386,6 +386,11 @@ class AnnotationChangeHandler implements Handler{
             x: targetx,
             y: targety
         }
+
+        document.querySelectorAll("*[fill=green]").forEach(fg => {
+            fg.removeAttribute("fill")
+        })
+        objToAttach.setAttribute("fill", "green")
 
         // some rules for custom shapes
         if(objToAttach.classList.contains("customAnnotShape")){
@@ -458,6 +463,7 @@ class AnnotationChangeHandler implements Handler{
         this.updateCallback
         this.root = document.getElementById(c._ROOTSVGID_)
         this.rootBBox = this.root.getBoundingClientRect()
+        this.scale = (document.querySelector("#annotationCanvas") as SVGSVGElement).viewBox.baseVal.width / this.rootBBox.width //scale is needed to make convertions between different sizes of container
         this.customShapes = Array.from(document.querySelectorAll(".customAnnotShape"))
         this.resetListeners()
     }

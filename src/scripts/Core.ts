@@ -253,6 +253,9 @@ class Core {
     
     this.windowHandler
       .setM2M(this.m2m)
+      .setCurrentMEI(this.currentMEIDoc)
+      .setLoadDataCallback(this.loadDataFunction)
+      .setAnnotations(this.insertModeHandler.getAnnotations())
       .resetListeners()
 
     this.sidebarHandler

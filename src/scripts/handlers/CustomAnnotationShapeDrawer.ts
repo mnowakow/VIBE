@@ -18,6 +18,7 @@ class CustomAnnotationShapeDrawer implements Handler{
     private shapeID: string
     private shape: HTMLElement
     private shapes: Array<HTMLElement>
+    private scale: number
 
     private updateCallback: () => void
 
@@ -25,6 +26,7 @@ class CustomAnnotationShapeDrawer implements Handler{
         this.shapes = new Array()
         this.shapeID = ""
         this.dragged = false
+        this.scale = (document.querySelector("#annotationCanvas") as SVGSVGElement).viewBox.baseVal.width / document.getElementById(c._ROOTSVGID_).getBoundingClientRect().width
         this.canvas = d3.select(c._ROOTSVGID_WITH_IDSELECTOR_); // draw directly in svg
         this.dragBehaviour = d3.drag()
             .on('start', drawStart)
@@ -63,6 +65,12 @@ class CustomAnnotationShapeDrawer implements Handler{
     }
 
     drawEnd(){
+
+        this.shape?.setAttribute('x', (parseFloat(this.shape.getAttribute("x")) * this.scale).toString())
+        this.shape?.setAttribute('y', (parseFloat(this.shape.getAttribute("y")) * this.scale).toString())
+        this.shape?.setAttribute('width', (parseFloat(this.shape.getAttribute("width")) * this.scale).toString())
+        this.shape?.setAttribute('height', (parseFloat(this.shape.getAttribute("height")) * this.scale).toString())
+
         if(!this.dragged){
             var elToRemove = document.getElementById(this.shapeID)
             if(elToRemove !== null){elToRemove.remove()}
@@ -70,6 +78,7 @@ class CustomAnnotationShapeDrawer implements Handler{
             document.getElementById("annotationCanvas").appendChild(this.shape)
             this.shapes.push(this.shape.cloneNode(true) as HTMLElement)
         }
+       
         this.shape = undefined
         this.updateCallback()
     }

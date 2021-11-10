@@ -71,9 +71,10 @@ class InsertModeHandler implements Handler{
     this.annotationMode = false;
     this.harmonyMode = false;
 
-    this.phantom = new PhantomElement("note")
     this.phantomNoteHandler = new PhantomElementHandler
+    this.phantom = new PhantomElement("note")
     this.phantomNoteHandler
+      .setPhantomNote()
       .setListeners()
       .setM2M(this.m2m)
 

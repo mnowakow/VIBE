@@ -15,12 +15,26 @@ class ScoreManipulatorHandler implements Handler{
 
     private sm: ScoreManipulator;
     loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>;
+    manipulatorCanvas: SVGSVGElement;
 
     constructor(){
         this.sm = new ScoreManipulator()
     }
 
+    addCanvas(){
+        var rootBBox = document.getElementById(c._ROOTSVGID_).getBoundingClientRect()
+        var rootWidth = rootBBox.width.toString()
+        var rootHeigth = rootBBox.height.toString()
+
+        this.manipulatorCanvas = document.createElementNS(c._SVGNS_, "svg")
+        this.manipulatorCanvas.setAttribute("id", "manipulatorCanvas")
+        this.manipulatorCanvas.setAttribute("preserveAspectRatio", "xMinYMin meet")
+        this.manipulatorCanvas.setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))
+        document.getElementById(c._ROOTSVGID_).append(this.manipulatorCanvas)
+    }
+
     drawElements(){
+        this.addCanvas()
         this.sm.drawMeasureAdder()
         this.sm.drawMeasureRemover()
         this.sm.drawStaffManipulators()
@@ -46,8 +60,8 @@ class ScoreManipulatorHandler implements Handler{
         document.querySelectorAll(".removeStaff").forEach(as => {
             as.addEventListener("click", that.removeStaff)
         })
-        document.getElementById("toggleSidebar").addEventListener("click", this.removeFunction)
-        document.getElementById("toggleSidebar").addEventListener("click", this.drawFunction)
+        //document.getElementById("toggleSidebar").addEventListener("click", this.removeFunction)
+        //document.getElementById("toggleSidebar").addEventListener("click", this.drawFunction)
     }
 
     removeListeners() {
@@ -61,8 +75,8 @@ class ScoreManipulatorHandler implements Handler{
         document.querySelectorAll(".removeStaff").forEach(as => {
             as.removeEventListener("click", that.removeStaff)
         })
-        document.getElementById("toggleSidebar")?.removeEventListener("click", this.removeFunction)
-        document.getElementById("toggleSidebar")?.removeEventListener("click", this.drawFunction)
+        //document.getElementById("toggleSidebar")?.removeEventListener("click", this.removeFunction)
+        //document.getElementById("toggleSidebar")?.removeEventListener("click", this.drawFunction)
     }
 
     addMeasure = (function handler(e: MouseEvent){
