@@ -1080,7 +1080,7 @@ function deleteDefSequences(xmlDoc: Document){
       var sig = sigElement.getAttribute("sig")
       if(lastElement != null){
         lastSig = lastElement.getAttribute("sig")
-        if(lastShape === sig){
+        if(lastSig === sig){
           sigElement.remove()
         }else{
           lastElement = sigElement
