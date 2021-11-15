@@ -1,10 +1,11 @@
 import MusicPlayer from "../MusicPlayer";
 import { Mouse2MEI } from "../utils/Mouse2MEI";
 import Handler from "./Handler";
-import { keyIdToSig } from "../utils/mappings"
+import { keyIdToSig, clefToLine } from "../utils/mappings"
 import { constants as c } from "../constants"
 import * as meiConverter from "../utils/MEIConverter"
 import * as meiOperation from "../utils/MEIOperations"
+import { select } from "d3";
 
 /**
  * Handles all Events when interacting with the sidebar.
@@ -28,8 +29,32 @@ class SidebarHandler implements Handler{
         return this
     }
 
-    removeListeners(): void {
-        console.log(this, "RemoveListener not Implementds")
+    removeListeners() {
+        document.querySelectorAll("*[id*=keyList] > *").forEach(k => {
+            if(k.tagName === "A"){
+                k.removeEventListener("click", this.keySigSelectHandler)
+            }
+        })
+
+        document.querySelectorAll("*[id*=clefList] > *").forEach(k => {
+            if(k.tagName === "A"){
+                k.removeEventListener("click", this.clefSelectHandler)
+            }
+        })
+
+        document.removeEventListener("dragover", (e) => {
+            e.preventDefault()
+        })
+        document.querySelectorAll("#sidebarList a").forEach(sa => {
+            sa.removeEventListener("drag", this.findDropTargetFunction)
+            sa.removeEventListener("dragend", this.dropOnTargetFunction)
+        })
+        return this
+    }
+
+    resetListeners(){
+        this.removeListeners()
+        this.setListeners() 
     }
 
 
@@ -48,6 +73,15 @@ class SidebarHandler implements Handler{
                 k.addEventListener("click", this.clefSelectHandler)
             }
         })
+
+        document.addEventListener("dragover", (e) => {
+            e.preventDefault()
+        })
+        document.querySelectorAll("#sidebarList a").forEach(sa => {
+            sa.addEventListener("drag", this.findDropTargetFunction)
+            sa.addEventListener("dragend", this.dropOnTargetFunction)
+        })
+
         return this
     }
 
@@ -143,19 +177,7 @@ class SidebarHandler implements Handler{
             var targetClefDef = this.currentMEI.querySelectorAll("staffDef > clef")[rowNum]
             if(targetClefDef.getAttribute("shape") !== target.id.charAt(0)){
                 targetClefDef.setAttribute("shape", target.id.charAt(0))
-                var line: string
-                switch(target.id.charAt(0)){
-                    case "G":
-                        line = "2"
-                        break;
-                    case "C":
-                        line = "3"
-                        break;
-                    case "F":
-                        line = "4"
-                        break;
-                }
-                targetClefDef.setAttribute("line", line)
+                targetClefDef.setAttribute("line", clefToLine.get(target.id.charAt(0)))
                 reload = true
             }
         })
@@ -164,6 +186,95 @@ class SidebarHandler implements Handler{
             this.loadDataCallback("", meiConverter.restoreXmlIdTags(this.currentMEI), false, c._TARGETDIVID_)
         }
     }
+
+    /**
+     * Find next possible eleent to drop element from sidebar on
+     * @param e 
+     */
+    findDropTarget(e: MouseEvent){
+        e.preventDefault()
+        var root = document.getElementById(c._ROOTSVGID_)
+        var rootBBox = root.getBoundingClientRect()
+        var posx = (e.pageX - window.pageXOffset - rootBBox.x - root.scrollLeft)
+        var posy = (e.pageY - window.pageYOffset - rootBBox.y - root.scrollTop)
+
+        var eventTarget = e.target as Element
+        var eventTargetParent = eventTarget.parentElement
+        var eventTargetIsClef = eventTargetParent.id.toLowerCase().includes("clef")
+        var eventTargetIsKey = eventTargetParent.id.toLowerCase().includes("key")
+        var dropTargets: NodeListOf<Element>
+        var dropFlag: string
+
+        if(eventTargetIsClef){
+            dropTargets = document.querySelectorAll(".clef, .barLine > path")
+            dropFlag = "dropClef"
+        }else if(eventTargetIsKey){
+            dropTargets = document.querySelectorAll(".keySig, .barLine > path, .clef")
+            dropFlag = "dropKey"
+        }
+        else{
+            return
+        }
+
+        var tempDist = Math.pow(10, 10)
+        dropTargets.forEach(dt => {
+            var blbbox = dt.getBoundingClientRect()
+            var dist = Math.sqrt(Math.abs(blbbox.x - posx)**2 + Math.abs(blbbox.y - posy)**2)
+            if(dist < tempDist){
+                dropTargets.forEach(_dt => {
+                    _dt.removeAttribute("fill")
+                    _dt.removeAttribute("color")
+                    _dt.classList.remove(dropFlag)
+                })
+                tempDist = dist
+                dt.setAttribute("fill", "orange")
+                dt.setAttribute("color", "orange")
+                dt.classList.add(dropFlag)
+            }
+        })
+    }
+
+    findDropTargetFunction =(function findBarline(e: MouseEvent){
+        this.findDropTarget(e)
+    }).bind(this)
+
+    /**
+     * Determine action on drop elemnt from sidebar on score
+     * @param e 
+     */
+    dropOnTarget(e: MouseEvent){
+        e.preventDefault()
+        var selectedElement = document.querySelector(".dropClef, .dropKey") 
+        var t = e.target as Element
+        var mei: Document
+
+        console.log("SELECTED ELEMENT:", selectedElement)
+        var isFirstClef = document.querySelector(".measure[n=\"1\"] .clef").id === selectedElement.id
+        var isFirstKey = Array.from(document.querySelectorAll(".measure[n=\"1\"] .keySig")).some(mc => mc.id === selectedElement.id)
+        if(selectedElement?.classList.contains("dropClef")){
+            if(isFirstClef){
+                mei = meiOperation.replaceClefinScoreDef(selectedElement, t.id, this.currentMEI)
+            }else{
+                mei = meiOperation.insertClef(selectedElement, t.id, this.currentMEI)
+            }
+        }else if(selectedElement?.classList.contains("dropKey")){
+            
+            if(isFirstKey || isFirstClef){
+                mei = meiOperation.replaceKeyInScoreDef(selectedElement, t.id, this.currentMEI)
+            }else{
+                mei = meiOperation.insertKey(selectedElement, t.id, this.currentMEI)
+            }
+        }else{
+            return
+        }
+
+
+        this.loadDataCallback("", mei, false, c._TARGETDIVID_)
+    }
+
+    dropOnTargetFunction =(function dropOnBarline(e: MouseEvent){
+        this.dropOnTarget(e)
+    }).bind(this)
 
 
     //////// GETTER / SETTER /////////////

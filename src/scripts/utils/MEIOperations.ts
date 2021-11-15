@@ -1,13 +1,13 @@
 import * as meiConverter from './MEIConverter'
 import { uuidv4 } from './random'
 import { constants as c} from '../constants'
-import { NewChord, NewNote } from './Types'
-import { keysigToNotes, nextStepUp, nextStepDown } from './mappings'
+import { NewChord, NewNote, NewClef } from './Types'
+import { keysigToNotes, nextStepUp, nextStepDown, clefToLine, keyIdToSig } from './mappings'
 import MeiTemplate from '../assets/mei_template'
 import { xml } from 'd3'
 import ScoreGraph from '../datastructures/ScoreGraph'
-import { removeAllListeners } from 'process'
-import { NOTIMP } from 'dns'
+import MeasureMatrix from '../datastructures/MeasureMatrix'
+
 
 const countableNoteUnitSelector: string =  
 ":scope > note:not([grace])," +
@@ -649,34 +649,39 @@ export function extrapolateMeter(xmlDoc: Document): number {
  */
 export function adjustAccids(xmlDoc: Document): Document{
 
-  var keySigElements = Array.from(xmlDoc.querySelectorAll("staffDef > keySig"))
-  keySigElements.forEach((ks, idx) => {
-    var keySymbol = ks.getAttribute("sig").charAt(1)
-    var sig = keysigToNotes.get(ks.getAttribute("sig"))
-    var n = idx + 1
-    xmlDoc.querySelectorAll("staff[n=\"" + n + "\"] * note").forEach(note => {
-      
-      var accid = note.getAttribute("accid")
-      var accidGes = note.getAttribute("accid.ges")
-      var pname = note.getAttribute("pname")
+  var measureMatrix = new MeasureMatrix()
+  measureMatrix.populateFromMEI(xmlDoc)
+  console.log(measureMatrix)
 
-      if(sig.includes(pname)){
-        if(accid === keySymbol){
-          note.setAttribute("accid.ges", accid)
-          note.removeAttribute("accid")
-        }
-        if(accid === null && accidGes === null){
-          note.setAttribute("accid", "n")
-        }
-      }else if(accid === "n"){
+  xmlDoc.querySelectorAll("note").forEach(note => {
+    let staffN = note.closest("staff").getAttribute("n")
+    let measureN = note.closest("measure").getAttribute("n")
+    let sig = measureMatrix.get(measureN, staffN).keysig
+    let keySymbol = sig.charAt(1)
+    let signedNotes = keysigToNotes.get(sig)
+
+
+    var accid = note.getAttribute("accid")
+    var accidGes = note.getAttribute("accid.ges")
+    var pname = note.getAttribute("pname")
+
+
+    if(signedNotes.some(sn => sn === pname)){
+      if(accid === keySymbol){
+        note.setAttribute("accid.ges", accid)
         note.removeAttribute("accid")
-        note.removeAttribute("accidGes")
-      }else if(accidGes !== null){
-        note.removeAttribute("accidGes")
-        note.setAttribute("accid", accidGes)
       }
-      hideAccid(note)
-    })
+      if(accid === null && accidGes === null){
+        note.setAttribute("accid", "n")
+      }
+    }else if(accid === "n"){
+      note.removeAttribute("accid")
+      note.removeAttribute("accidGes")
+    }else if(accidGes !== null){
+      note.removeAttribute("accidGes")
+      note.setAttribute("accid", accidGes)
+    }
+    hideAccid(note)
   })
 
   return xmlDoc
@@ -1039,10 +1044,53 @@ export function changeDuration(xmlDoc: Document, mode: string, additionalElement
  * @param xmlDoc 
  */
 export function cleanUp(xmlDoc: Document){
+  deleteDefSequences(xmlDoc)
   reorganizeBeams(xmlDoc)
   removeEmptyElements(xmlDoc)
   //fillWithRests(xmlDoc)
   adjustRests(xmlDoc)
+}
+
+function deleteDefSequences(xmlDoc: Document){
+  var staffCount = xmlDoc.querySelectorAll("staffDef").length
+  for(var i = 0; i < staffCount; i++){
+    var n = (i+1).toString()
+    var lastElement = null
+    var lastShape = null
+    var lastLine = null
+    xmlDoc.querySelectorAll("staffDef[n=\"" + n +"\"] clef, staff[n=\"" + n +"\"] clef").forEach(clefElement => {
+      var shape = clefElement.getAttribute("shape")
+      var line = clefElement.getAttribute("line")
+      if(lastElement != null){
+        lastShape = lastElement.getAttribute("shape")
+        lastLine = lastElement.getAttribute("line")
+        if(lastShape === shape && lastLine === line){
+          clefElement.remove()
+        }else{
+          lastElement = clefElement
+        }
+      }else{
+        lastElement = clefElement
+      }
+    })
+
+    lastElement = null
+    var lastSig = null
+    xmlDoc.querySelectorAll("staffDef[n=\"" + n +"\"] keySig, staff[n=\"" + n +"\"] keySig").forEach(sigElement => {
+      var sig = sigElement.getAttribute("sig")
+      if(lastElement != null){
+        lastSig = lastElement.getAttribute("sig")
+        if(lastShape === sig){
+          sigElement.remove()
+        }else{
+          lastElement = sigElement
+        }
+      }else{
+        lastElement = sigElement
+      }
+    })
+  }
+
 }
 
 function reorganizeBeams(xmlDoc: Document){
@@ -1309,6 +1357,87 @@ export function paste(ids: Array<string>, refId: string, xmlDoc: Document){
     })
 }
 
+/**
+ * Replace clef in main/ first score definition
+ * @param targetid 
+ * @param newClef 
+ * @param currentMEI 
+ * @returns 
+ */
+export function replaceClefinScoreDef(target: Element, newClef: string, currentMEI: Document): Document{
+  var staffN = document.getElementById(target.id).closest(".staff").getAttribute("n")
+  var staffDefClef = currentMEI.querySelector("staffDef[n=\"" + staffN + "\"] > clef")
+  staffDefClef.setAttribute("shape", newClef.charAt(0))
+  staffDefClef.setAttribute("line", clefToLine.get(newClef.charAt(0)))
+  cleanUp(currentMEI)
+  currentMEI = meiConverter.restoreXmlIdTags(currentMEI)
+  return currentMEI
+}
+
+/**
+ * Layer to which a new clef object has to be inserted
+ * @param targetid Usually a barline before which new clef should stand
+ * @param newClef Name of new Clef to be inserted
+ */
+export function insertClef(target: Element, newClef: string, currentMEI: Document): Document{
+  var targetStaffId = target.closest(".measure").querySelector(".staff[n=\"" + target.getAttribute("n") + "\"]")?.id || target.closest(".staff")?.id
+  var targetLayerId = currentMEI.getElementById(targetStaffId).querySelector("layer").id
+  currentMEI.getElementById(targetLayerId).querySelectorAll("clef").forEach(c => c.remove())
+
+  var clefElement = currentMEI.createElement("clef")
+  clefElement.setAttribute("id", uuidv4())
+  clefElement.setAttribute("shape", newClef.charAt(0))
+  clefElement.setAttribute("line", clefToLine.get(newClef.charAt(0)))
+
+  currentMEI.getElementById(targetLayerId).append(clefElement)
+  cleanUp(currentMEI)
+  currentMEI = meiConverter.restoreXmlIdTags(currentMEI)
+
+  return currentMEI
+}
+
+export function replaceKeyInScoreDef(target: Element, newSig: string, currentMEI: Document): Document {
+  console.log("REPLACE KEY IN SCOREDEF")
+  var staffN = document.getElementById(target.id).closest(".staff").getAttribute("n")
+  var staffDefSig = currentMEI.querySelector("staffDef[n=\"" + staffN + "\"] > keySig")
+  if(staffDefSig !== null){
+    staffDefSig.setAttribute("sig", keyIdToSig.get(newSig))
+  }else{
+    var newSigElement = new MeiTemplate().createKeySig("major", keyIdToSig.get(newSig))
+    currentMEI.querySelector("staffDef[n=\"" + staffN + "\"]")?.append(newSigElement)
+  }
+  adjustAccids(currentMEI)
+  cleanUp(currentMEI)
+  currentMEI = meiConverter.restoreXmlIdTags(currentMEI)
+  return currentMEI
+}
+
+export function insertKey(target: Element, newSig: string, currentMEI: Document): Document {
+  console.log("INSERT KEY")
+  var targetStaff = target.closest(".measure").querySelector(".staff[n=\"" + target.getAttribute("n") + "\"]") || target.closest(".staff")
+  var staffN = targetStaff.getAttribute("n")
+  var targetLayerId = currentMEI.getElementById(targetStaff.id).closest("measure")?.nextElementSibling?.querySelector("staff[n=\"" + staffN + "\"] > layer").id
+  currentMEI.getElementById(targetLayerId).querySelectorAll("keySig")?.forEach(c => c.remove())
+  
+  var newSigElement = new MeiTemplate().createKeySig("major", keyIdToSig.get(newSig))
+  currentMEI.getElementById(targetLayerId).insertBefore(newSigElement, currentMEI.getElementById(targetLayerId).firstElementChild)
+  adjustAccids(currentMEI)
+  cleanUp(currentMEI)
+  currentMEI = meiConverter.restoreXmlIdTags(currentMEI)
+
+  return currentMEI
+
+  return currentMEI
+}
+
+
+
+
+
+
+
+
+//PRIVATE
 
 function convertToNewNote(element: Element): NewNote{
 
@@ -1362,3 +1491,4 @@ function convertToNewChord(element: Element): NewChord{
 
   return newChord
 }
+

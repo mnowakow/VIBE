@@ -16,6 +16,7 @@ class PhantomElementHandler implements Handler{
     private phantomCanvas: SVGSVGElement
     root: HTMLElement;
     rootBBox: DOMRect;
+    scale: number;
 
     constructor(){
         this.phantom = document.getElementById("phantomNote")
@@ -89,9 +90,9 @@ class PhantomElementHandler implements Handler{
       
         var root = document.getElementById(c._ROOTSVGID_)
         var rootBBox = root.getBoundingClientRect()
-        
-        var relX = e.pageX - window.pageXOffset - rootBBox.x - root.scrollLeft //- window.pageXOffset
-        var relY = e.pageY - window.pageYOffset - rootBBox.y - root.scrollTop //- window.pageYOffset - svgrect.y
+
+        var relX = (e.pageX - window.pageXOffset - rootBBox.x - root.scrollLeft) * this.scale //- window.pageXOffset
+        var relY = (e.pageY - window.pageYOffset - rootBBox.y - root.scrollTop) * this.scale //- window.pageYOffset - svgrect.y
         var target = e.target as HTMLElement;
         var options = {}
 
@@ -137,6 +138,11 @@ class PhantomElementHandler implements Handler{
 
     setPhantomNote(note: Element = undefined){
         this.phantom = note || document.getElementById("phantomNote")
+        return this
+    }
+
+    setScale(scale:number){
+        this.scale = scale
         return this
     }
 

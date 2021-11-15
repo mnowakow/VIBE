@@ -1,11 +1,10 @@
 import * as dc from '../utils/DOMCreator'
 import * as customType from "../utils/Types"
-import { Button, Dropdown, Collapse } from 'bootstrap'
-import SidebarHandler from '../handlers/SideBarHandler'
-import { keyIdToSig } from '../utils/mappings'
-import { interpolateZoom } from 'd3'
-import KeyModeHandler from '../handlers/KeyModeHandler'
-import ModHandler from '../handlers/ModHandler'
+import {Dropdown, Collapse } from 'bootstrap'
+import interact from 'interactjs'
+import { constants as c } from '../constants'
+import * as meioperations from "../utils/MEIOperations"
+
 
 const buttonStyleDarkOutline = "btn btn-outline-dark btn-md"
 const buttonStyleDark = "btn btn-dark btn-md"
@@ -46,6 +45,15 @@ class Toolbar{
     }
 
     private createSideBar(){
+        this.createModList()
+        document.querySelectorAll("#sidebarList a").forEach(sa => {
+            sa.setAttribute("draggable", "true")
+        })
+        this.createAnnotList()
+        this.optionalButtons()
+    }
+
+    private createModList(){
         this.sidebar = document.getElementById("sidebarContainer")
 
         var accordeon = dc.makeNewDiv("sidebarList", "accordion")
@@ -129,8 +137,6 @@ class Toolbar{
         timeDiv.appendChild(countDiv)
         timeDiv.appendChild(slashDiv)
         timeDiv.appendChild(unitDiv)
-
-        this.optionalButtons()
     }
 
     private optionalButtons(){
@@ -148,6 +154,45 @@ class Toolbar{
         //     }
         // }
     }
+
+    private createAnnotList(){
+        document.getElementById("annotList")?.remove()
+        var annotList = document.createElement("div")
+        annotList.setAttribute("id", "annotList")
+        annotList.classList.add("list-group")
+
+        document.querySelectorAll("#annotationCanvas > g")?.forEach(c => {
+            var text = c.querySelector(".annotDiv").textContent || c.querySelector(".annotDiv").getAttribute("data-text")
+            var a = dc.makeNewAElement(text, "", "list-group-item list-group-item-action list-group-item-primary", "#")
+            a.setAttribute("refId", c.id)
+            a.setAttribute("contenteditable", "true")
+            a.addEventListener("click", function(){
+                document.querySelectorAll(".selected").forEach(s => s.classList.remove("selected"))
+                document.getElementById(c.id).focus()
+                document.getElementById(c.id).querySelector(".annotText").classList.add("selected")
+            })
+            a.addEventListener("blur", function(e: KeyboardEvent){
+                var t = e.target as HTMLElement
+                document.getElementById(t.getAttribute("refid")).querySelector(".annotDiv").textContent = t.textContent
+            })
+            a.addEventListener("keydown", function(e: KeyboardEvent){
+                var t = e.target as HTMLElement
+                if(e.code === "Enter"){
+                    t.blur()
+                }else if(e.code === "Space"){
+                    e.preventDefault()
+                    document.execCommand("insertText", false, ' ')
+                }
+            })
+            annotList.appendChild(a)
+        })
+
+        this.sidebar.appendChild(annotList)
+    }
+
+    createAnnotListFunction = (function(){
+        this.createAnnotList()}
+    ).bind(this)
 
     private createButtonsMainToolbar(){
         // Buttons können in eigenes package ausgelagert werden (Editor)
@@ -332,6 +377,17 @@ class Toolbar{
             })
 
         }) 
+
+        document.addEventListener("annotChanged", this.createAnnotListFunction)
+
+        interact("#annotList")
+            .resizable({
+                // resize from all edges and corners
+                edges: { left: false, right: false, bottom: false, top: true },
+    
+                listeners: { move: this.resizeListListener.bind(this) },
+            })
+
     }
 
     removeListeners(){
@@ -356,6 +412,9 @@ class Toolbar{
         // document.querySelectorAll("#sidebarContainer * a").forEach(el => {
         //     el.removeEventListener("click", this.sidebarHandler)
         // })
+
+        document.removeEventListener("annotChanged", this.createAnnotListFunction)
+        interact("#annotList").unset()
     }
 
     closeHandlerMouse = (function closeHandlerMouse(evt: MouseEvent): void {
@@ -385,6 +444,21 @@ class Toolbar{
             ddButton.nextElementSibling.removeAttribute("data-popper-placement")
         }
     }
+
+    private resizeListListener(event){
+        event.stopImmediatePropagation()
+        var target = event.target as HTMLElement
+        var y = (parseFloat(target.getAttribute('data-y')) || 0)
+        target.style.height = event.rect.height + 'px'
+        y += event.deltaRect.top
+        target.style.transform = 'translate(0px,' + y + 'px)'
+        target.setAttribute('data-y', y.toString())
+
+        var sibling = target.previousElementSibling as HTMLElement
+        var sbb = sibling.getBoundingClientRect()
+        sbb.height = sbb.height + y
+    }
+
 
     /**
      * Make Notes and Dots selectable exclusively

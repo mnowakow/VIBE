@@ -294,3 +294,8 @@ octToNum.set("2LineOct", "5")
 octToNum.set("3LineOct", "6")
 octToNum.set("4LineOct", "7")
 octToNum.set("5LineOct", "8")
+
+export const clefToLine: Map<string, string> = new Map;
+clefToLine.set("G", "2")
+clefToLine.set("C", "3")
+clefToLine.set("F", "4")

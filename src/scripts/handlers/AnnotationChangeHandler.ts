@@ -259,6 +259,8 @@ class AnnotationChangeHandler implements Handler{
             line.setAttribute("y1", rectY)
             this.highlightNextAttachObject(target)
         }
+
+        document.dispatchEvent(new Event("annotChanged"))
         
     }
 
@@ -463,7 +465,6 @@ class AnnotationChangeHandler implements Handler{
         this.updateCallback
         this.root = document.getElementById(c._ROOTSVGID_)
         this.rootBBox = this.root.getBoundingClientRect()
-        this.scale = (document.querySelector("#annotationCanvas") as SVGSVGElement).viewBox.baseVal.width / this.rootBBox.width //scale is needed to make convertions between different sizes of container
         this.customShapes = Array.from(document.querySelectorAll(".customAnnotShape"))
         this.resetListeners()
     }
@@ -479,6 +480,11 @@ class AnnotationChangeHandler implements Handler{
 
     setM2M(m2m: Mouse2MEI){
         this.m2m = m2m
+        return this
+    }
+
+    setScale(scale: number){
+        this.scale = scale
         return this
     }
 

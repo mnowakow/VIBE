@@ -29,8 +29,7 @@ class MeasureMatrix{
         }
     }
 
-    populate(svg: SVGGElement){
-
+    populateFromSVG(svg: SVGGElement){
         this.matrix =  new Array<Array<Staff>>();
         this.cols = svg.querySelectorAll(".measure").length;
         this.rows = svg.querySelector(".measure").querySelectorAll(c._STAFF_WITH_CLASSSELECTOR_).length;
@@ -69,8 +68,53 @@ class MeasureMatrix{
                 }else{ // First measure, has no accidentials
                     staff.keysig = "0"
                 }
+                col.push(staff)
+            }
+            this.matrix.push(col)
+        }
+    }
+
+    populateFromMEI(mei: Document){
+        this.matrix =  new Array<Array<Staff>>();
+        this.cols = mei.querySelectorAll("measure").length;
+        this.rows = mei.querySelector("measure").querySelectorAll("staff").length;
+
+        var measures = mei.querySelectorAll("measure")
+        for(var i = 0; i < this.cols; i++){
+            let col = new Array<Staff>();
+            let measure = measures[i]
+            let staves = measure.querySelectorAll("staff")
+            for(var j = 0; j < this.rows; j++){
+                let staffDef = mei.querySelector("staffDef[n=\"" + (j+1).toString() + "\"]")
+                let staff: Staff = {}
+                let clefs = staves[j].querySelectorAll("clef")
+                let keysigs = staves[j].querySelectorAll("keySig")
+                if(clefs.length > 0){
+                    let lastIdx = clefs.length -1
+                    let clefShape = clefs[lastIdx].getAttribute("shape")
+                    clefShape = idToClef.get(clefShape);
+                    staff.clef = clefShape;
+                }else{
+                    if(i>0){
+                        staff.clef = this.matrix[i-1][j].clef
+                    }else{
+                        staff.clef = staffDef.querySelector("clef").getAttribute("shape")
+                    }
+                }
                 
-                
+                if(keysigs.length > 0){
+                    let lastIdx = keysigs.length -1
+                    let keysig = keysigs[lastIdx].getAttribute("sig")
+                    staff.keysig = keysig
+                }else if(i>0) {
+                   staff.keysig = this.matrix[i-1][j].keysig;
+                }else{
+                    if(staffDef.querySelector("keySig") === null){
+                        staff.keysig = "0"
+                    }else{
+                        staff.keysig = staffDef.querySelector("keySig").getAttribute("sig")
+                    }
+                }
                 col.push(staff)
             }
             this.matrix.push(col)
@@ -99,8 +143,27 @@ class MeasureMatrix{
         this.rows += n;
     }
 
-    get(row: number, col: number): Staff{
-        return this.matrix[row][col]
+    /**
+     * Get StaffType from matrix for [staff][measure]
+     * @param row measure index = attribute("n")-1
+     * @param col staff index = attribute("n")-1
+     * @returns 
+     */
+    get(row: number | string, col: number | string): Staff{
+        if(!isNaN(parseInt(row.toString())) && !isNaN(parseInt(col.toString()))){
+            if(typeof row === "string"){
+                row = parseInt(row.toString()) - 1 
+            }
+
+            if(typeof col === "string"){
+                col = parseInt(col.toString()) - 1 
+            }
+
+            return this.matrix[row][col]
+        }else{
+            return null
+        }
+            
     }
 
     getDimensions(): {rows: number, cols: number}{

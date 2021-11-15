@@ -38,7 +38,7 @@ export function makeNewAElement(text: string, id: string, className: string, hre
     var classList = className.split(" ")
     classList.forEach(c =>  a.classList.add(c))
     a.setAttribute("href", href)
-    a.setAttribute("id", id)
+    if(id.length > 0) a.setAttribute("id", id)
     a.textContent = text
     return a
 

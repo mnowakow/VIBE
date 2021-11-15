@@ -19,6 +19,7 @@ class Annotations implements Handler{
     private snapCoords: Coord
     private customAnnotationDrawer: CustomAnnotationShapeDrawer;
     private annotationChangeHandler: AnnotationChangeHandler;
+    private scale
 
     x
     constructor(){
@@ -61,6 +62,7 @@ class Annotations implements Handler{
         this.annotationChangeHandler = new AnnotationChangeHandler()
         this.annotationChangeHandler
             .setUpdateCallback(this.resetListeners.bind(this))
+            .setScale(this.scale)
             .setM2M(this.m2m)
             .setAnnotations(this.annotations)
 
@@ -213,6 +215,8 @@ class Annotations implements Handler{
        this.annotationCanvas.appendChild(textGroup)
        this.deactivateEdit()
        this.resetListeners()
+
+       document.dispatchEvent(new Event("annotChanged"))
     }
 
     selectHandler = (function selectHandler(e: MouseEvent){
@@ -288,6 +292,7 @@ class Annotations implements Handler{
                     el.remove();
                 }
             })
+            document.dispatchEvent(new Event("annotChanged"))
         }
     }).bind(this)
 
@@ -295,6 +300,7 @@ class Annotations implements Handler{
         var target = e.target as HTMLElement
         if((e.key === "Enter" || e.key === "Escape")){
             target.blur()
+            document.dispatchEvent(new Event("annotChanged"))
         }
     }).bind(this)
 
@@ -345,6 +351,11 @@ class Annotations implements Handler{
 
     setMusicPlayer(musicPlayer: MusicPlayer){
         this.musicPlayer = musicPlayer
+        return this
+    }
+
+    setScale(scale: number){
+        this.scale = scale
         return this
     }
 

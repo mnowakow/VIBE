@@ -11,8 +11,9 @@ class WindowHandler implements Handler{
     musicPlayer?: MusicPlayer;
     currentMEI?: string | Document;
     annotations: Annotations;
+    scale: number
     loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>;
-    //smHandler: ScoreManipulatorHandler
+    scaleCallback: (scale: number) => void;
 
     setListeners(){
         window.addEventListener("scroll", this.update)
@@ -54,6 +55,8 @@ class WindowHandler implements Handler{
         var isScrolling = setTimeout(function(){
             that.m2m.update()
             that.annotations.update()
+            that.scale = (document.querySelector("#annotationCanvas") as SVGSVGElement)?.viewBox.baseVal.width / document.getElementById(c._ROOTSVGID_)?.getBoundingClientRect().width || 0
+            that.scaleCallback(that.scale)
         }, 100)  
     }).bind(this)
 
@@ -81,6 +84,16 @@ class WindowHandler implements Handler{
 
     setCurrentMEI(mei: Document){
         this.currentMEI = mei
+        return this
+    }
+
+    setScale(scale: number){
+        this.scale = scale
+        return this
+    }
+
+    setScaleCallback(scaleCallback: (scale: number) => void){
+        this.scaleCallback = scaleCallback
         return this
     }
 

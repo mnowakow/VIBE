@@ -18,6 +18,7 @@ import ScoreManipulatorHandler from './ScoreManipulatorHandler';
 import { cleanUp } from '../utils/MEIOperations';
 import { isFunction } from 'tone';
 import { truncate } from 'fs';
+import { textChangeRangeIsUnchanged } from 'typescript';
 
 /**
  * Class that handles insert mode, events, and actions.
@@ -51,6 +52,7 @@ class InsertModeHandler implements Handler{
   private insertCallback: (newNote: NewNote, replace: Boolean) => Promise<any> 
   private deleteCallback: (notes: Array<Element>) => Promise<any>;
   private loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>;
+  scale: number;
   
 
   constructor () {
@@ -75,6 +77,7 @@ class InsertModeHandler implements Handler{
     this.phantom = new PhantomElement("note")
     this.phantomNoteHandler
       .setPhantomNote()
+      .setScale(this.scale)
       .setListeners()
       .setM2M(this.m2m)
 
@@ -153,6 +156,7 @@ class InsertModeHandler implements Handler{
     }
     this.annotations
       .setM2M(this.m2m)
+      .setScale(this.scale)
       .setMusicPlayer(this.musicPlayer)
       .setToFront()
       .setMenuClickHandler()
@@ -416,6 +420,14 @@ class InsertModeHandler implements Handler{
 
   setLoadDataCallback(loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>){
     this.loadDataCallback = loadDataCallback
+    return this
+  }
+
+  setScale(scale: number){
+    this.scale = scale
+    this.annotations?.setScale(this.scale)
+    this.phantomNoteHandler?.setScale(this.scale)
+    this.musicPlayer?.setScale(this.scale)
     return this
   }
 

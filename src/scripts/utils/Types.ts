@@ -94,6 +94,8 @@ export type NewChord = {
   noteElements: Array<NewNote>
 }
 
+export type NewClef = {}
+
 export type Staff = {
   clef?: string,
   keysig?: string

@@ -129,7 +129,7 @@ export class Mouse2MEI{
         })
 
 
-        this.measureMatrix.populate(document.querySelector(c._ROOTSVGID_WITH_IDSELECTOR_));
+        this.measureMatrix.populateFromSVG(document.querySelector(c._ROOTSVGID_WITH_IDSELECTOR_));
         var staves = document.querySelectorAll(c._STAFF_WITH_CLASSSELECTOR_)
         Array.from(staves).forEach(element => {
             let g = document.querySelectorAll("#" + element.id + " > path")

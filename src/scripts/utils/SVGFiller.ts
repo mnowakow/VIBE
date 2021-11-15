@@ -13,6 +13,7 @@ class SVGFiller{
      */
     fillSVG(mei: Document){
         this.fillSystemCounts(mei)
+        this.countBarlines()
         return this
     }
 
@@ -97,6 +98,14 @@ class SVGFiller{
             })
         })
         return this
+    }
+
+    countBarlines(){
+        document.querySelectorAll(".barLine").forEach(bl => {
+            bl.querySelectorAll("path").forEach((p, idx) => {
+                p.setAttribute("n", (idx+1).toString())
+            })
+        })
     }
 }
 
