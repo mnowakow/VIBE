@@ -32,7 +32,7 @@ export function removeFromMEI(scoreElements: Array<Element>, currentMEI: Documen
       if(currentMEI.getElementById(se.id) !== null){ // this only applies for <note> and <rest>
         //do not remove completely, replace with rest
         //currentMEI.getElementById(note.id).remove()
-        if(!se.classList.contains("rest")){
+        if(["note, chord"].some(s => se.classList.contains(s))){
           replaceWithRest(se, currentMEI)
         }else{
           currentMEI.getElementById(se.id).remove() // possibility to remove rests entirely
@@ -167,7 +167,7 @@ export function addToMEI(newSound: NewNote | NewChord, currentMEI: Document, rep
       }else if(newNote.nearestNoteId !== null){
         var sibling: HTMLElement = currentMEI.getElementById(newNote.nearestNoteId);
         
-        //specil rule for first element in layer
+        //special rule for first element in layer
         if(sibling.tagName === "layer"){
           if(scoreGraph !== null){
             sibling = currentMEI.getElementById(scoreGraph.getCurrentNode().getRight().getId())?.parentElement
@@ -987,16 +987,16 @@ export function changeDuration(xmlDoc: Document, mode: string, additionalElement
             elmei.parentElement.insertBefore(newRest, elmei.nextElementSibling)
           }
         }else if(layerRatio !== globalRatio){
-
           if(refRatio === elmeiRatio){
             elmei.remove()
-            //break
+            break;
           }else if(refRatio < elmeiRatio){
             elmeiRatio -= refRatio
             refRatio += elmeiRatio
             var elmeiDurDots = ratioToDur(elmeiRatio)
             elmei.setAttribute("dur", elmeiDurDots[0].toString())
             elmei.setAttribute("dots", elmeiDurDots[1].toString())
+            break;
           }else if(refRatio > elmeiRatio){
             var tie = elmei.closest("measure").querySelector("tie[startid='#" + elmei.id + "']")
             if(tie !== null){
@@ -1416,7 +1416,9 @@ export function insertKey(target: Element, newSig: string, currentMEI: Document)
   console.log("INSERT KEY")
   var targetStaff = target.closest(".measure").querySelector(".staff[n=\"" + target.getAttribute("n") + "\"]") || target.closest(".staff")
   var staffN = targetStaff.getAttribute("n")
-  var targetLayerId = currentMEI.getElementById(targetStaff.id).closest("measure")?.nextElementSibling?.querySelector("staff[n=\"" + staffN + "\"] > layer").id
+  var parentMeasure = currentMEI.getElementById(targetStaff.id).closest("measure")
+  var pmn = parseInt(parentMeasure.getAttribute("n")) + 1
+  var targetLayerId = parentMeasure.parentElement.querySelector("measure[n=\"" + pmn.toString() + "\"] > staff[n=\"" + staffN + "\"] > layer")?.id
   currentMEI.getElementById(targetLayerId).querySelectorAll("keySig")?.forEach(c => c.remove())
   
   var newSigElement = new MeiTemplate().createKeySig("major", keyIdToSig.get(newSig))

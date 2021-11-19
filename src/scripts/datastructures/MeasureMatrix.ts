@@ -38,14 +38,27 @@ class MeasureMatrix{
         for(var i = 0; i < this.cols; i++){
             let col = new Array<Staff>();
             let measure = measures[i]
+            let prevMeasure: Element
+            if(i==0){
+                prevMeasure = measure
+            }else{
+                prevMeasure = measures[i-1]
+            }
             let staves = measure.querySelectorAll(".staff")
+            let prevStaves = prevMeasure.querySelectorAll(".staff")
             for(var j = 0; j < this.rows; j++){
                 let staff: Staff = {}
-                let clefs = staves[j].getElementsByClassName("clef")
-                let keysigs = staves[j].getElementsByClassName("keySig")
+                let clefs = prevStaves[j].querySelectorAll(".clef")
+                let keysigs = staves[j].querySelectorAll(".keySig")
+                let meterSigs = staves[j].querySelectorAll(".meterSig")
                 if(clefs.length > 0){
-                    let lastIdx = clefs.length -1
-                    let clefShape = clefs[lastIdx].querySelector("use").getAttribute("xlink:href")
+                    let clefIdx: number
+                        if(i === 0){
+                            clefIdx = 0
+                        }else{
+                            clefIdx = clefs.length -1
+                        }
+                    let clefShape = clefs[clefIdx].querySelector("use").getAttribute("xlink:href")
                     if(clefShape.includes("-")){
                         let clefRegex = /^(.*?)-/g
                         clefShape = clefRegex.exec(clefShape)[0]
@@ -68,6 +81,23 @@ class MeasureMatrix{
                 }else{ // First measure, has no accidentials
                     staff.keysig = "0"
                 }
+
+                // TO BEI IMPLEMENTED...
+                // if(meterSigs.length > 0){
+                //     let lastIdx = keysigs.length -1
+                //     let meter = meterSigs[lastIdx].getAttribute("meter")
+                //     let count = meterSigs[lastIdx].getAttribute("count")
+                //     staff.meterSig = {meter: meter, count: count}
+                // }else if(i>0) {
+                //    staff.meterSig = this.matrix[i-1][j].meterSig;
+                // }else{
+                //     if(staves[j].querySelector("metersig") === null){
+                //         staff.meterSig = null
+                //     }else{
+                //         staff.meterSig = {meter: staves[j].querySelector("metersig").getAttribute("meter"), count: staves[j].querySelector("metersig").getAttribute("count")}
+                //     }
+                // }
+
                 col.push(staff)
             }
             this.matrix.push(col)
@@ -83,15 +113,28 @@ class MeasureMatrix{
         for(var i = 0; i < this.cols; i++){
             let col = new Array<Staff>();
             let measure = measures[i]
+            let prevMeasure: Element
+            if(i==0){
+                prevMeasure = measure
+            }else{
+                prevMeasure = measures[i-1]
+            }
             let staves = measure.querySelectorAll("staff")
+            let prevStaves = prevMeasure.querySelectorAll("staff")
             for(var j = 0; j < this.rows; j++){
                 let staffDef = mei.querySelector("staffDef[n=\"" + (j+1).toString() + "\"]")
                 let staff: Staff = {}
-                let clefs = staves[j].querySelectorAll("clef")
+                let clefs = prevStaves[j].querySelectorAll("clef")
                 let keysigs = staves[j].querySelectorAll("keySig")
+                let meterSigs = staves[j].querySelectorAll("meterSig")
                 if(clefs.length > 0){
-                    let lastIdx = clefs.length -1
-                    let clefShape = clefs[lastIdx].getAttribute("shape")
+                    let clefIdx: number
+                        if(i === 0){
+                            clefIdx = 0
+                        }else{
+                            clefIdx = clefs.length -1
+                        }
+                    let clefShape = clefs[clefIdx].getAttribute("shape")
                     clefShape = idToClef.get(clefShape);
                     staff.clef = clefShape;
                 }else{
@@ -115,6 +158,22 @@ class MeasureMatrix{
                         staff.keysig = staffDef.querySelector("keySig").getAttribute("sig")
                     }
                 }
+
+                if(meterSigs.length > 0){
+                    let lastIdx = keysigs.length -1
+                    let meter = meterSigs[lastIdx].getAttribute("meter")
+                    let count = meterSigs[lastIdx].getAttribute("count")
+                    staff.meterSig = {meter: meter, count: count}
+                }else if(i>0) {
+                   staff.meterSig = this.matrix[i-1][j].meterSig;
+                }else{
+                    if(staffDef.querySelector("metersig") === null){
+                        staff.meterSig = null
+                    }else{
+                        staff.meterSig = {meter: staffDef.querySelector("metersig").getAttribute("meter"), count: staffDef.querySelector("metersig").getAttribute("count")}
+                    }
+                }
+
                 col.push(staff)
             }
             this.matrix.push(col)

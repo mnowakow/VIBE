@@ -224,6 +224,11 @@ text{
     z-index: 1;
 }
 
+.dropKey, .dropClef{
+    fill: orange;
+    color: orange;
+}
+
 #annotList{
     height: 50%;
     width: 100%;

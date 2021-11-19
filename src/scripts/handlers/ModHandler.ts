@@ -90,7 +90,7 @@ class ModHandler implements Handler{
     connectNotes(e: MouseEvent){
         var markedElements = Array.from(document.querySelectorAll(".note.marked"))
         markedElements = markedElements.filter(me => me.closest(".layer").getAttribute("n") === markedElements[0].closest(".layer").getAttribute("n"))
-        if(markedElements.length === 0){return}
+        if(markedElements.length <= 1){return}
         var makeSlur = markedElements.length > 2
         if(!makeSlur && markedElements.length > 1){ // assert only 2 items
             var leftMeiElement = this.currentMEI.getElementById(markedElements[0].id)

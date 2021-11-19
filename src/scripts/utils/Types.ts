@@ -98,7 +98,8 @@ export type NewClef = {}
 
 export type Staff = {
   clef?: string,
-  keysig?: string
+  keysig?: string, 
+  meterSig?: {meter: string, count: string}
 }
 
 export type Annotation = {

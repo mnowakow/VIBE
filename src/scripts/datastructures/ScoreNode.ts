@@ -8,9 +8,11 @@ class ScoreNode{
     private left: ScoreNode
     private id: string
     private timeCode: number
+    private docElement: Element
 
     constructor(id: string){
         this.id = id
+        this.setDocElement()
     }
 
     hasNodeAnywhere(sn: ScoreNode){
@@ -76,6 +78,10 @@ class ScoreNode{
         return this.timeCode
     }
 
+    getDocElement(){
+        return this.docElement || document.getElementById(this.id) || null
+    }
+
     setUp(sn: ScoreNode){
         this.up = sn
     }
@@ -94,6 +100,10 @@ class ScoreNode{
 
     setTimeCode(tc: number){
         this.timeCode = tc
+    }
+
+    setDocElement(){
+        this.docElement = document.getElementById(this.id)
     }
 
     

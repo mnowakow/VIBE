@@ -114,17 +114,18 @@ class KeyModeHandler implements Handler{
     //get relevant staffinfo
     this.setCurrentNodeScoreGraph()
     var nearestNodeId = this.scoreGraph.getCurrentNode().getId()
-    var closestStaff = this.m2m.getCurrentMei().getElementById(nearestNodeId).closest("staff")
+    var closestStaff = this.m2m.getCurrentMei().getElementById(nearestNodeId)?.closest("staff") || this.m2m.getCurrentMei().querySelector("measure > staff") //asume first measure first staff
     var closestMeasure = closestStaff.closest("measure")
     var closestStaffIdx = parseInt(closestStaff.getAttribute("n")) - 1
     var closestMeasureIdx = parseInt(closestMeasure.getAttribute("n")) - 1
 
     var keysig = this.m2m.getMeasureMatrix().get(closestMeasureIdx, closestStaffIdx).keysig
-    var accid
+    var accids: string[]
+    var accid: string
     if(typeof keysig !== "undefined"){
-        accid = keysigToNotes.get(keysig)
-        accid = accid.filter((s:string) => {return s === pname})
-        if(accid.length === 1){
+        accids = keysigToNotes.get(keysig)
+        accids = accids.filter((s:string) => {return s === pname})
+        if(accids.length === 1){
             accid = keysig.charAt(1)
         }
     }

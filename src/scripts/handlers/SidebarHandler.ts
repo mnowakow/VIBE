@@ -19,29 +19,60 @@ class SidebarHandler implements Handler{
     loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>;
 
     constructor(){
-        this.setListeners()
+        //this.setListeners()
+        document.addEventListener("dragover", (e) => {
+            e.preventDefault()
+        })
     }
 
     setListeners() {
-        this.setKeySigSelectListeners()
-        this.setClefSelectListeners()
+        this.setSelectListeners()
         this.setChangeMeterListeners()
+
+        // Controll dpossible drag and drop zones on screen
+        var that = this
+        var dragTarget =  document.getElementById("rootSVG")
+        document.getElementById("rootSVG").addEventListener("dragleave", function(event){
+            event.preventDefault()
+            event.stopPropagation()
+            if(event.target === dragTarget){
+                document.querySelectorAll(".dropKey, .dropClef").forEach(e => {
+                    e.classList.remove("dropClef")
+                    e.classList.remove("dropKey")
+                })
+                that.removeSelectListeners()
+            }
+        }, false)
+    
+
+        document.getElementById("rootSVG").addEventListener("dragenter", function(event){
+            event.preventDefault()
+            event.stopPropagation()
+            if(Array.from(dragTarget.querySelectorAll("*")).every(c => c !== event.target)){
+                that.setSelectListeners()
+            }
+        }, false)
+
         return this
     }
 
     removeListeners() {
+        this.removeSelectListeners()
+        return this
+    }
+
+    removeSelectListeners(){
         document.querySelectorAll("*[id*=keyList] > *").forEach(k => {
             if(k.tagName === "A"){
-                k.removeEventListener("click", this.keySigSelectHandler)
+                k.removeEventListener("dblclick", this.keySigSelectHandler)
             }
         })
 
         document.querySelectorAll("*[id*=clefList] > *").forEach(k => {
             if(k.tagName === "A"){
-                k.removeEventListener("click", this.clefSelectHandler)
+                k.removeEventListener("dblclick", this.clefSelectHandler)
             }
         })
-
         document.removeEventListener("dragover", (e) => {
             e.preventDefault()
         })
@@ -57,26 +88,20 @@ class SidebarHandler implements Handler{
         this.setListeners() 
     }
 
-
-    setKeySigSelectListeners(){
+    setSelectListeners(){
         document.querySelectorAll("*[id*=keyList] > *").forEach(k => {
             if(k.tagName === "A"){
-                k.addEventListener("click", this.keySigSelectHandler)
+                k.addEventListener("dblclick", this.keySigSelectHandler)
             }
         })
-        return this
-    }
 
-    setClefSelectListeners(){
         document.querySelectorAll("*[id*=clefList] > *").forEach(k => {
             if(k.tagName === "A"){
-                k.addEventListener("click", this.clefSelectHandler)
+                k.addEventListener("dblclick", this.clefSelectHandler)
             }
         })
 
-        document.addEventListener("dragover", (e) => {
-            e.preventDefault()
-        })
+
         document.querySelectorAll("#sidebarList a").forEach(sa => {
             sa.addEventListener("drag", this.findDropTargetFunction)
             sa.addEventListener("dragend", this.dropOnTargetFunction)
@@ -92,7 +117,7 @@ class SidebarHandler implements Handler{
      */
     makeScoreElementsClickable(){
         // Clefs are clickable and will be filled red (see css)
-        document.querySelectorAll(".clef").forEach(c => {
+        document.querySelectorAll(".clef, .keySig").forEach(c => {
             c.addEventListener("click", function(){
                 if(c.classList.contains("marked")){
                     c.classList.remove("marked")
@@ -219,16 +244,14 @@ class SidebarHandler implements Handler{
         var tempDist = Math.pow(10, 10)
         dropTargets.forEach(dt => {
             var blbbox = dt.getBoundingClientRect()
-            var dist = Math.sqrt(Math.abs(blbbox.x - posx)**2 + Math.abs(blbbox.y - posy)**2)
+            var bbx  = blbbox.x - window.pageXOffset - rootBBox.x - root.scrollLeft
+            var bby  = blbbox.y - window.pageYOffset - rootBBox.y - root.scrollTop
+            var dist = Math.sqrt(Math.abs(bbx - posx)**2 + Math.abs(bby - posy)**2)
             if(dist < tempDist){
                 dropTargets.forEach(_dt => {
-                    _dt.removeAttribute("fill")
-                    _dt.removeAttribute("color")
                     _dt.classList.remove(dropFlag)
                 })
                 tempDist = dist
-                dt.setAttribute("fill", "orange")
-                dt.setAttribute("color", "orange")
                 dt.classList.add(dropFlag)
             }
         })
@@ -248,8 +271,7 @@ class SidebarHandler implements Handler{
         var t = e.target as Element
         var mei: Document
 
-        console.log("SELECTED ELEMENT:", selectedElement)
-        var isFirstClef = document.querySelector(".measure[n=\"1\"] .clef").id === selectedElement.id
+        var isFirstClef = Array.from(document.querySelectorAll(".measure[n=\"1\"] .clef")).some(mc => mc.id === selectedElement.id)
         var isFirstKey = Array.from(document.querySelectorAll(".measure[n=\"1\"] .keySig")).some(mc => mc.id === selectedElement.id)
         if(selectedElement?.classList.contains("dropClef")){
             if(isFirstClef){

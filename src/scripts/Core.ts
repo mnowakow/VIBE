@@ -155,10 +155,11 @@ class Core {
         this.undoStacks.push(mei)
 
         //mark if note was inserted (enables direct manipulation)
-        document.querySelectorAll(".marked").forEach(m => {
-          m.classList.remove("marked")
-        })
-        if(this.lastInsertedNoteId != undefined){
+        // document.querySelectorAll(".marked").forEach(m => {
+        //   m.classList.remove("marked")
+        // })
+
+        if(this.lastInsertedNoteId != undefined && document.getElementById(targetDivID).classList.contains("clickmode")){
           document.getElementById(this.lastInsertedNoteId)?.classList.add("marked")
         }
 

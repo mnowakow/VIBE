@@ -363,6 +363,9 @@ export class Mouse2MEI{
                 let map = null
                 if(currentNearestStaffLine.classList.contains("ClefG")){map = idxNoteMapGClef} 
                 else if(currentNearestStaffLine.classList.contains("ClefF")){map = idxNoteMapFClef}
+                else if(currentNearestStaffLine.classList.contains("ClefC")){map = idxNoteMapCClef}
+                else{throw new Error("No Note to Clef Mapping found")}
+                
                 pname = map.get(nextPitchIdx).charAt(0)
                 oct = map.get(nextPitchIdx).charAt(1)
                 

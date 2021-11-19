@@ -8,7 +8,7 @@ export enum constants{
     _NOTEHEAD_ = "notehead",
     _ROOTSVGID_ = "rootSVG",
     _ROOTSVGID_WITH_IDSELECTOR_ = "#rootSVG",
-    _VEROVIO_VERSION_ = "latest",
+    _VEROVIO_VERSION_ = "3.6.0", //"latest",
     _METERUNIT_ = "meter.unit",
     _METERCOUNT_ = "meter.count",
     _SVGNS_ = "http://www.w3.org/2000/svg",
