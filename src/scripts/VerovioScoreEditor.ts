@@ -66,10 +66,10 @@ class VerovioScoreEditor{
      */
     initGUI(): Promise<void>{
         return new Promise((resolve): void => {
-            var btnGrpClass = "btn-group me-2 h-100"
+            var btnGrpClass = "btn-group me-2"
             // MAIN/ Permanent TOOLBAR
             // parentElement for dropdown
-            this.container.append(dc.makeNewDiv("handlerGroup", "me-2 h-100"))
+            this.container.append(dc.makeNewDiv("handlerGroup", btnGrpClass, {role: "group"})) //"me-2 h-100"))
         
             //parentElement for Notebuttons
             this.container.append(dc.makeNewDiv("noteGroup", btnGrpClass, {role: "group"}))

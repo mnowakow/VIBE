@@ -102,6 +102,8 @@ class MeasureMatrix{
             }
             this.matrix.push(col)
         }
+
+        //console.log(this.matrix)
     }
 
     populateFromMEI(mei: Document){
@@ -178,6 +180,7 @@ class MeasureMatrix{
             }
             this.matrix.push(col)
         }
+        //console.log(this.matrix)
     }
 
     addMeasure(n: number = 1){

@@ -302,14 +302,15 @@ class MusicPlayer{
                                 var baseDur = this.getDur(parseInt(meiNote.getAttribute("dur")), parseInt(meiNote.getAttribute("dots")) || 0 , 4)
 
                                 //find any prolongated Notes
-                                var tie = this.mei.querySelector("tie[startid='#" + note.id +"']")
+                                var tie = this.mei.querySelector("tie[startid='#" + note.id +"']") 
                                 if(tie !== null){
                                     var endid = tie.getAttribute("endid") //endid alway includes # at beginnig
                                     var prolongNote = this.mei.querySelector(endid)
-                                    var pnDur = prolongNote.getAttribute("dur")
-                                    var pnDot = prolongNote.getAttribute("dots")
-                                    baseDur += this.getDur(parseInt(pnDur), parseInt(pnDot) || 0, 4)
-
+                                    if(prolongNote !== null){
+                                        var pnDur = prolongNote.getAttribute("dur")
+                                        var pnDot = prolongNote.getAttribute("dots")
+                                        baseDur += this.getDur(parseInt(pnDur), parseInt(pnDot) || 0, 4)
+                                    }
                                 }
 
                                 //concat duration

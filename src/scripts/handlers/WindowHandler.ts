@@ -21,13 +21,18 @@ class WindowHandler implements Handler{
         window.addEventListener("deviceorientation", this.update)
         document.getElementById("sidebarContainer").addEventListener("transitionend", this.update)
 
-        document.getElementById(c._ROOTSVGID_).parentElement.addEventListener("scroll", this.update)
-        document.getElementById(c._ROOTSVGID_).parentElement.addEventListener("resize", this.update)
-        document.getElementById(c._ROOTSVGID_).parentElement.addEventListener("deviceorientation", this.update)
+        // document.getElementById(c._ROOTSVGID_).parentElement.addEventListener("scroll", this.update)
+        // document.getElementById(c._ROOTSVGID_).parentElement.addEventListener("resize", this.update)
+        // document.getElementById(c._ROOTSVGID_).parentElement.addEventListener("deviceorientation", this.update)
+        document.getElementById(c._ROOTSVGID_).addEventListener("scroll", this.update)
+        document.getElementById(c._ROOTSVGID_).addEventListener("resize", this.update)
+        document.getElementById(c._ROOTSVGID_).addEventListener("deviceorientation", this.update)
 
-        document.querySelectorAll("*").forEach(el => {
-            el.addEventListener("fullscreenchange", this.update)
-        })
+        // document.body.forEach(el => {
+        //     el.addEventListener("fullscreenchange", this.update)
+        // })
+
+        document.addEventListener("fullscreenchange", this.update)
 
         return this
     }
@@ -38,13 +43,19 @@ class WindowHandler implements Handler{
         window.removeEventListener("deviceorientation", this.update)
         document.getElementById("sidebarContainer").removeEventListener("transitionend", this.update)
 
-        document.getElementById(c._ROOTSVGID_).parentElement.removeEventListener("scroll", this.update)
-        document.getElementById(c._ROOTSVGID_).parentElement.removeEventListener("resize", this.update)
-        document.getElementById(c._ROOTSVGID_).parentElement.removeEventListener("deviceorientation", this.update)
+        // document.getElementById(c._ROOTSVGID_).parentElement.removeEventListener("scroll", this.update)
+        // document.getElementById(c._ROOTSVGID_).parentElement.removeEventListener("resize", this.update)
+        // document.getElementById(c._ROOTSVGID_).parentElement.removeEventListener("deviceorientation", this.update)
 
-        document.querySelectorAll("*").forEach(el => {
-            el.removeEventListener("fullscreenchange", this.update)
-        })
+        document.getElementById(c._ROOTSVGID_).removeEventListener("scroll", this.update)
+        document.getElementById(c._ROOTSVGID_).removeEventListener("resize", this.update)
+        document.getElementById(c._ROOTSVGID_).removeEventListener("deviceorientation", this.update)
+
+        // document.querySelectorAll("*").forEach(el => {
+        //     el.removeEventListener("fullscreenchange", this.update)
+        // })
+        document.removeEventListener("fullscreenchange", this.update)
+
         return this
     }
 

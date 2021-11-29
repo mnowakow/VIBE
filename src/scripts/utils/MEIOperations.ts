@@ -32,7 +32,7 @@ export function removeFromMEI(scoreElements: Array<Element>, currentMEI: Documen
       if(currentMEI.getElementById(se.id) !== null){ // this only applies for <note> and <rest>
         //do not remove completely, replace with rest
         //currentMEI.getElementById(note.id).remove()
-        if(["note, chord"].some(s => se.classList.contains(s))){
+        if(["note", "chord"].some(s => se.classList.contains(s))){
           replaceWithRest(se, currentMEI)
         }else{
           currentMEI.getElementById(se.id).remove() // possibility to remove rests entirely

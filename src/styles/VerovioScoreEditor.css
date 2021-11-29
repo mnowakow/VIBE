@@ -144,7 +144,7 @@ text{
 #btnToolbar{
     top: 0px;
     transition: 0.5s;
-    height: 5%;
+    /*height: 5%;*/
 }
 
 .dropdown-item.selected{

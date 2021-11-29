@@ -134,9 +134,9 @@ export class Mouse2MEI{
         Array.from(staves).forEach(element => {
             let g = document.querySelectorAll("#" + element.id + " > path")
             let staff = element;
-            let idxStaff = Array.from(element.parentElement.querySelectorAll(".staff")).indexOf(element)
+            let idxStaff = parseInt(element.getAttribute("n")) - 1
             let closestMeasure = element.closest(".measure");
-            let idxParentMeasure = Array.from(closestMeasure.parentElement.querySelectorAll(".measure")).indexOf(closestMeasure)
+            let idxParentMeasure = parseInt(closestMeasure.getAttribute("n")) - 1
             let clefShape = this.measureMatrix.get(idxParentMeasure, idxStaff).clef;
             Array.from(g).forEach((staffLine, idx) => {
                 staffLine.id = uuidv4();
@@ -169,6 +169,8 @@ export class Mouse2MEI{
                 
             })
         })
+
+        console.log(this.staffLineBBoxes)
     }
 
     /**
@@ -222,8 +224,8 @@ export class Mouse2MEI{
         let upperStaffBound = staffIdx * 5 + 0;
         let lowerStaffBound = staffIdx * 5 + 4;
 
-        let aboveSystem: boolean =  (y < this.staffLineBBoxes[upperStaffBound].y)? true : false;
-        let belowSystem: boolean = (y > this.staffLineBBoxes[lowerStaffBound].y)? true: false;
+        let aboveSystem: boolean =  (y < this.staffLineBBoxes[upperStaffBound]?.y) ? true : false;
+        let belowSystem: boolean = (y > this.staffLineBBoxes[lowerStaffBound]?.y) ? true: false;
         let isInSystem: boolean = !aboveSystem && !belowSystem;
 
         this.lastStaffMouseEnter.querySelectorAll(".layer").forEach(l => {
@@ -349,6 +351,7 @@ export class Mouse2MEI{
                 })
         
                 // prepare center coordinate (Y) for snapping
+                if(sbb[0] == undefined || sbb[1] == undefined){return}
                 let lineDist = Math.abs(sbb[0].y - sbb[1].y)
                 this.lineDist = lineDist/2
                 lineDist = isOverStaff ? -lineDist : lineDist
