@@ -11,16 +11,16 @@ class PhantomElementHandler implements Handler{
     musicPlayer?: MusicPlayer;
     currentMEI?: string | Document;
 
-    private phantom: Element
     private phantomLines: Array<PhantomElement>
     private phantomCanvas: SVGSVGElement
     root: HTMLElement;
     rootBBox: DOMRect;
     scale: number;
+    phantom: PhantomElement
 
     constructor(){
-        this.phantom = document.getElementById("phantomNote")
         this.addCanvas()
+        this.phantom = new PhantomElement("note")
     }
     
     
@@ -31,7 +31,7 @@ class PhantomElementHandler implements Handler{
         var rootHeigth = this.rootBBox.height.toString()
         
 
-        if(typeof this.phantomCanvas === "undefined"){
+        if(this.phantomCanvas == undefined){
             this.phantomCanvas = document.createElementNS(c._SVGNS_, "svg")
             this.phantomCanvas.setAttribute("id", "phantomCanvas")
             this.phantomCanvas.setAttribute("preserveAspectRatio", "xMinYMin meet")
@@ -63,8 +63,9 @@ class PhantomElementHandler implements Handler{
             element.removeEventListener('click', this.trackMouseHandler)
             clearInterval(this.trackMouseHandler)
         })
-        if(this.phantom !== null){
-            this.phantom.remove()
+        if(this.phantom != undefined){
+            this.phantom.removePhantomNote()
+            this.phantom = undefined
         }
 
         return this
@@ -91,8 +92,9 @@ class PhantomElementHandler implements Handler{
         var root = document.getElementById(c._ROOTSVGID_)
         var rootBBox = root.getBoundingClientRect()
 
-        var relX = (e.pageX - window.pageXOffset - rootBBox.x - root.scrollLeft) * this.scale //- window.pageXOffset
-        var relY = (e.pageY - window.pageYOffset - rootBBox.y - root.scrollTop) * this.scale //- window.pageYOffset - svgrect.y
+        var relX = (e.pageX - window.pageXOffset - rootBBox.x - root.scrollLeft) // * this.scale //- window.pageXOffset
+        var relY = (e.pageY - window.pageYOffset - rootBBox.y - root.scrollTop) * this.scale //- window.pageYOffset //- svgrect.y
+
         var target = e.target as HTMLElement;
         var options = {}
 
@@ -100,18 +102,19 @@ class PhantomElementHandler implements Handler{
             options["staffLineId"] = target.id
         }
 
-        this.phantom.setAttribute("cx", relX.toString());
-        this.phantom.setAttribute("cy", relY.toString());
-        this.phantom.setAttribute("r", this.m2m?.getLineDist()?.toString() || "0")
+        var phantomNoteElement = this.phantom.getNoteElement()
+        phantomNoteElement.setAttribute("cx", relX.toString());
+        phantomNoteElement.setAttribute("cy", relY.toString());
+        phantomNoteElement.setAttribute("r", this.m2m?.getLineDist()?.toString() || "0")
         //(this.phantom as HTMLElement).style.transform += 'translate(' + [- window.pageXOffset, - window.pageYOffset - svgrect.y] +')'
-        this.phantom.setAttribute('transform', 'translate(' + [- window.pageXOffset, - window.pageYOffset - rootBBox.y] +')') // BUT WHY???
-        this.phantom.setAttribute("visibility", "visible")
+        phantomNoteElement.setAttribute('transform', 'translate(' + [- window.pageXOffset, - window.pageYOffset - rootBBox.y] +')') // BUT WHY???
+        phantomNoteElement.setAttribute("visibility", "visible")
         this.m2m.defineNote(e.pageX, e.pageY, options)
         var newCY = (this.m2m.getNewNoteY())?.toString()
-        this.phantom.setAttribute("cy", (newCY || "0"))
+        phantomNoteElement.setAttribute("cy", (newCY || "0"))
 
         this.removeLines()
-        if(typeof this.m2m.getPhantomLines() !== "undefined"){
+        if(this.m2m.getPhantomLines() != undefined){
             this.phantomLines = new Array();
             this.m2m.getPhantomLines().forEach(pl => {
                 this.phantomLines.push(new PhantomElement("line", {lineX: relX - window.pageXOffset, lineY: pl - window.pageYOffset - rootBBox.y}, this.phantomCanvas))
@@ -128,6 +131,25 @@ class PhantomElementHandler implements Handler{
                 l.remove()
             })
         }
+        return this
+    }
+
+    resetCanvas(){
+
+        this.root = document.getElementById(c._ROOTSVGID_)
+        this.rootBBox = this.root.getBoundingClientRect()
+        var rootWidth = this.rootBBox.width.toString()
+        var rootHeigth = this.rootBBox.height.toString()
+        
+        this.phantomCanvas = document.querySelector("#phantomCanvas")
+        this.phantomCanvas.setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))  
+
+        
+        this.removeListeners()
+        this.removePhantomLineListeners()
+        this.phantom = new PhantomElement("note")
+        this.setListeners()
+        this.setPhantomLineListeners()
     }
 
 
@@ -136,8 +158,8 @@ class PhantomElementHandler implements Handler{
         return this
     }
 
-    setPhantomNote(note: Element = undefined){
-        this.phantom = note || document.getElementById("phantomNote")
+    setPhantomNote(note: PhantomElement = undefined){
+        this.phantom = note || new PhantomElement("note")
         return this
     }
 

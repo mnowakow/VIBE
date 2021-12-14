@@ -4,6 +4,7 @@ import Handler from "./Handler";
 import ScoreManipulatorHandler from "./ScoreManipulatorHandler";
 import { constants as c } from "../constants"
 import Annotations from "../gui/Annotations";
+import InsertModeHandler from "./InsertModeHandler";
 
 
 class WindowHandler implements Handler{
@@ -14,6 +15,7 @@ class WindowHandler implements Handler{
     scale: number
     loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>;
     scaleCallback: (scale: number) => void;
+    insertModeHandler: InsertModeHandler;
 
     setListeners(){
         window.addEventListener("scroll", this.update)
@@ -64,11 +66,12 @@ class WindowHandler implements Handler{
         window.clearTimeout(isScrolling)
 
         var isScrolling = setTimeout(function(){
-            that.m2m.update()
-            that.annotations.update()
+            that.m2m?.update()
+            that.annotations?.update()
             that.scale = (document.querySelector("#annotationCanvas") as SVGSVGElement)?.viewBox.baseVal.width / document.getElementById(c._ROOTSVGID_)?.getBoundingClientRect().width || 0
             that.scaleCallback(that.scale)
-        }, 100)  
+            that.insertModeHandler?.getPhantomNoteHandler()?.resetCanvas()
+        }, 500)  
     }).bind(this)
 
     scoreChangedHandler = (function scoreChangedHandler(e: Event){
@@ -100,6 +103,11 @@ class WindowHandler implements Handler{
 
     setScale(scale: number){
         this.scale = scale
+        return this
+    }
+
+    setInsertModeHandler(imh: InsertModeHandler){
+        this.insertModeHandler = imh
         return this
     }
 

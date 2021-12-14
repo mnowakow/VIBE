@@ -100,7 +100,7 @@ class VerovioScoreEditor{
             // var statusBar = dc.makeNewDiv("statusBar", "")
             // statusBar.textContent = "Status: "
             // this.container.append(statusBar)
-
+            // test
 
             var tb = new Toolbar(this.options)
             tb.createToolbars()

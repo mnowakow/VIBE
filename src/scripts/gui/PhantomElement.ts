@@ -1,5 +1,6 @@
 import * as d3 from 'd3';
 import { line } from 'd3';
+import { threadId } from 'worker_threads';
 import {constants as c} from '../constants'
 import { Mouse2MEI } from '../utils/Mouse2MEI';
 
@@ -9,6 +10,7 @@ class PhantomElement{
 
     noteR: number
     phantomCanvas: SVGSVGElement;
+    noteElement: Element
 
     constructor(elementName: string, options = null, canvas = undefined){
         elementName = elementName.toLowerCase();
@@ -29,7 +31,7 @@ class PhantomElement{
 
     makeNewPhantomNote(){
         this.removePhantomNote()
-        if(document.body.classList.contains("clickmode")){
+        if(document.body.classList.contains("clickmode") && document.getElementById("phantomNote") === null){
             var circle = document.createElementNS(svgNS, "circle")
             //document.querySelector(c._ROOTSVGID_WITH_IDSELECTOR_).insertBefore(circle, document.querySelector(c._ROOTSVGID_WITH_IDSELECTOR_).firstChild);
             this.phantomCanvas.insertBefore(circle, this.phantomCanvas.firstChild);
@@ -39,6 +41,7 @@ class PhantomElement{
             circle.setAttribute("fill", "black");
             circle.setAttribute("opacity", "0.5");
             circle.setAttribute("visibility", "hidden")
+            this.noteElement = circle
         }
     }
 
@@ -80,6 +83,10 @@ class PhantomElement{
     setPhantomCanvas(canvas: SVGSVGElement){
         this.phantomCanvas = canvas
         return this
+    }
+
+    getNoteElement(){
+        return this.noteElement
     }
 }
 export default PhantomElement;

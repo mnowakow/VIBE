@@ -535,6 +535,10 @@ class MusicPlayer{
         return this
     }
 
+    getIsPlaying(){
+        return this.player?.isPlaying()
+    }
+
     update(){
         this.resetListeners()
         this.initPlayer()

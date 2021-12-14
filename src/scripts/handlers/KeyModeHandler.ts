@@ -54,6 +54,7 @@ class KeyModeHandler implements Handler{
    * Event handler for inserting Notes
    */
   keyModeHandler = (function keyModeHandler (evt: KeyboardEvent): void {
+    if(this.musicPlayer.getIsPlaying() === true){return} // getIsPlaying could also be undefined
     if(keyCodeNoteMap.has(evt.code) && typeof this.cursor !== "undefined"){
       evt.preventDefault()
       var pname = keyCodeNoteMap.get(evt.code)

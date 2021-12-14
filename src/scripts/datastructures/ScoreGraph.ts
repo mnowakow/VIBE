@@ -250,7 +250,7 @@ class ScoreGraph {
 
             // check right
             if (this.targetNodeIsLeftOrRight(currentNode, currentNode.getDown()) && rightNode !== null) {
-                if (rightNode.getDown() !== null && typeof rightNode.getDown() !== "undefined") {
+                if (rightNode.getDown() !== null && rightNode.getDown() != undefined) {
                     if ((rightNode.getDown().getTimeCode() - currentNode.getTimeCode()) < closestTimeDown) {
                         downSet = rightNode.getDown()
                     }
@@ -265,7 +265,7 @@ class ScoreGraph {
         //     console.log(document.getElementById(key))
         // }
 
-        console.log(this.graph)
+        //console.log(this.graph)
 
     }
 

@@ -262,6 +262,7 @@ class Core {
       .setCurrentMEI(this.currentMEIDoc)
       .setLoadDataCallback(this.loadDataFunction)
       .setAnnotations(this.insertModeHandler.getAnnotations())
+      .setInsertModeHandler(this.insertModeHandler)
       .resetListeners()
 
     this.sidebarHandler

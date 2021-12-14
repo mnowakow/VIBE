@@ -74,12 +74,7 @@ class InsertModeHandler implements Handler{
     this.harmonyMode = false;
 
     this.phantomNoteHandler = new PhantomElementHandler
-    this.phantom = new PhantomElement("note")
-    this.phantomNoteHandler
-      .setPhantomNote()
-      .setScale(this.scale)
-      .setListeners()
-      .setM2M(this.m2m)
+    this.setPhantomNote()
 
     this.clickModeHandler = typeof this.clickModeHandler === "undefined" ? new ClickModeHandler() : this.clickModeHandler
     this.clickModeHandler
@@ -215,14 +210,14 @@ class InsertModeHandler implements Handler{
     this.harmonyMode = false;
     this.annotationMode = false;
 
-    if(typeof this.clickModeHandler !== "undefined"){
+    if(this.clickModeHandler != undefined){
       this.clickModeHandler.removeListeners();
       this.phantomNoteHandler
         .removeListeners()
         .removeLines()
     }
 
-    if(typeof this.keyModeHandler !== "undefined"){
+    if(this.keyModeHandler != undefined){
       this.keyModeHandler.removeListeners();
     }
 
@@ -231,19 +226,19 @@ class InsertModeHandler implements Handler{
     // }
     // this.selectionHandler = undefined
 
-    if(typeof this.annotations !== "undefined"){
+    if(this.annotations != undefined){
       this.annotations.removeListeners()
       this.annotations.setToBack()
       this.annotationMode = false
     }
 
-    if(typeof this.labelHandler !== "undefined"){
+    if(this.labelHandler != undefined){
       //this.labelHandler.removeListeners()
       this.isGlobal = true
       this.labelHandler.reset()
     }
 
-    if(typeof this.deleteHandler !== "undefined"){
+    if(this.deleteHandler != undefined){
       this.deleteHandler.removeListeners()
     }
 
@@ -408,6 +403,18 @@ class InsertModeHandler implements Handler{
     return this
   }
 
+  setPhantomNote(){
+    if(this.phantomNoteHandler != undefined){
+      console.log("Set PHantomNOte")
+      this.phantomNoteHandler
+        .setPhantomNote()
+        .setScale(this.scale)
+        .setListeners()
+        .setM2M(this.m2m)
+    }
+    return this
+  }
+
   setInsertCallback(insertCallback: (newNote: NewNote, replace: Boolean) => Promise<any>){
     this.insertCallback = insertCallback
     return this
@@ -445,6 +452,10 @@ class InsertModeHandler implements Handler{
 
   getSMHandler(){
     return this.smHandler
+  }
+
+  getPhantomNoteHandler(){
+    return this.phantomNoteHandler
   }
 
 }

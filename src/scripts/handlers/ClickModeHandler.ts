@@ -66,7 +66,7 @@ class ClickModeHandler implements Handler{
      * Event handler for inserting Notes
      */
     clickHandler = (function clickHandler (evt: MouseEvent): void{
-
+        if(this.musicPlayer.getIsPlaying() === true){return} // getIsPlaying could also be undefined
         var posx = evt.offsetX
         var posy = evt.offsetY
         var target = evt.target as HTMLElement;

@@ -170,7 +170,7 @@ export class Mouse2MEI{
             })
         })
 
-        console.log(this.staffLineBBoxes)
+        //console.log(this.staffLineBBoxes)
     }
 
     /**
