@@ -29,12 +29,12 @@ class GlobalKeyboardHandler implements Handler{
 
     setListeners(){
         document.addEventListener("keydown", this.keydownHandler)
-        document.addEventListener("keydown", this.changeHandler)
+        document.addEventListener("keydown", this.prolongHandler)
     }
 
     removeListeners(){
         document.removeEventListener("keydown", this.keydownHandler)
-        document.removeEventListener("keydown", this.changeHandler)
+        document.removeEventListener("keydown", this.prolongHandler)
     }
 
     keydownHandler = (function keydownHandler(e: KeyboardEvent){
@@ -58,7 +58,7 @@ class GlobalKeyboardHandler implements Handler{
         }
     }).bind(this)
 
-    changeHandler = (function handler(e: KeyboardEvent){
+    prolongHandler = (function prolongHandler(e: KeyboardEvent){
         if(e.code === "Semicolon"){ // Deutsch: Ä
             this.reduceDur()
         }else if(e.code === "Quote"){ // Deutsch: Ö
@@ -70,14 +70,14 @@ class GlobalKeyboardHandler implements Handler{
         e.stopImmediatePropagation()
         console.log("Pushed undo")
         this.undoCallback()
-        document.removeEventListener("keydown", this.keydownHandler)
+        //document.removeEventListener("keydown", this.keydownHandler)
     }
 
     redoHandler(e: KeyboardEvent): void{
         e.stopImmediatePropagation()
         console.log("Pushed redo")
         this.redoCallback()
-        document.removeEventListener("keydown", this.keydownHandler)       
+        //document.removeEventListener("keydown", this.keydownHandler)       
     }
 
     selectAllHandler(e: KeyboardEvent){

@@ -4,7 +4,7 @@ import { constants as c } from "../constants"
 
 const meiNodeSelector = "note, rest, mRest, chord, layer"
 const documentNodeSelector = ".clef, .meterSig, .keySig, .note, .rest, .mRest, .chord, .layer"
-const documentNodeSelector2 = ".clef, .meterSig, .keySig, .layer > .note, .layer > .rest, .layer > .mRest, .layer > .chord, :scope > .layer"
+const documentNodeSelector2 = ".clef, .meterSig, .keySig, .layer .note, .layer .rest, .layer .mRest, .layer .chord, :scope > .layer"
 
 class ScoreGraph {
 
@@ -278,6 +278,9 @@ class ScoreGraph {
         var isLeft: Boolean = false
         while (tempNode !== null) {
             if (tempNode !== null) {
+                if(tempNode == undefined){
+                    return isLeft
+                }
                 tempNode = tempNode.getLeft()
             }
             if (tempNode === targetNode) {
@@ -292,6 +295,9 @@ class ScoreGraph {
         var isRight: Boolean = false
         while (tempNode !== null) {
             if (tempNode !== null) {
+                if(tempNode == undefined){
+                    return isRight
+                }
                 tempNode = tempNode.getRight()
             }
             if (tempNode === targetNode) {

@@ -26,14 +26,12 @@ class PhantomElement{
             console.log("Element", elementName, "is not supported")
             break;
         }
-
     }
 
     makeNewPhantomNote(){
         this.removePhantomNote()
         if(document.body.classList.contains("clickmode") && document.getElementById("phantomNote") === null){
             var circle = document.createElementNS(svgNS, "circle")
-            //document.querySelector(c._ROOTSVGID_WITH_IDSELECTOR_).insertBefore(circle, document.querySelector(c._ROOTSVGID_WITH_IDSELECTOR_).firstChild);
             this.phantomCanvas.insertBefore(circle, this.phantomCanvas.firstChild);
             circle.setAttribute("id", "phantomNote");
             var r = 5
@@ -46,7 +44,7 @@ class PhantomElement{
     }
 
     makeNewPhantomLine(options: {lineY: number, lineX: number}){
-        if(typeof options.lineX === "undefined" || typeof options.lineY === "undefined"){
+        if(options.lineX == undefined || options.lineY == undefined){
             return
         }
 

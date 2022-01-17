@@ -42,8 +42,10 @@ class Core {
   private verivioMeasureWrappers: Map<string, VerovioWrapper> // measure.id, verovioWrapper
   private m2m: Mouse2MEI;
 
-  private undoStacks: Array<string>;
-  private redoStacks: Array<string>;
+  private undoMEIStacks: Array<string>;
+  private redoMEIStacks: Array<string>;
+  private undoAnnotationStacks: Array<Array<Element>>;
+  private redoAnnotationStacks: Array<Array<Element>>;
 
   //private $: any;
   private insertModeHandler: InsertModeHandler;
@@ -69,8 +71,12 @@ class Core {
    */
   constructor () {
     this.verovioWrapper = new VerovioWrapper();
-    this.undoStacks = Array<string>();
-    this.redoStacks = new Array<string>();
+    this.undoMEIStacks = Array<string>();
+    this.redoMEIStacks = new Array<string>();
+    this.undoAnnotationStacks = new Array<Array<Element>>();
+    //this.undoAnnotationStacks.push(new Array<Element>())
+    this.redoAnnotationStacks = new Array<Array<Element>>();
+    //this.redoAnnotationStacks.push(new Array<Element>())
     this.musicplayer = new MusicPlayer()
     this.verivioMeasureWrappers = new Map();
 
@@ -152,7 +158,7 @@ class Core {
           .loadClasses()
           .fillSVG(this.currentMEIDoc)
         this.musicplayer.setMEI(this.currentMEIDoc)
-        this.undoStacks.push(mei)
+        this.undoMEIStacks.push(mei)
 
         //mark if note was inserted (enables direct manipulation)
         // document.querySelectorAll(".marked").forEach(m => {
@@ -232,6 +238,7 @@ class Core {
       .setDeleteCallback(this.delete)
       .setLoadDataCallback(this.loadDataFunction)
       .setScoreGraph(this.scoreGraph)
+      .setUndoAnnotationStacks(this.undoAnnotationStacks)
       .resetCanvas()
       .resetModes()
 
@@ -286,9 +293,13 @@ class Core {
     return new Promise((resolve): void => {
       this.getMEI("").then(mei => {
         meiOperation.removeFromMEI(notes, this.currentMEIDoc).then(updatedMEI => {
-          this.loadData("", updatedMEI, false, c._TARGETDIVID_).then(() => {
-            resolve(true);
-          })
+          if(updatedMEI != undefined){
+            this.loadData("", updatedMEI, false, c._TARGETDIVID_).then(() => {
+              resolve(true);
+            })
+          }else{
+            resolve(true)
+          }
         })
       })
     });
@@ -303,9 +314,11 @@ class Core {
     return new Promise((resolve): void => {
       this.getMEI("").then(mei => {
         var updatedMEI = meiOperation.addToMEI(newNote, this.currentMEIDoc, replace, this.scoreGraph)
-        this.loadData("", updatedMEI, false, c._TARGETDIVID_).then(() => {
-            resolve(true)       
-        })
+        if(updatedMEI != undefined){
+          this.loadData("", updatedMEI, false, c._TARGETDIVID_).then(() => {
+              resolve(true)       
+          })
+        }
       })
     });
   }).bind(this)
@@ -317,11 +330,26 @@ class Core {
    */
    undo = (function undo (pageURI: string  = ""): Promise<boolean> {
     return new Promise((resolve): void => {
-        this.undoStacks.pop() // get rid of currentMEI, since last (initial) MEI is not accessible through verovio
-        const state = this.undoStacks.pop()
-        if (state !== undefined) {
-            this.redoStacks.push(this.currentMEI)
-            this.loadData(pageURI, state, false, c._TARGETDIVID_).then(() => resolve(true))
+        if(document.getElementsByClassName("annotMode").length > 0){
+          this.undoAnnotationStacks.pop()
+          const annotstate = this.undoAnnotationStacks.pop()
+          if(annotstate != undefined){
+            var annotCanvas = document.getElementById("annotationCanvas")
+            var annotList = document.getElementById("annotList")
+            this.redoAnnotationStacks.push([annotCanvas, annotList])
+            this.undoAnnotationStacks.push([annotCanvas, annotList])
+            annotCanvas.replaceWith(annotstate[0])
+            annotList.replaceWith(annotstate[1])
+            this.keyboardHandler.resetListeners()
+          }
+          resolve(true)
+          return
+        }
+        this.undoMEIStacks.pop() // get rid of currentMEI, since last in line (=initial) MEI is not accessible through verovio
+        const meistate = this.undoMEIStacks.pop()
+        if (meistate != undefined) {
+            this.redoMEIStacks.push(this.currentMEI)
+            this.loadData(pageURI, meistate, false, c._TARGETDIVID_).then(() => resolve(true))
         }else{
           resolve(false)
         }
@@ -335,13 +363,26 @@ class Core {
    */
   redo = (function redo (pageURI: string = ""): Promise<boolean> {
     return new Promise((resolve): void => {
-        const state = this.redoStacks.pop()
-        if (state !== undefined) {
-            this.undoStacks.push(this.currentMEI);
-            this.loadData(pageURI, state, false, c._TARGETDIVID_).then(() => resolve(true))
-        }else{
-          resolve(false)
+      if(document.getElementsByClassName("annotMode").length > 0){
+        const annotstate = this.redoAnnotationStacks.pop()
+        if(annotstate != undefined){
+          var annotCanvas = document.getElementById("annotationCanvas")
+          var annotList = document.getElementById("annotList")
+          this.undoAnnotationStacks.push([annotCanvas, annotList])
+          annotCanvas.replaceWith(annotstate[0])
+          annotList.replaceWith(annotstate[1])
+          this.keyboardHandler.resetListeners()
         }
+        resolve(true)
+        return
+      }
+      const meistate = this.redoMEIStacks.pop()
+      if (meistate !== undefined) {
+          this.undoMEIStacks.push(this.currentMEI);
+          this.loadData(pageURI, meistate, false, c._TARGETDIVID_).then(() => resolve(true))
+      }else{
+        resolve(false)
+      }
     });
   }).bind(this)
 

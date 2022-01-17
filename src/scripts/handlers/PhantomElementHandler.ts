@@ -34,11 +34,11 @@ class PhantomElementHandler implements Handler{
         if(this.phantomCanvas == undefined){
             this.phantomCanvas = document.createElementNS(c._SVGNS_, "svg")
             this.phantomCanvas.setAttribute("id", "phantomCanvas")
-            this.phantomCanvas.setAttribute("preserveAspectRatio", "xMinYMin meet")
-            this.phantomCanvas.setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))
+            //this.phantomCanvas.setAttribute("preserveAspectRatio", "xMinYMin meet")
+            //this.phantomCanvas.setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))
         }
 
-        this.root.append(this.phantomCanvas)
+        this.root.insertBefore(this.phantomCanvas, this.root.firstChild)
     }
 
     setListeners() {
@@ -90,10 +90,19 @@ class PhantomElementHandler implements Handler{
     trackMouse(e: MouseEvent){
       
         var root = document.getElementById(c._ROOTSVGID_)
+        var rootsvg = root as unknown as SVGGraphicsElement 
         var rootBBox = root.getBoundingClientRect()
+        var rootpt = new DOMPoint(rootBBox.x, rootBBox.y)
 
-        var relX = (e.pageX - window.pageXOffset - rootBBox.x - root.scrollLeft) // * this.scale //- window.pageXOffset
-        var relY = (e.pageY - window.pageYOffset - rootBBox.y - root.scrollTop) * this.scale //- window.pageYOffset //- svgrect.y
+
+
+        // var relX = (e.pageX - window.pageXOffset - rootBBox.x - root.scrollLeft) // * this.scale //- window.pageXOffset
+        // var relY = (e.pageY - window.pageYOffset - rootBBox.y - root.scrollTop) * this.scale //- window.pageYOffset //- svgrect.y
+
+        var pt = new DOMPoint(e.clientX, e.clientY)
+        var relpt = pt.matrixTransform(rootsvg.getScreenCTM().inverse());
+        var relX = relpt.x
+        var relY = relpt.y
 
         var target = e.target as HTMLElement;
         var options = {}
@@ -103,13 +112,12 @@ class PhantomElementHandler implements Handler{
         }
 
         var phantomNoteElement = this.phantom.getNoteElement()
+        if(phantomNoteElement == undefined){return}
         phantomNoteElement.setAttribute("cx", relX.toString());
         phantomNoteElement.setAttribute("cy", relY.toString());
         phantomNoteElement.setAttribute("r", this.m2m?.getLineDist()?.toString() || "0")
-        //(this.phantom as HTMLElement).style.transform += 'translate(' + [- window.pageXOffset, - window.pageYOffset - svgrect.y] +')'
-        phantomNoteElement.setAttribute('transform', 'translate(' + [- window.pageXOffset, - window.pageYOffset - rootBBox.y] +')') // BUT WHY???
         phantomNoteElement.setAttribute("visibility", "visible")
-        this.m2m.defineNote(e.pageX, e.pageY, options)
+        this.m2m.defineNote(relX, relY, options)
         var newCY = (this.m2m.getNewNoteY())?.toString()
         phantomNoteElement.setAttribute("cy", (newCY || "0"))
 
@@ -117,7 +125,7 @@ class PhantomElementHandler implements Handler{
         if(this.m2m.getPhantomLines() != undefined){
             this.phantomLines = new Array();
             this.m2m.getPhantomLines().forEach(pl => {
-                this.phantomLines.push(new PhantomElement("line", {lineX: relX - window.pageXOffset, lineY: pl - window.pageYOffset - rootBBox.y}, this.phantomCanvas))
+                this.phantomLines.push(new PhantomElement("line", {lineX: relX, lineY: pl}, this.phantomCanvas))
             })
             this.setPhantomLineListeners()
         }
@@ -142,7 +150,7 @@ class PhantomElementHandler implements Handler{
         var rootHeigth = this.rootBBox.height.toString()
         
         this.phantomCanvas = document.querySelector("#phantomCanvas")
-        this.phantomCanvas.setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))  
+        //this.phantomCanvas?.setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))  
 
         
         this.removeListeners()
@@ -162,12 +170,6 @@ class PhantomElementHandler implements Handler{
         this.phantom = note || new PhantomElement("note")
         return this
     }
-
-    setScale(scale:number){
-        this.scale = scale
-        return this
-    }
-
 }
 
 export default PhantomElementHandler

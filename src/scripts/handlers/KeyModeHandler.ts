@@ -7,7 +7,6 @@ import { uuidv4 } from "../utils/random";
 import { NewNote } from "../utils/Types";
 import { constants as c } from "../constants"
 import Handler from "./Handler";
-import * as coord from "../utils/coordinates"
 
 const marked = "marked"
 
@@ -164,7 +163,7 @@ class KeyModeHandler implements Handler{
   keyInputHandler = (function keyInputHandler(e: KeyboardEvent){
     //this.setCurrentNodeScoreGraph()
     if(typeof this.scoreGraph.getCurrentNode() === "undefined"){
-      this.scoreGraph.setCurrentNodeById(this.cursor.getNextElement().id)
+      this.scoreGraph?.setCurrentNodeById(this.cursor?.getNextElement().id)
     }
 
     if(e.shiftKey && e.key.includes("Arrow")){
@@ -206,68 +205,68 @@ class KeyModeHandler implements Handler{
   }
 
 
-  navigateSelection(direction: string){
-    if(typeof this.startSelect === "undefined"){
-      this.startSelect = document.getElementById(this.scoreGraph.getCurrentNode().getId()).getBoundingClientRect()
-    }
-    this.navigateCursor(direction)
-    if(typeof this.selectRect === "undefined"){
-      this.selectRect = document.createElementNS(c._SVGNS_, "rect")
-      this.selectRect.setAttribute("id", "keyModeSelectRect")
-      document.getElementById("canvasG").appendChild(this.selectRect)
-    }
+  // navigateSelection(direction: string){
+  //   if(typeof this.startSelect === "undefined"){
+  //     this.startSelect = document.getElementById(this.scoreGraph.getCurrentNode().getId()).getBoundingClientRect()
+  //   }
+  //   this.navigateCursor(direction)
+  //   if(this.selectRect == undefined){
+  //     this.selectRect = document.createElementNS(c._SVGNS_, "rect")
+  //     this.selectRect.setAttribute("id", "keyModeSelectRect")
+  //     document.getElementById("canvasG").appendChild(this.selectRect)
+  //   }
 
-    var cursorPos = this.cursor.getPos() //document.getElementById("cursor").getBoundingClientRect()
+  //   var cursorPos = this.cursor.getPos() //document.getElementById("cursor").getBoundingClientRect()
 
-    var startSelectX = coord.adjustToPage(this.startSelect.left, "x")
-    var cursorX = cursorPos.x 
-    var startSelectY = coord.adjustToPage(this.startSelect.top, "y") + window.pageYOffset
-    var cursorY = cursorPos.y //+ window.pageYOffset
+  //   var startSelectX = coord.adjustToPage(this.startSelect.left, "x")
+  //   var cursorX = cursorPos.x 
+  //   var startSelectY = coord.adjustToPage(this.startSelect.top, "y") + window.pageYOffset
+  //   var cursorY = cursorPos.y //+ window.pageYOffset
 
-    if(cursorX < startSelectX){ // draw rect to right
-      this.selectRect.setAttribute("x", cursorX.toString())
-      this.selectRect.setAttribute("width",  Math.abs(cursorX - startSelectX).toString())
-    }else{ // else right
-      this.selectRect.setAttribute("x", startSelectX.toString())
-      this.selectRect.setAttribute("width",  Math.abs(coord.adjustToPage(this.startSelect.left, "x") - cursorX).toString())
-    }
+  //   if(cursorX < startSelectX){ // draw rect to right
+  //     this.selectRect.setAttribute("x", cursorX.toString())
+  //     this.selectRect.setAttribute("width",  Math.abs(cursorX - startSelectX).toString())
+  //   }else{ // else right
+  //     this.selectRect.setAttribute("x", startSelectX.toString())
+  //     this.selectRect.setAttribute("width",  Math.abs(coord.adjustToPage(this.startSelect.left, "x") - cursorX).toString())
+  //   }
 
-    if(cursorY < startSelectY){ // draw rect to top
-      this.selectRect.setAttribute("y", cursorY.toString())
-      //this.selectRect.setAttribute("height", Math.abs(cursorPos.y - coord.adjustToPage(this.startSelect.top, "y")).toString())
-      this.selectRect.setAttribute("height", Math.abs(cursorY - startSelectY).toString())
-      //console.log(cursorY, startSelectY,  this.selectRect.getAttribute("height"))
-    }else{ // else bottom
-      this.selectRect.setAttribute("y", startSelectY.toString())
-      this.selectRect.setAttribute("height",  Math.abs(coord.adjustToPage(this.startSelect.bottom, "y") - cursorY).toString())
-      //this.selectRect.setAttribute("height",  Math.abs(coord.adjustToPage(this.startSelect.top, "y") - coord.adjustToPage(cursorPos.y, "y")).toString())
-      //console.log(cursorY, startSelectY, this.selectRect.getAttribute("height"))
-    }
+  //   if(cursorY < startSelectY){ // draw rect to top
+  //     this.selectRect.setAttribute("y", cursorY.toString())
+  //     //this.selectRect.setAttribute("height", Math.abs(cursorPos.y - coord.adjustToPage(this.startSelect.top, "y")).toString())
+  //     this.selectRect.setAttribute("height", Math.abs(cursorY - startSelectY).toString())
+  //     //console.log(cursorY, startSelectY,  this.selectRect.getAttribute("height"))
+  //   }else{ // else bottom
+  //     this.selectRect.setAttribute("y", startSelectY.toString())
+  //     this.selectRect.setAttribute("height",  Math.abs(coord.adjustToPage(this.startSelect.bottom, "y") - cursorY).toString())
+  //     //this.selectRect.setAttribute("height",  Math.abs(coord.adjustToPage(this.startSelect.top, "y") - coord.adjustToPage(cursorPos.y, "y")).toString())
+  //     //console.log(cursorY, startSelectY, this.selectRect.getAttribute("height"))
+  //   }
 
-    var rectBBox = this.selectRect.getBoundingClientRect()
-    var rx = rectBBox.x + window.pageXOffset //accomodate for scrolling
-    var ry = rectBBox.y + window.pageYOffset
-    this.m2m.getNoteBBoxes().forEach(bb => {
-      var note = document.getElementById(bb.id)
-      let stem = note.querySelector(".stem") as HTMLElement
-      if( bb.x >= rx && 
-          bb.x <= rx + rectBBox.width &&
-          bb.y >= ry &&
-          bb.y <= ry + rectBBox.height) {
-              note.classList.add(marked)
-              if(stem !== null) stem.classList.add(marked)
-              var chord = note.closest(".chord")
-              if(chord !== null){
-                  if(!chord.classList.contains(marked)) chord.classList.add(marked)
-              }
-          }else{
-              note.classList.remove(marked)
-              if(stem !== null) stem.classList.remove(marked)
-              var chord = note.closest(".chord")
-              if(chord !== null) chord.classList.remove(marked)
-          }
-    })
-  }
+  //   var rectBBox = this.selectRect.getBoundingClientRect()
+  //   var rx = rectBBox.x + window.pageXOffset //accomodate for scrolling
+  //   var ry = rectBBox.y + window.pageYOffset
+  //   this.m2m.getNoteBBoxes().forEach(bb => {
+  //     var note = document.getElementById(bb.id)
+  //     let stem = note.querySelector(".stem") as HTMLElement
+  //     if( bb.x >= rx && 
+  //         bb.x <= rx + rectBBox.width &&
+  //         bb.y >= ry &&
+  //         bb.y <= ry + rectBBox.height) {
+  //             note.classList.add(marked)
+  //             if(stem !== null) stem.classList.add(marked)
+  //             var chord = note.closest(".chord")
+  //             if(chord !== null){
+  //                 if(!chord.classList.contains(marked)) chord.classList.add(marked)
+  //             }
+  //         }else{
+  //             note.classList.remove(marked)
+  //             if(stem !== null) stem.classList.remove(marked)
+  //             var chord = note.closest(".chord")
+  //             if(chord !== null) chord.classList.remove(marked)
+  //         }
+  //   })
+  // }
 
   /**
    * End selection in Keyboardmode

@@ -67,8 +67,13 @@ class ClickModeHandler implements Handler{
      */
     clickHandler = (function clickHandler (evt: MouseEvent): void{
         if(this.musicPlayer.getIsPlaying() === true){return} // getIsPlaying could also be undefined
-        var posx = evt.offsetX
-        var posy = evt.offsetY
+        
+        var pt = new DOMPoint(evt.clientX, evt.clientY)
+        var rootSVG = document.getElementById("rootSVG") as unknown as SVGGraphicsElement
+        var pospt = pt.matrixTransform(rootSVG.getScreenCTM().inverse()) 
+        
+        var posx = pospt.x
+        var posy = pospt.y
         var target = evt.target as HTMLElement;
         var options = {}
 
@@ -78,8 +83,9 @@ class ClickModeHandler implements Handler{
         if(document.getElementById("phantomNote")?.classList.contains("onChord")){
             options["targetChord"] = this.findScoreTarget(posx, posy)
         }
-        this.m2m.defineNote(evt.pageX, evt.pageY, options);
-        //this.removeListeners();
+
+        //this.m2m.defineNote(evt.pageX, evt.pageY, options);
+        this.m2m.defineNote(posx, posy, options);
 
         var newNote: NewNote = this.m2m.getNewNote()
         var meiDoc = this.m2m.getCurrentMei()
@@ -115,7 +121,8 @@ class ClickModeHandler implements Handler{
         var posy = evt.offsetY
 
         var elementToHighlight: Element = this.findScoreTarget(posx, posy)
-        if(typeof this.prevElementToHighlight === "undefined" || this.currentElementToHighlight !== elementToHighlight){
+        if(elementToHighlight == undefined){return}
+        if(this.prevElementToHighlight == undefined || this.currentElementToHighlight !== elementToHighlight){
             
             // in css: elements get highlight color according to layer
             document.querySelectorAll(".highlighted").forEach(h => {
@@ -137,8 +144,12 @@ class ClickModeHandler implements Handler{
             //snap note to closest Chord
             var phantom = document.getElementById("phantomNote")
             var cx = parseFloat(phantom.getAttribute("cx"))
-            var left = elementToHighlight.getBoundingClientRect().left - window.scrollX - rootBBox.x - root.scrollLeft
-            var right = elementToHighlight.getBoundingClientRect().right - window.scrollX - rootBBox.x - root.scrollLeft
+
+            var ptLeft = new DOMPoint(elementToHighlight.getBoundingClientRect().left, 0)
+            var ptRight = new DOMPoint(elementToHighlight.getBoundingClientRect().right, 0)
+            var rootSVG = root as unknown as SVGGraphicsElement
+            var left = ptLeft.matrixTransform(rootSVG.getScreenCTM().inverse()).x
+            var right = ptRight.matrixTransform(rootSVG.getScreenCTM().inverse()).x
 
             //snap only when within boundaries of target Chord
             if(cx > left && cx < right){
@@ -146,16 +157,23 @@ class ClickModeHandler implements Handler{
                 var snapTargetBBox: DOMRect
                 var phantomSnapX: number
                 var targetwidth: number
+                var snapCoord: number
                 if(navigator.userAgent.toLowerCase().indexOf("firefox") > -1){ // special rules for buggy firefox
                     targetwidth = elementToHighlight.querySelector(".notehead").getBoundingClientRect().width
                     snapTarget = elementToHighlight.classList.contains("chord") ?  elementToHighlight : elementToHighlight.querySelector(".note") || elementToHighlight
                     snapTargetBBox = snapTarget.getBoundingClientRect()
-                    phantomSnapX = snapTargetBBox.x - window.scrollX - rootBBox.x - root.scrollLeft
+                    // phantomSnapX = snapTargetBBox.x - window.scrollX - rootBBox.x - root.scrollLeft
+                    snapCoord = snapTargetBBox.x
                 }else{
                     snapTarget = elementToHighlight.querySelector(".notehead")|| elementToHighlight
                     snapTargetBBox = snapTarget.getBoundingClientRect()
-                    phantomSnapX = snapTargetBBox.x + snapTargetBBox.width/2 - window.scrollX - rootBBox.x - root.scrollLeft
+                    // phantomSnapX = snapTargetBBox.x + snapTargetBBox.width/2 - window.scrollX - rootBBox.x - root.scrollLeft
+                    snapCoord = snapTargetBBox.x + snapTargetBBox.width/2
                 }
+                
+                let snappt= new DOMPoint(snapCoord, 0)
+                phantomSnapX = snappt.matrixTransform(rootSVG.getScreenCTM().inverse()).x
+
                 if(elementToHighlight.querySelector(".chord") != null){
                     console.log(phantomSnapX)
                 }
@@ -205,8 +223,11 @@ class ClickModeHandler implements Handler{
          */
     findScoreTarget(posx: number, posy: number): Element{
         var nextNote = this.m2m.findScoreTarget(posx, posy)
-        var el = document.getElementById(nextNote.id).closest(".chord") || document.getElementById(nextNote.id)
-        return el
+        if(nextNote != undefined){
+            var el = document.getElementById(nextNote.id).closest(".chord") || document.getElementById(nextNote.id)
+            return el
+        }
+        return
     }
 
 

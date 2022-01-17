@@ -87,10 +87,29 @@ class ScoreManipulator{
         var lastBlineRect = this.lastBline.getBoundingClientRect()
         var root = document.getElementById(c._ROOTSVGID_) as HTMLElement
         var rootBBox = root.getBoundingClientRect()
-        var blineTop = lastBlineRect.top - rootBBox.y - root.scrollTop
-        var blineRight = lastBlineRect.right + rootBBox.height*0.007 - rootBBox.x + root.scrollLeft
 
-        var containerSize = (lastBlineRect.height * 0.1)
+        var rootMatrix = (root as unknown as SVGGraphicsElement).getScreenCTM().inverse()
+
+        var ptRootLT = new DOMPoint(rootBBox.left, rootBBox.top)
+        ptRootLT = ptRootLT.matrixTransform(rootMatrix)
+        var ptRootRB = new DOMPoint(rootBBox.right, rootBBox.bottom)
+        ptRootRB = ptRootRB.matrixTransform(rootMatrix)
+
+        var ptRootWidth = Math.abs(ptRootRB.x - ptRootLT.x)
+        var ptRootHeight= Math.abs(ptRootRB.y - ptRootLT.y)
+        
+        var ptBlineLT = new DOMPoint(lastBlineRect.left, lastBlineRect.top)
+        ptBlineLT = ptBlineLT.matrixTransform(rootMatrix)
+        var ptBlineRB = new DOMPoint(lastBlineRect.right, lastBlineRect.bottom)
+        ptBlineRB = ptBlineRB.matrixTransform(rootMatrix)
+
+        var ptBlineWidth = Math.abs(ptBlineRB.x - ptBlineLT.x)
+        var ptBlineHeight= Math.abs(ptBlineRB.y - ptBlineLT.y)
+
+        var blineTop = ptBlineLT.y //lastBlineRect.top - rootBBox.y - root.scrollTop
+        var blineRight = ptBlineRB.x + ptRootHeight*0.007 //lastBlineRect.right + rootBBox.height*0.007 - rootBBox.x + root.scrollLeft
+
+        var containerSize = ptBlineHeight * 0.1 //(lastBlineRect.height * 0.1)
 
         this.drawButton("measureAdder", null, "+", blineRight, blineTop, containerSize, this.lastBline.closest("svg").parentElement, "Add Measure")
     }
@@ -100,10 +119,32 @@ class ScoreManipulator{
         var lastBlineRect = this.lastBline.getBoundingClientRect()
         var root = document.getElementById(c._ROOTSVGID_)
         var rootBBox = root.getBoundingClientRect()
-        var blineTop = lastBlineRect.top + rootBBox.height*0.01 - rootBBox.y + root.scrollTop 
-        var blineRight = lastBlineRect.right + rootBBox.height*0.007 - rootBBox.x + root.scrollLeft 
 
-        var containerSize = (lastBlineRect.height * 0.1)
+        var rootMatrix = (root as unknown as SVGGraphicsElement).getScreenCTM().inverse()
+
+        var ptRootLT = new DOMPoint(rootBBox.left, rootBBox.top)
+        ptRootLT = ptRootLT.matrixTransform(rootMatrix)
+        var ptRootRB = new DOMPoint(rootBBox.right, rootBBox.bottom)
+        ptRootRB = ptRootRB.matrixTransform(rootMatrix)
+
+        var ptRootWidth = Math.abs(ptRootRB.x - ptRootLT.x)
+        var ptRootHeight= Math.abs(ptRootRB.y - ptRootLT.y)
+        
+        var ptBlineLT = new DOMPoint(lastBlineRect.left, lastBlineRect.top)
+        ptBlineLT = ptBlineLT.matrixTransform(rootMatrix)
+        var ptBlineRB = new DOMPoint(lastBlineRect.right, lastBlineRect.bottom)
+        ptBlineRB = ptBlineRB.matrixTransform(rootMatrix)
+
+        var ptBlineWidth = Math.abs(ptBlineRB.x - ptBlineLT.x)
+        var ptBlineHeight= Math.abs(ptBlineRB.y - ptBlineLT.y)
+
+        // var blineTop = lastBlineRect.top + rootBBox.height*0.01 - rootBBox.y + root.scrollTop 
+        // var blineRight = lastBlineRect.right + rootBBox.height*0.007 - rootBBox.x + root.scrollLeft 
+
+        var blineTop = ptBlineLT.y + ptRootHeight * 0.01
+        var blineRight = ptBlineRB.x + ptRootHeight*0.007
+
+        var containerSize = ptBlineHeight * 0.1 //(lastBlineRect.height * 0.1)
 
         this.drawButton("measureRemover", null, "-", blineRight, blineTop, containerSize, this.lastBline.closest("svg").parentElement, "Remove Measure")
     }

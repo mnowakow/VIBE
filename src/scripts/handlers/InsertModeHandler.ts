@@ -42,7 +42,7 @@ class InsertModeHandler implements Handler{
   deleteHandler: DeleteHandler;
   scoreGraph: ScoreGraph;
   keyModeHandler: KeyModeHandler;
-  clickModeHandler: ClickModeHandler;
+  clickModeHandler: ClickModeHandler
   phantomNoteHandler: PhantomElementHandler;
   private annotations: Annotations;
   smHandler: ScoreManipulatorHandler
@@ -144,7 +144,7 @@ class InsertModeHandler implements Handler{
     if(clicked){
       if(this.unselectMenuItem("activateAnnot")){return}
     }
-    if(typeof this.annotations === "undefined"){
+    if(this.annotations == undefined){
       this.annotations = new Annotations()
     }else{
       this.annotations.update()
@@ -241,6 +241,10 @@ class InsertModeHandler implements Handler{
     if(this.deleteHandler != undefined){
       this.deleteHandler.removeListeners()
     }
+
+    //activationmode should be always active. 
+    //Listeners will overwritten if another mode listen same behaviour on same element (d3.js), e.g. annotation
+    this.activateSelectionMode()
 
   }
 
@@ -408,7 +412,6 @@ class InsertModeHandler implements Handler{
       console.log("Set PHantomNOte")
       this.phantomNoteHandler
         .setPhantomNote()
-        .setScale(this.scale)
         .setListeners()
         .setM2M(this.m2m)
     }
@@ -432,14 +435,18 @@ class InsertModeHandler implements Handler{
 
   setScale(scale: number){
     this.scale = scale
-    this.annotations?.setScale(this.scale)
-    this.phantomNoteHandler?.setScale(this.scale)
-    this.musicPlayer?.setScale(this.scale)
+    //this.annotations?.setScale(this.scale)
+    //this.musicPlayer?.setScale(this.scale)
+    return this
+  }
+
+  setUndoAnnotationStacks(arr: Array<Array<Element>>){
+    this.annotations.setUndoStacks(arr)
     return this
   }
 
   resetCanvas(){
-    if(typeof this.annotations !== "undefined"){
+    if(this.annotations != undefined){
       document.getElementById(c._ROOTSVGID_).append(this.annotations.getAnnotationCanvas())
       this.annotations.addCanvas()
     }

@@ -118,6 +118,7 @@ function getMeterRatioGlobal(xmlDoc: Document): number{
    */
 export function addToMEI(newSound: NewNote | NewChord, currentMEI: Document, replace: Boolean = false, scoreGraph: ScoreGraph = null): Document{//Promise<Document> {
   //return new Promise<Document>((resolve): void => {
+    var currMeiClone = currentMEI.cloneNode(true)
     var newElem: Element
     if(newSound.hasOwnProperty("pname")){
       var newNote = newSound as NewNote
@@ -238,6 +239,15 @@ export function addToMEI(newSound: NewNote | NewChord, currentMEI: Document, rep
         currentMEI.getElementById(newChord.nearestNoteId).parentElement.insertBefore(newElem, currentMEI.getElementById(newChord.nearestNoteId))
       }else{
         currentMEI.getElementById(newChord.nearestNoteId).parentElement.insertBefore(newElem, currentMEI.getElementById(newChord.nearestNoteId).nextSibling)
+      }
+    }
+
+    //check if measure is too long, return if too long
+    var overfillMeasure = false
+    if(!overfillMeasure){
+      var newMeasureRatio = getAbsoluteRatio(newElem.closest("layer"))
+      if(newMeasureRatio > getMeterRatioGlobal(currentMEI)){
+        currentMEI = currMeiClone as Document
       }
     }
 
@@ -1428,10 +1438,38 @@ export function insertKey(target: Element, newSig: string, currentMEI: Document)
   currentMEI = meiConverter.restoreXmlIdTags(currentMEI)
 
   return currentMEI
-
-  return currentMEI
 }
 
+/**
+ * Gets timestamp of element. Computes it, if no such attribute is present for the element
+ * @param id 
+ * @param currentMEI 
+ * @returns 
+ */
+export function getElementTimestampById(id: string, currentMEI: Document): number{
+  var element = currentMEI.getElementById(id)
+  var timestamp = element.getAttribute("tstamp")
+  if(timestamp === null){
+    var parentLayer = element.closest("layer")
+    var count = 0
+    var units = parentLayer.querySelectorAll(countableNoteUnitSelector)
+    for(var i=0; i < units.length; i++){
+      if(units[i].getAttribute("dur") !== null){
+        if(units[i].id === id){
+          var fraction = 4
+          if(currentMEI.querySelector("meterSig") !== null){
+            fraction = parseInt(currentMEI.querySelector("meterSig").getAttribute("unit"))
+          }
+          timestamp = (count * fraction + 1).toString() // add 1 to accomodate for shift ration sum
+          break
+        }
+        count += getAbsoluteRatio(units[i])
+      }
+    }
+    
+  }
+  return parseFloat(timestamp)
+}
 
 
 

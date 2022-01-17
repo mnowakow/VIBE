@@ -50,32 +50,40 @@ export class Mouse2MEI{
 
    setMouseEnterElementListeners(): void{     
        var that = this;
+       var mouseEventName = "mouseover"
 
         document.querySelectorAll(".system").forEach(sy => {
-            sy.addEventListener("mouseenter", function(evt){
+            sy.addEventListener(mouseEventName, function(evt){
+                evt.preventDefault()
                 var target = evt.target as HTMLElement
                 that.lastSystemMouseEnter = target.closest(".system")
             })
         });
 
         document.querySelectorAll(".staff").forEach(staff => {
-            staff.addEventListener("mouseenter", function(evt){
+            staff.addEventListener(mouseEventName, function(evt){
+                evt.preventDefault()
                 var target = evt.target as HTMLElement
                 that.lastStaffMouseEnter = target.closest(".staff")
+                //console.log("CURRENT STAFF: ", that.lastStaffMouseEnter)
             })
         });
 
         document.querySelectorAll(".measure").forEach(measure => {
-            measure.addEventListener("mouseenter", function(evt){
+            measure.addEventListener(mouseEventName, function(evt){
+                evt.preventDefault()
                 var target = evt.target as HTMLElement
                 that.lastMeasureMouseEnter = target.closest(".measure")
+                //console.log("CURRENT MEASURE: ", that.lastMeasureMouseEnter)
             })
         });
 
         document.querySelectorAll(".layer").forEach(layer => {
-            layer.addEventListener("mouseenter", function(evt){
+            layer.addEventListener(mouseEventName, function(evt){
+                evt.preventDefault()
                 var target = evt.target as HTMLElement
                 that.lastLayerMouseEnter = target.closest(".layer")
+                //console.log("CURRENT LAYER: ", that.lastLayerMouseEnter)
             })
         });
 
@@ -113,17 +121,24 @@ export class Mouse2MEI{
     }
 
     findBBoxes(){
+        console.log("FINDBBOX")
         var notes = document.querySelectorAll(".note, .rest, .mRest") ;
         var root = document.getElementById(c._ROOTSVGID_)
         var rootBBox = root.getBoundingClientRect()
         Array.from(notes).forEach(element => {
+            var pt = new DOMPoint(element.getBoundingClientRect().x, element.getBoundingClientRect().y)
+            var svg = root as unknown as SVGGraphicsElement 
+            var relpt = pt.matrixTransform(svg.getScreenCTM().inverse());
+
             let bb: NoteBBox = {
                 id: element.id,
                 parentStaff: element.closest(".staff"),
                 parentLayer: element.closest(".layer"),
                 parentMeasure: element.closest(".measure"),
-                x: element.getBoundingClientRect().x + window.pageXOffset,
-                y: element.getBoundingClientRect().y + window.pageYOffset
+                //x: element.getBoundingClientRect().x + window.pageXOffset,
+                //y: element.getBoundingClientRect().y + window.pageYOffset
+                x: relpt.x,
+                y: relpt.y
             }
             this.noteBBoxes.push(bb);
         })
@@ -159,9 +174,12 @@ export class Mouse2MEI{
                 }
                 staffLine.classList.add(map.get(idx*2))
                 staffLine.classList.add("Clef" + clefShape)
+                var pt = new DOMPoint(staffLine.getBoundingClientRect().x, staffLine.getBoundingClientRect().y)
+                var svg = root as unknown as SVGGraphicsElement 
+                var relpt = pt.matrixTransform(svg.getScreenCTM().inverse());
                 let bb: StaffLineBBox = {
                     id: staffLine.parentElement.id,
-                    y: staffLine.getBoundingClientRect().y + window.pageYOffset,
+                    y: relpt.y, //staffLine.getBoundingClientRect().y + window.pageYOffset,
                     staffIdx: idx*2,
                     classList: staffLine.classList
                 }
@@ -169,8 +187,6 @@ export class Mouse2MEI{
                 
             })
         })
-
-        //console.log(this.staffLineBBoxes)
     }
 
     /**
@@ -426,12 +442,15 @@ export class Mouse2MEI{
 
     /**
      * Find Score Element nearest to given Position (e.g. Mouse)
-     * @param posx 
-     * @param posy 
+     * @param posX should be already transformed DOMPoint
+     * @param posY should be already transformed DOMPoint
+     * @param checkStaff check if vertical distance in the staff should be considered 
+     * (for example: should be false, when check position for Annotations, should be true when placing notes in different staves)
+     * @param orientation only consider elements which are left or right of given coordinates
      * @returns 
      */
-     findScoreTarget(posx: number, posy: number): NoteBBox{
-        var notes = this.getNoteBBoxes()
+     findScoreTarget(posX: number, posY: number, checkStaff = true, orientation = {left: true, right: true}): NoteBBox{
+        var notes: NoteBBox[] = this.getNoteBBoxes()
         var nextNote: NoteBBox
         var tempDist: number = Math.pow(10, 10)
         var rootBBox = document.getElementById(c._ROOTSVGID_).getBoundingClientRect()
@@ -445,8 +464,23 @@ export class Mouse2MEI{
                 x = n.x
                 y = n.y
             }
-            var dist = Math.sqrt(Math.abs(x - rootBBox.x - window.pageXOffset - posx)**2 + Math.abs(y - rootBBox.y - window.pageYOffset - posy)**2)
-            if(dist < tempDist){
+
+            //filter for left and right elements
+            if(!document.getElementById(n.id).classList.contains("mRest")){ //mRest are excluded from this rule
+                if(orientation.left === false){
+                    if(x < posX) return //exclude left elements
+                }else if(orientation.right === false){
+                    if(x > posX) return // exclude right elements
+                }
+            }
+            
+            var dist = Math.abs(x - posX)
+            var staffCondition = n.parentStaff === this.lastStaffMouseEnter
+            if(checkStaff === false){
+                staffCondition = true
+                dist = Math.sqrt(Math.abs(x - posX)**2 + Math.abs(y - posY)**2)
+            }
+            if(dist < tempDist && staffCondition){ // define next note in staff bounds
                 tempDist = dist
                 nextNote = n
             }

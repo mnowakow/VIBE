@@ -14,7 +14,7 @@ class SelectionHandler implements Handler{
     private initialX: number;
     private initialY: number;
     m2m: Mouse2MEI;
-    private dragSelectAction: any
+    private dsa: any
 
     constructor(){
 
@@ -26,9 +26,12 @@ class SelectionHandler implements Handler{
 
         var that = this;
         function selStart(){
-            var container = document.getElementById(c._ROOTSVGID_).parentElement
-            that.initialX = d3.event.x + container.scrollLeft 
-            that.initialY = d3.event.y + container.scrollTop
+           //var container = document.getElementById(c._ROOTSVGID_).parentElement
+           var pt = new DOMPoint(d3.event.sourceEvent.clientX, d3.event.sourceEvent.clientY)
+           var canvasMatrix = (document.getElementById("manipulatorCanvas") as unknown as SVGGraphicsElement).getScreenCTM().inverse()
+           pt = pt.matrixTransform(canvasMatrix)
+           that.initialX = pt.x //d3.event.x
+           that.initialY = pt.y //d3.event.y
             if(!document.body.classList.contains("harmonyMode")){ //!that.harmonyHandler.getGlobal()){
                 that.m2m.getNoteBBoxes().forEach(bb => {
                     let note = document.getElementById(bb.id)
@@ -39,11 +42,16 @@ class SelectionHandler implements Handler{
         }
 
         function selecting(){
-            var container = document.getElementById(c._ROOTSVGID_).parentElement
+            //var container = document.getElementById(c._ROOTSVGID_).parentElement
             var root = document.getElementById(c._ROOTSVGID_)
-            var rootBBox = root.getBoundingClientRect()
-            const curX = d3.event.x + container.scrollLeft 
-            const curY = d3.event.y + container.scrollTop 
+            //var rootBBox = root.getBoundingClientRect()
+
+            var pt = new DOMPoint(d3.event.sourceEvent.clientX, d3.event.sourceEvent.clientY)
+            var canvasMatrix = (document.getElementById("manipulatorCanvas") as unknown as SVGGraphicsElement).getScreenCTM().inverse()
+            pt = pt.matrixTransform(canvasMatrix)
+
+            const curX = pt.x //d3.event.x + container.scrollLeft 
+            const curY = pt.y //d3.event.y + container.scrollTop 
 
             const newX = curX < that.initialX ? curX : that.initialX;
             const newY = curY < that.initialY ? curY : that.initialY;
@@ -54,17 +62,29 @@ class SelectionHandler implements Handler{
 
             var rect =  document.querySelector("#selectRect");
             var rectBBox = rect.getBoundingClientRect();
-            var rx = rectBBox.x + window.scrollX + root.scrollLeft  //accomodate for scrolling
-            var ry = rectBBox.y + window.scrollY + root.scrollTop
+
+            pt = new DOMPoint(rectBBox.x, rectBBox.y)
+            var ptRight = new DOMPoint(rectBBox.right, 0)
+            var ptBottom = new DOMPoint(0, rectBBox.bottom)
+            var rootMatrix = root as unknown as SVGGraphicsElement
+            var rectpt = pt.matrixTransform(rootMatrix.getScreenCTM().inverse())
+            var rectHeightpt = Math.abs(rectpt.y - ptBottom.matrixTransform(rootMatrix.getScreenCTM().inverse()).y) 
+            var rectWidthpt = Math.abs(rectpt.x - ptRight.matrixTransform(rootMatrix.getScreenCTM().inverse()).x)
+
+            var rx = rectpt.x
+            var ry = rectpt.y
             var noteBBoxes = that.m2m.getNoteBBoxes();
             noteBBoxes.forEach(bb => {
                 var note = document.getElementById(bb.id)
                 let stem = note.querySelector(".stem") as HTMLElement
                 let accid = note.querySelector(".accid") as HTMLElement
                 if( bb.x >= rx && 
-                    bb.x <= rx + rectBBox.width &&
+                    //bb.x <= rx + rectBBox.width &&
+                    bb.x <= rx +  rectWidthpt &&
                     bb.y >= ry &&
-                    bb.y <= ry + rectBBox.height){
+                    //bb.y <= ry + rectBBox.height
+                    bb.y <= ry + rectHeightpt
+                    ){
                         note.classList.add(marked)
                         if(stem !== null) stem.classList.add(marked)
                         var chord = note.closest(".chord")
@@ -94,7 +114,7 @@ class SelectionHandler implements Handler{
             document.getElementById(numToNoteButtonId.get(meiNote?.getAttribute("dur")))?.classList.add("selected")
             document.getElementById(numToDotButtonId.get(meiNote?.getAttribute("dots")))?.classList.add("selected")
         }
-        this.dragSelectAction = dragSelectAction
+        this.dsa = dragSelectAction
         this.setListeners()
         //this.canvas.call(dragSelectAction);
     }
@@ -134,10 +154,15 @@ class SelectionHandler implements Handler{
     }
 
     setListeners():void{
-        this.canvas.call(this.dragSelectAction);
+        this.canvas.call(this.dsa);
         document.querySelectorAll(".note, .rest, .mRest").forEach(el => {
             el.addEventListener("click", this.markedHandler)
         })
+    }
+
+    resetListeners(){
+        //this.removeListeners()
+        this.setListeners()
     }
 
      /**

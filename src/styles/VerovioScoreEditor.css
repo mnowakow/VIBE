@@ -320,16 +320,18 @@ text{
     fill: orange
 }
 
-.customAnnotShape.selected{
-    box-shadow: 10px 10px 15px silver;
-}
-
 .customAnnotShape{
     fill: orange;
     fill-opacity: 0.2;
     outline-style: dotted;
     outline-width: 0.5px;
     outline-color: black; 
+}
+
+.customAnnotShape.selected{
+    outline-style: dashed;
+    outline-color:cornflowerblue;
+    outline-width: 1;
 }
 
 

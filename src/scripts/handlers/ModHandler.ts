@@ -9,7 +9,7 @@ import { noteToB } from "../utils/mappings";
 const modSelector = ".slur, .tie, .accid"
 
 /**
- * Handler for all options which could modulate the given score
+ * Handler for all options which could modulate the given score. These functions are related to all buttons in the sidebar and toolbar
  */
 class ModHandler implements Handler{
 

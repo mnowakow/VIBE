@@ -6,6 +6,7 @@ import interact from "interactjs"
 import { idxNoteMapFClef } from "../utils/mappings";
 import { Annotation, Coord } from "../utils/Types";
 import { isConstructorDeclaration } from "typescript";
+import { pathToFileURL } from "url";
 
 class AnnotationChangeHandler implements Handler{
     m2m?: Mouse2MEI;
@@ -16,6 +17,8 @@ class AnnotationChangeHandler implements Handler{
     private updateCallback: () => void;
     private root: HTMLElement;
     private rootBBox: DOMRect;
+    private rootMatrix: DOMMatrix
+    private canvasMatrix: DOMMatrix
     private snapCoords: { obj: Element; x: number; y: number; };
     private annotations: Annotation[];
     private dragedRect: SVGRectElement
@@ -27,15 +30,29 @@ class AnnotationChangeHandler implements Handler{
 
 
     setListeners() {
+        var that = this
+
         interact('.customAnnotShape')
         .resizable({
             // resize from all edges and corners
             edges: { left: true, right: true, bottom: true, top: true },
 
-            listeners: { move: this.resizeShapeListener.bind(this) },
+            listeners: { 
+                move: this.resizeShapeListener.bind(this),
+                end(event){
+                    document.dispatchEvent(new Event("annotationCanvasChanged"))
+                    that.deleteTempDistances()
+                }  
+            },
         })
         .draggable({
-            listeners: { move: this.dragShapeListener.bind(this) },
+            listeners: { 
+                move: this.dragShapeListener.bind(this),
+                end(event){
+                    document.dispatchEvent(new Event("annotationCanvasChanged"))
+                    that.deleteTempDistances()
+                } 
+            },
             modifiers: [
                 interact.modifiers.restrictRect({
                     restriction: 'parent',
@@ -49,10 +66,22 @@ class AnnotationChangeHandler implements Handler{
             // resize from all edges and corners
             edges: { left: true, right: true, bottom: true, top: true },
 
-            listeners: { move: this.resizeTextListener.bind(this) },
+            listeners: { 
+                move: this.resizeTextListener.bind(this),
+                end(event){
+                    that.deleteTempDistances()
+                    document.dispatchEvent(new Event("annotationCanvasChanged"))
+                }  
+            },
         })
         .draggable({
-            listeners: { move: this.dragTextListener.bind(this) },
+            listeners: { 
+                move: this.dragTextListener.bind(this),
+                end(event){
+                    document.dispatchEvent(new Event("annotationCanvasChanged"))
+                    that.deleteTempDistances()
+                }  
+            },
             modifiers: [
                 interact.modifiers.restrictRect({
                     restriction: 'parent',
@@ -65,7 +94,12 @@ class AnnotationChangeHandler implements Handler{
         .draggable({
             listeners: { 
                 move: this.dragLineListener.bind(this),
-                end:  this.snapToObj.bind(this)
+
+                end(event){
+                    that.snapToObj()
+                    document.dispatchEvent(new Event("annotationCanvasChanged"))
+                    that.deleteTempDistances()
+                }
             },
             modifiers: [
                 interact.modifiers.restrictRect({
@@ -87,26 +121,31 @@ class AnnotationChangeHandler implements Handler{
     }
 
     // SHAPES
-
     dragShapeListener (event) {
-        event.stopImmediatePropagation()
-        var target = event.target
-        //console.log("DRAG:", event)
-        // keep the dragged position in the data-x/data-y attributes
-        var x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx
-        var y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy
+        var target = event.target as HTMLElement
+        var pt = new DOMPoint(event.clientX, event.clientY)
+        this.canvasMatrix = (document.getElementById("annotationCanvas") as unknown as SVGGraphicsElement).getScreenCTM().inverse()
+        var edx = pt.matrixTransform(this.canvasMatrix).x
+        var edy = pt.matrixTransform(this.canvasMatrix).y
 
-        // translate the element
-        target.style.transform = 'translate(' + x + 'px, ' + y + 'px)'
+        var ptDist = new DOMPoint(target.getBoundingClientRect().x, event.target.getBoundingClientRect().y)
+        var distX = (parseFloat(target.getAttribute('distX'))) || edx - ptDist.matrixTransform(this.canvasMatrix).x 
+        var distY = (parseFloat(target.getAttribute('distY'))) || edy - ptDist.matrixTransform(this.canvasMatrix).y 
 
-        // update the posiion attributes
-        target.setAttribute('data-x', x)
-        target.setAttribute('data-y', y)
+        target.setAttribute("distX", distX.toString())
+        target.setAttribute("distY", distY.toString())
+
+        target.setAttribute("x", (edx - distX).toString())
+        target.setAttribute("y", (edy - distY).toString())
+
         var targetParent = target.parentElement as Element
         var line = targetParent.querySelector(":scope > .annotLine")
 
-        var rectX = (parseFloat(target.getAttribute("x")) + x).toString()
-        var rectY = (parseFloat(target.getAttribute("y")) + y).toString()
+        var pt = new DOMPoint(target.getBoundingClientRect().x, target.getBoundingClientRect().y)
+
+        var rectX = pt.matrixTransform(this.canvasMatrix).x.toString() 
+        var rectY = pt.matrixTransform(this.canvasMatrix).y.toString() 
+
         if(line!== null){
             line.setAttribute("x1", rectX)
             line.setAttribute("y1", rectY)
@@ -114,31 +153,44 @@ class AnnotationChangeHandler implements Handler{
     }
 
     resizeShapeListener(event){
-        event.stopImmediatePropagation()
         var target = event.target as HTMLElement
-        var x = (parseFloat(target.getAttribute('data-x')) || 0)
-        var y = (parseFloat(target.getAttribute('data-y')) || 0)
+        this.canvasMatrix = (document.getElementById("annotationCanvas") as unknown as SVGGraphicsElement).getScreenCTM().inverse()
 
-        // update the element's style
-        target.style.width = event.rect.width + 'px'
-        target.style.height = event.rect.height + 'px'
+        // update overal dimensions
+        var ptTL = new DOMPoint(event.rect.left, event.rect.top)
+        var ptRB = new DOMPoint(event.rect.right, event.rect.bottom)
+        var ptWidth = Math.abs(ptRB.matrixTransform(this.canvasMatrix).x - ptTL.matrixTransform(this.canvasMatrix).x).toString()
+        var ptHeight = Math.abs(ptRB.matrixTransform(this.canvasMatrix).y - ptTL.matrixTransform(this.canvasMatrix).y).toString()
+        target.style.width = ptWidth + 'px'
+        target.style.height = ptHeight + 'px'
 
         // translate when resizing from top or left edges
-        x += event.deltaRect.left
-        y += event.deltaRect.top
+        if(event.edges.top === true || event.edges.left === true){
+            var pt = new DOMPoint(event.clientX, event.clientY)
+            var edx = pt.matrixTransform(this.canvasMatrix).x
+            var edy = pt.matrixTransform(this.canvasMatrix).y
 
-        target.style.transform = 'translate(' + x + 'px,' + y + 'px)'
+            var ptDist = new DOMPoint(target.getBoundingClientRect().x, event.target.getBoundingClientRect().y)
+            var distX = (parseFloat(target.getAttribute('distX'))) || edx - ptDist.matrixTransform(this.canvasMatrix).x 
+            var distY = (parseFloat(target.getAttribute('distY'))) || edy - ptDist.matrixTransform(this.canvasMatrix).y 
 
-        target.setAttribute('data-x', x.toString())
-        target.setAttribute('data-y', y.toString())
-        //target.textContent = Math.round(event.rect.width) + '\u00D7' + Math.round(event.rect.height)
+            target.setAttribute("distX", distX.toString())
+            target.setAttribute("distY", distY.toString())
+
+            if(event.edges.left === true) target.setAttribute("x", (edx - distX).toString())
+
+            if(event.edges.top === true) target.setAttribute("y", (edy - distY).toString())
+            //target.textContent = Math.round(event.rect.width) + '\u00D7' + Math.round(event.rect.height)
+        }
         
-        var targetParent = target.closest("g")
-        var line = targetParent.querySelector(".annotLine")
-        var dragRects = targetParent.querySelectorAll(".lineDragRect")
+        //update attached line
+        var targetParent = target.parentElement
+        var line = targetParent?.querySelector(".annotLine")
+        var dragRects = targetParent?.querySelectorAll(".lineDragRect")
 
-        var rectX = (parseFloat(target.getAttribute("x")) + x).toString()
-        var rectY = (parseFloat(target.getAttribute("y")) + y).toString()
+        var rectX = ptTL.matrixTransform(this.canvasMatrix).x.toString()
+        var rectY = ptTL.matrixTransform(this.canvasMatrix).y.toString()
+        
         if(line!== null){
             line.setAttribute("x1", rectX)
             line.setAttribute("y1", rectY)
@@ -152,35 +204,48 @@ class AnnotationChangeHandler implements Handler{
                 }
             });
         }
-
     }
 
     // TEXTBOXES
     resizeTextListener(event){
-        event.stopImmediatePropagation()
         var target = event.target.querySelector(".annotFO") as HTMLElement
-        var x = (parseFloat(target.getAttribute('data-x')) || 0)
-        var y = (parseFloat(target.getAttribute('data-y')) || 0)
+        this.canvasMatrix = (document.getElementById("annotationCanvas") as unknown as SVGGraphicsElement).getScreenCTM().inverse()
 
-        // update the element's style
-        target.style.width = event.rect.width + 'px'
-        target.style.height = event.rect.height + 'px'
+        // update overal dimensions
+        var ptTL = new DOMPoint(event.rect.left, event.rect.top)
+        var ptRB = new DOMPoint(event.rect.right, event.rect.bottom)
+        var ptWidth = Math.abs(ptRB.matrixTransform(this.canvasMatrix).x - ptTL.matrixTransform(this.canvasMatrix).x).toString()
+        var ptHeight = Math.abs(ptRB.matrixTransform(this.canvasMatrix).y - ptTL.matrixTransform(this.canvasMatrix).y).toString()
+        target.style.width = ptWidth + 'px'
+        target.style.height = ptHeight + 'px'
 
         // translate when resizing from top or left edges
-        x += event.deltaRect.left
-        y += event.deltaRect.top
+        if(event.edges.top === true || event.edges.left === true){
+            var pt = new DOMPoint(event.clientX, event.clientY)
+            var edx = pt.matrixTransform(this.canvasMatrix).x
+            var edy = pt.matrixTransform(this.canvasMatrix).y
 
-        target.style.transform = 'translate(' + x + 'px,' + y + 'px)'
+            var ptDist = new DOMPoint(target.getBoundingClientRect().x, event.target.getBoundingClientRect().y)
+            var distX = (parseFloat(target.getAttribute('distX'))) || edx - ptDist.matrixTransform(this.canvasMatrix).x 
+            var distY = (parseFloat(target.getAttribute('distY'))) || edy - ptDist.matrixTransform(this.canvasMatrix).y 
 
-        target.setAttribute('data-x', x.toString())
-        target.setAttribute('data-y', y.toString())
+            target.setAttribute("distX", distX.toString())
+            target.setAttribute("distY", distY.toString())
+
+            if(event.edges.left === true) target.setAttribute("x", (edx - distX).toString())
+
+            if(event.edges.top === true) target.setAttribute("y", (edy - distY).toString())
+            //target.textContent = Math.round(event.rect.width) + '\u00D7' + Math.round(event.rect.height)
+        }
         
+        //update attached line
         var targetParent = target.closest("g")
-        var line = targetParent.querySelector(".annotLine")
-        var dragRects = targetParent.querySelectorAll(".lineDragRect")
+        var line = targetParent?.querySelector(".annotLine")
+        var dragRects = targetParent?.querySelectorAll(".lineDragRect")
 
-        var rectX = (parseFloat(target.getAttribute("x")) + x).toString()
-        var rectY = (parseFloat(target.getAttribute("y")) + y).toString()
+        var rectX = ptTL.matrixTransform(this.canvasMatrix).x.toString()
+        var rectY = ptTL.matrixTransform(this.canvasMatrix).y.toString()
+        
         if(line!== null){
             line.setAttribute("x2", rectX)
             line.setAttribute("y2", rectY)
@@ -197,23 +262,31 @@ class AnnotationChangeHandler implements Handler{
     }
 
     dragTextListener(event){
-        event.stopImmediatePropagation()
-        var target = event.target.querySelector(".annotFO") as HTMLElement
-        var x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx
-        var y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy
+        var target = event.target.querySelector(".annotFO")
+        this.canvasMatrix = (document.getElementById("annotationCanvas") as unknown as SVGGraphicsElement).getScreenCTM().inverse()
+        var pt = new DOMPoint(event.clientX, event.clientY)
+        var edx = pt.matrixTransform(this.canvasMatrix).x
+        var edy = pt.matrixTransform(this.canvasMatrix).y
 
-        // translate the element
-        target.style.transform = 'translate(' + x + 'px, ' + y + 'px)'
+        var ptDist = new DOMPoint(target.getBoundingClientRect().x, event.target.getBoundingClientRect().y)
+        var distX = (parseFloat(target.getAttribute('distX'))) || edx - ptDist.matrixTransform(this.canvasMatrix).x 
+        var distY = (parseFloat(target.getAttribute('distY'))) || edy - ptDist.matrixTransform(this.canvasMatrix).y 
 
-        // update the posiion attributes
-        target.setAttribute('data-x', x)
-        target.setAttribute('data-y', y)
+        target.setAttribute("distX", distX.toString())
+        target.setAttribute("distY", distY.toString())
+
+        target.setAttribute("x", (edx - distX).toString())
+        target.setAttribute("y", (edy - distY).toString())
+
         var targetParent = target.closest("g")
         var line = targetParent.querySelector(".annotLine")
         var dragRects = targetParent.querySelectorAll(".lineDragRect")
 
-        var rectX = (parseFloat(target.getAttribute("x")) + x).toString()
-        var rectY = (parseFloat(target.getAttribute("y")) + y).toString()
+        var pt = new DOMPoint(target.getBoundingClientRect().x, target.getBoundingClientRect().y)
+
+        var rectX = pt.matrixTransform(this.canvasMatrix).x.toString() 
+        var rectY = pt.matrixTransform(this.canvasMatrix).y.toString() 
+
         if(line!== null){
             line.setAttribute("x2", rectX)
             line.setAttribute("y2", rectY)
@@ -232,27 +305,23 @@ class AnnotationChangeHandler implements Handler{
     //LINES
 
     dragLineListener(event){
-        event.stopImmediatePropagation()
+
         var target = event.target as SVGRectElement
+        this.canvasMatrix = (document.getElementById("annotationCanvas") as unknown as SVGGraphicsElement).getScreenCTM().inverse()
         this.dragedRect = target
-        // keep the dragged position in the data-x/data-y attributes
-        var x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx
-        var y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy
+        var pt = new DOMPoint(event.clientX, event.clientY)
+        var edx = pt.matrixTransform(this.canvasMatrix).x
+        var edy = pt.matrixTransform(this.canvasMatrix).y
 
-        // translate the element
-        target.style.transform = 'translate(' + x + 'px, ' + y + 'px)'
+        target.setAttribute("x", edx.toString())
+        target.setAttribute("y", edy.toString())
 
-        // update the posiion attributes
-        target.setAttribute('data-x', x)
-        target.setAttribute('data-y', y)
         var targetParent = target.closest("g")
         var line = targetParent.querySelector(".annotLine")
 
-        // var rectX = (parseFloat(target.getAttribute("x")) + x).toString()
-        // var rectY = (parseFloat(target.getAttribute("y")) + y).toString()
-
-        var rectX = ((target.getBoundingClientRect().x - this.rootBBox.x) * this.scale).toString()
-        var rectY = ((target.getBoundingClientRect().y - this.rootBBox.y) * this.scale).toString()
+        pt = new DOMPoint(target.getBoundingClientRect().x, target.getBoundingClientRect().y)
+        var rectX = pt.matrixTransform(this.canvasMatrix).x.toString() 
+        var rectY = pt.matrixTransform(this.canvasMatrix).y.toString() 
 
         if(target.classList.contains("x1")){
             line.setAttribute("x1", rectX)
@@ -261,7 +330,6 @@ class AnnotationChangeHandler implements Handler{
         }
 
         document.dispatchEvent(new Event("annotChanged"))
-        
     }
 
     /**
@@ -270,42 +338,52 @@ class AnnotationChangeHandler implements Handler{
      * @returns 
      */
     highlightNextAttachObject(lineDragRect: SVGRectElement): Element{
-        var posx = lineDragRect.getBoundingClientRect().x - this.rootBBox.x - window.pageXOffset - this.root.scrollLeft
-        var posy =  lineDragRect.getBoundingClientRect().y - this.rootBBox.y - window.pageYOffset - this.root.scrollTop
+
+        var pt = new DOMPoint(lineDragRect.getBoundingClientRect().x, lineDragRect.getBoundingClientRect().y)
+
+        var posx = pt.matrixTransform(this.rootMatrix).x //lineDragRect.getBoundingClientRect().x - this.rootBBox.x - window.pageXOffset - this.root.scrollLeft
+        var posy = pt.matrixTransform(this.rootMatrix).y //lineDragRect.getBoundingClientRect().y - this.rootBBox.y - window.pageYOffset - this.root.scrollTop
+        
         var nextScoreObj = this.m2m.findScoreTarget(posx, posy)
         var nextShapeObj = this.findCustomShapeTarget(posx, posy)
         var possibleCoords = new Array<Coord>()
 
         var shapeCoord: Coord
         if(nextShapeObj !== null){
+            var shapept = new DOMPoint(nextShapeObj.getBoundingClientRect().x, nextShapeObj.getBoundingClientRect().y)
             shapeCoord = {
                 obj: nextShapeObj,
-                x: nextShapeObj.getBoundingClientRect().x - this.rootBBox.x - window.pageXOffset - this.root.scrollLeft, 
-                y: nextShapeObj.getBoundingClientRect().y - this.rootBBox.y - window.pageYOffset - this.root.scrollTop
+                x: shapept.matrixTransform(this.rootMatrix).x, // nextShapeObj.getBoundingClientRect().x - this.rootBBox.x - window.pageXOffset - this.root.scrollLeft, 
+                y: shapept.matrixTransform(this.rootMatrix).y //nextShapeObj.getBoundingClientRect().y - this.rootBBox.y - window.pageYOffset - this.root.scrollTop
             }
             possibleCoords.push(shapeCoord)
         }
 
-        var measureCoord: Coord = {
-            obj: nextScoreObj.parentMeasure,
-            x: nextScoreObj.parentMeasure.getBoundingClientRect().x - this.rootBBox.x - window.pageXOffset - this.root.scrollLeft, 
-            y: nextScoreObj.parentMeasure.getBoundingClientRect().y - this.rootBBox.y - window.pageYOffset - this.root.scrollTop
-        } 
-        possibleCoords.push(measureCoord)
+        if(nextScoreObj != undefined){
+            var measurept = new DOMPoint(nextScoreObj.parentMeasure.getBoundingClientRect().x, nextScoreObj.parentMeasure.getBoundingClientRect().y)
+            var measureCoord: Coord = {
+                obj: nextScoreObj.parentMeasure,
+                x: measurept.matrixTransform(this.rootMatrix).x, //nextScoreObj.parentMeasure.getBoundingClientRect().x - this.rootBBox.x - window.pageXOffset - this.root.scrollLeft, 
+                y: measurept.matrixTransform(this.rootMatrix).y //nextScoreObj.parentMeasure.getBoundingClientRect().y - this.rootBBox.y - window.pageYOffset - this.root.scrollTop
+            } 
+            possibleCoords.push(measureCoord)
 
-        var staffCoord: Coord = {
-            obj: nextScoreObj.parentStaff,
-            x: nextScoreObj.parentStaff.getBoundingClientRect().x - this.rootBBox.x - window.pageXOffset - this.root.scrollLeft, 
-            y: nextScoreObj.parentStaff.getBoundingClientRect().y - this.rootBBox.y - window.pageYOffset - this.root.scrollTop
-        } 
-        possibleCoords.push(staffCoord)
-        
-        var noteCoord: Coord = {
-            obj: document.getElementById(nextScoreObj.id),
-            x: document.getElementById(nextScoreObj.id).getBoundingClientRect().x - this.rootBBox.x - window.pageXOffset - this.root.scrollLeft,  
-            y: document.getElementById(nextScoreObj.id).getBoundingClientRect().y - this.rootBBox.y - window.pageYOffset - this.root.scrollTop
+            var staffpt = new DOMPoint(nextScoreObj.parentStaff.getBoundingClientRect().x, nextScoreObj.parentStaff.getBoundingClientRect().y)
+            var staffCoord: Coord = {
+                obj: nextScoreObj.parentStaff,
+                x: staffpt.matrixTransform(this.rootMatrix).x, //nextScoreObj.parentStaff.getBoundingClientRect().x - this.rootBBox.x - window.pageXOffset - this.root.scrollLeft, 
+                y: staffpt.matrixTransform(this.rootMatrix).y //,nextScoreObj.parentStaff.getBoundingClientRect().y - this.rootBBox.y - window.pageYOffset - this.root.scrollTop
+            } 
+            possibleCoords.push(staffCoord)
+            
+            var notept = new DOMPoint(document.getElementById(nextScoreObj.id).getBoundingClientRect().x, document.getElementById(nextScoreObj.id).getBoundingClientRect().y)
+            var noteCoord: Coord = {
+                obj: document.getElementById(nextScoreObj.id),
+                x: notept.matrixTransform(this.rootMatrix).x, //document.getElementById(nextScoreObj.id).getBoundingClientRect().x - this.rootBBox.x - window.pageXOffset - this.root.scrollLeft,  
+                y: notept.matrixTransform(this.rootMatrix).y //document.getElementById(nextScoreObj.id).getBoundingClientRect().y - this.rootBBox.y - window.pageYOffset - this.root.scrollTop
+            }
+            possibleCoords.push(noteCoord)
         }
-        possibleCoords.push(noteCoord)
 
         var tempDist: number = Math.pow(10, 10)
         var objToHighlight: Element; 
@@ -334,13 +412,15 @@ class AnnotationChangeHandler implements Handler{
         var nextShape: Element
         var tempDist: number = Math.pow(10, 10)
         shapes.forEach(s => {
-            var dist = Math.sqrt(Math.abs(s.getBoundingClientRect().x - this.rootBBox.x - window.pageXOffset - posx)**2 + Math.abs(s.getBoundingClientRect().y - this.rootBBox.y - window.pageXOffset - posy)**2)
+            var pt = new DOMPoint(s.getBoundingClientRect().x, s.getBoundingClientRect().y)
+            var spt = pt.matrixTransform(this.rootMatrix)
+            var dist = Math.sqrt(Math.abs(spt.x - posx)**2 + Math.abs(spt.y - posy)**2)
             if(dist < tempDist){
                 tempDist = dist
                 nextShape = s
             }
         })
-        if(typeof nextShape === "undefined"){
+        if(nextShape == undefined){
             return null
         }
         return nextShape
@@ -357,11 +437,19 @@ class AnnotationChangeHandler implements Handler{
         var targety: number
         var highlightRect: SVGRectElement
         var parentGroup = lineDragRect.closest("g")
+
+        var otaBBox = objToAttach.getBoundingClientRect()
         this.annotations.some(annot => {
             if(annot.sourceID = parentGroup.id){
+                var pt = new DOMPoint(otaBBox.x, otaBBox.y)
+                var ptBottom = new DOMPoint(0, otaBBox.bottom)
+                var ptRight = new DOMPoint(otaBBox.right, 0)
+                var otapt = pt.matrixTransform(this.canvasMatrix)
+                var otaptHeight = Math.abs(otapt.y - ptBottom.matrixTransform(this.canvasMatrix).y)
+                var otaptWidth = Math.abs(otapt.x - ptRight.matrixTransform(this.canvasMatrix).x)
                 annot.targetID = objToAttach.id
-                targetx = (objToAttach.getBoundingClientRect().x - this.rootBBox.x - window.pageXOffset - this.root.scrollLeft) * this.scale
-                targety = (objToAttach.getBoundingClientRect().y - this.rootBBox.y - window.pageYOffset - this.root.scrollTop) * this.scale
+                targetx = otapt.x //(objToAttach.getBoundingClientRect().x - this.rootBBox.x - window.pageXOffset - this.root.scrollLeft) * this.scale
+                targety = otapt.y //(objToAttach.getBoundingClientRect().y - this.rootBBox.y - window.pageYOffset - this.root.scrollTop) * this.scale
 
 
                 // draw rect for highlighting
@@ -376,8 +464,10 @@ class AnnotationChangeHandler implements Handler{
                 highlightRect.classList.add("highlightAnnotation")
                 highlightRect.setAttribute("x", (targetx - highlightMargin).toString())
                 highlightRect.setAttribute("y", (targety - highlightMargin).toString())
-                highlightRect.setAttribute("height", ((objToAttach.getBoundingClientRect().height + 2*highlightMargin) * this.scale).toString())
-                highlightRect.setAttribute("width", ((objToAttach.getBoundingClientRect().width + 2*highlightMargin) * this.scale).toString())
+                // highlightRect.setAttribute("height", ((objToAttach.getBoundingClientRect().height + 2*highlightMargin) * this.scale).toString())
+                // highlightRect.setAttribute("width", ((objToAttach.getBoundingClientRect().width + 2*highlightMargin) * this.scale).toString())
+                highlightRect.setAttribute("height", (otaptHeight + 2*highlightMargin).toString())
+                highlightRect.setAttribute("width", (otaptWidth + 2*highlightMargin).toString())
 
                 return annot.sourceID === parentGroup.id
             }
@@ -426,6 +516,16 @@ class AnnotationChangeHandler implements Handler{
     }
 
     /**
+     * Delete attributes from Elements which are just used temporarily to resize or drag objects
+     */
+    deleteTempDistances(){
+        document.getElementById("annotationCanvas").querySelectorAll("*[distX], *[distY]").forEach(d => {
+            d.removeAttribute("distX")
+            d.removeAttribute("distY")
+        })
+    }
+
+    /**
      * Snap Annotation Pointer to highlighted Object
      */
      snapToObj(){
@@ -465,6 +565,8 @@ class AnnotationChangeHandler implements Handler{
         this.updateCallback
         this.root = document.getElementById(c._ROOTSVGID_)
         this.rootBBox = this.root.getBoundingClientRect()
+        this.rootMatrix = (this.root as unknown as SVGGraphicsElement).getScreenCTM().inverse()
+        this.canvasMatrix = (document.getElementById("annotationCanvas") as unknown as SVGGraphicsElement).getScreenCTM().inverse()
         this.customShapes = Array.from(document.querySelectorAll(".customAnnotShape"))
         this.resetListeners()
     }

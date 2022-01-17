@@ -68,8 +68,6 @@ class WindowHandler implements Handler{
         var isScrolling = setTimeout(function(){
             that.m2m?.update()
             that.annotations?.update()
-            that.scale = (document.querySelector("#annotationCanvas") as SVGSVGElement)?.viewBox.baseVal.width / document.getElementById(c._ROOTSVGID_)?.getBoundingClientRect().width || 0
-            that.scaleCallback(that.scale)
             that.insertModeHandler?.getPhantomNoteHandler()?.resetCanvas()
         }, 500)  
     }).bind(this)

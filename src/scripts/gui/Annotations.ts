@@ -20,6 +20,7 @@ class Annotations implements Handler{
     private customAnnotationDrawer: CustomAnnotationShapeDrawer;
     private annotationChangeHandler: AnnotationChangeHandler;
     private scale
+    private undoStacks: Array<Array<Element>>;
 
     x
     constructor(){
@@ -34,15 +35,15 @@ class Annotations implements Handler{
         var rootHeigth = this.rootBBox.height.toString()
         
 
-        if(typeof this.annotationCanvas === "undefined"){
+        if(this.annotationCanvas == undefined){
             this.annotationCanvas = document.createElementNS(c._SVGNS_, "svg")
             this.annotationCanvas.setAttribute("id", "annotationCanvas")
-            this.annotationCanvas.setAttribute("preserveAspectRatio", "xMinYMin meet")
+            //this.annotationCanvas.setAttribute("preserveAspectRatio", "xMinYMin meet")
             this.annotationCanvas.setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))
             this.annotationCanvas.classList.add("back")
         }
 
-        if(this.annotationCanvas.classList.contains("back")){
+        if(this.annotationCanvas.classList.contains("front")){
             this.root.insertBefore(this.annotationCanvas, this.root.lastChild.nextSibling)
         }else{
             this.root.insertBefore(this.annotationCanvas, this.root.firstChild)
@@ -86,6 +87,9 @@ class Annotations implements Handler{
         })
         
         document.addEventListener("keydown", this.deleteHandler)
+
+        document.addEventListener("annotationCanvasChanged", this.updateUndoStacks)
+
         return this
     }
 
@@ -104,6 +108,8 @@ class Annotations implements Handler{
             cas.removeEventListener("dblclick", this.selectHandler)
         })
         document.removeEventListener("keydown", this.deleteHandler)
+        this.customAnnotationDrawer?.removeListeners()
+        this.annotationChangeHandler?.removeListeners()
 
         return this
     }
@@ -129,7 +135,7 @@ class Annotations implements Handler{
     }).bind(this)
 
     createAnnotationHandler = (function createAnnotationHandler (e: MouseEvent){
-       var selectedAnnotations = document.getElementById("annotationCanvas").querySelectorAll(".annotText.selected")
+       var selectedAnnotations = document.querySelectorAll("#annotationCanvas .selected")
        if(selectedAnnotations.length === 0){
            this.createAnnotation(e)
        }else{
@@ -148,7 +154,7 @@ class Annotations implements Handler{
         if((e.target as HTMLElement).id !== c._ROOTSVGID_){
             return 
         }
-
+        this.setToFront()
         var selcount = 0
         this.annotationCanvas.querySelectorAll(":scope > .selected").forEach(el => {
             el.classList.remove("selected")
@@ -158,9 +164,13 @@ class Annotations implements Handler{
             return
         }
 
-        var posx = e.pageX - this.rootBBox.x - window.pageXOffset
-        var posy = e.pageY - this.rootBBox.y - window.pageYOffset
-        var annotationTarget = this.m2m.findScoreTarget(posx, posy)
+        var pt = new DOMPoint(e.clientX, e.clientY)
+        var rootMatrix = (this.root as unknown as SVGGraphicsElement).getScreenCTM().inverse()
+        rootMatrix = (this.annotationCanvas as unknown as SVGGraphicsElement).getScreenCTM().inverse()
+
+        var posx = pt.matrixTransform(rootMatrix).x //e.pageX - this.rootBBox.x - window.pageXOffset
+        var posy = pt.matrixTransform(rootMatrix).y //e.pageY - this.rootBBox.y - window.pageYOffset
+        var annotationTarget = this.m2m.findScoreTarget(posx, posy, false)
 
         var textGroup = document.createElementNS(c._SVGNS_, "g")
         textGroup.setAttribute("id", uuidv4())
@@ -184,8 +194,8 @@ class Annotations implements Handler{
         text.setAttribute("x", "0")
         text.setAttribute("y", "0")
 
-        textForeignObject.setAttribute("x", (posx + rectPadding).toString())
-        textForeignObject.setAttribute("y", (posy).toString())
+        textForeignObject.setAttribute("x", ((posx + rectPadding) * this.scale).toString())
+        textForeignObject.setAttribute("y", (posy * this.scale).toString())
         textForeignObject.setAttribute("height", (textDiv.clientHeight + 2*rectPadding).toString())
         textForeignObject.setAttribute("width", (100+2*rectPadding).toString())
 
@@ -193,8 +203,8 @@ class Annotations implements Handler{
         line.classList.add("annotLine")
         line.setAttribute("x2", textForeignObject.x.baseVal.valueAsString)
         line.setAttribute("y2", textForeignObject.y.baseVal.valueAsString)
-        line.setAttribute("x1", (annotationTarget.x - this.rootBBox.x - window.pageXOffset).toString())
-        line.setAttribute("y1", (annotationTarget.y - this.rootBBox.y - window.pageYOffset).toString())
+        line.setAttribute("x1", annotationTarget.x.toString()) //(annotationTarget.x - this.rootBBox.x - window.pageXOffset).toString())
+        line.setAttribute("y1", annotationTarget.y.toString()) //(annotationTarget.y - this.rootBBox.y - window.pageYOffset).toString())
         line.classList.add("annotLine")
 
         textForeignObject.append(textDiv)
@@ -217,10 +227,19 @@ class Annotations implements Handler{
        this.resetListeners()
 
        document.dispatchEvent(new Event("annotChanged"))
+       document.dispatchEvent(new Event("annotationCanvasChanged"))
+
     }
 
     selectHandler = (function selectHandler(e: MouseEvent){
         this.select(e)
+    }).bind(this)
+
+    updateUndoStacks = (function updateUndoStacks(e: Event){
+        var canvasClone = document.querySelector("#annotationCanvas").cloneNode(true) as Element
+        var listClone = document.querySelector("#annotList").cloneNode(true) as Element
+        this.undoStacks.push([canvasClone, listClone])
+        this.annotationCanvas = document.querySelector("#annotationCanvas")
     }).bind(this)
 
     /**
@@ -282,9 +301,10 @@ class Annotations implements Handler{
     deleteHandler = (function deleteHandler(e: KeyboardEvent){
         var isValidKey = ["Delete", "Backspace"].some(code => e.code === code)
         var isInAnnotMode = document.body.classList.contains("annotMode")
-        var hasEditableElement = document.querySelectorAll("*[contenteditable=true]").length > 0
+        var hasEditableElement = document.querySelectorAll(".selected [contenteditable=true]").length > 0
+        var listHasFocus = Array.from(document.querySelectorAll("#annotList > *")).some(le => le === document.activeElement)
 
-        if(isValidKey && isInAnnotMode && !hasEditableElement){
+        if(isValidKey && isInAnnotMode && !hasEditableElement && !listHasFocus){
             document.querySelectorAll(".annotText.selected, .customAnnotShape.selected").forEach(el => {
                 if(el.closest("g") !== null){
                     el.closest("g").remove()
@@ -293,6 +313,7 @@ class Annotations implements Handler{
                 }
             })
             document.dispatchEvent(new Event("annotChanged"))
+            document.dispatchEvent(new Event("annotationCanvasChanged"))
         }
     }).bind(this)
 
@@ -301,11 +322,13 @@ class Annotations implements Handler{
         if((e.key === "Enter" || e.key === "Escape")){
             target.blur()
             document.dispatchEvent(new Event("annotChanged"))
+            document.dispatchEvent(new Event("annotationCanvasChanged"))
         }
     }).bind(this)
 
     update(){
         this.addCanvas()
+        this.annotationChangeHandler?.update()
         if(this.annotationCanvas.classList.contains("back")){
             this.removeListeners()
         }else{
@@ -322,7 +345,7 @@ class Annotations implements Handler{
     setToFront(){
         this.annotationCanvas.classList.remove("back")
         this.annotationCanvas.classList.add("front")
-        this.root.insertBefore(this.annotationCanvas, this.root.lastChild.nextSibling)
+        this.root.insertBefore(this.getAnnotationCanvas(), this.root.lastChild.nextSibling)
         this.setListeners()
         document.body.classList.add("annotMode")
 
@@ -336,7 +359,9 @@ class Annotations implements Handler{
     setToBack(){
         this.annotationCanvas.classList.remove("front")
         this.annotationCanvas.classList.add("back")
-        this.root.insertBefore(this.annotationCanvas, this.root.firstChild)
+        if((this.getAnnotationCanvas() !== (this.root.firstChild as SVGSVGElement) && this.getAnnotationCanvas() !== null)){
+            this.root.insertBefore(this.getAnnotationCanvas(), this.root.firstChild)
+        }
         this.removeListeners()
         document.body.classList.remove("annotMode")
 
@@ -359,8 +384,18 @@ class Annotations implements Handler{
         return this
     }
 
-    getAnnotationCanvas(): SVGGElement{
-        return this.annotationCanvas
+    getAnnotationCanvas(): SVGSVGElement{
+        return document.querySelector("#annotationCanvas")
+    }
+
+    setUndoStacks(arr: Array<Array<Element>>){
+        if(arr[0] == undefined || this.undoStacks == undefined){
+            this.undoStacks = arr
+            var canvasClone = document.querySelector("#annotationCanvas").cloneNode(true) as Element
+            var listClone = document.querySelector("#annotList").cloneNode(true) as Element
+            this.undoStacks.push([canvasClone, listClone])
+        }
+        return this
     }
     
 }

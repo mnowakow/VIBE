@@ -1,4 +1,5 @@
 import * as meiConverter from "../utils/MEIConverter"
+import * as meiOperation from "../utils/MEIOperations"
 import { Mouse2MEI } from "../utils/Mouse2MEI";
 import Handler from "./Handler";
 import { constants as c } from "../constants"
@@ -6,7 +7,6 @@ import { uuidv4 } from "../utils/random";
 import HarmonyLabel from "../gui/HarmonyLabel";
 import TempoLabel from "../gui/TempoLabel"
 import MusicPlayer from "../MusicPlayer";
-import * as coordinates from "../utils/coordinates"
 import Label from '../gui/Label'
 
 const labelClasses = ["harm", "tempo", "note"]
@@ -19,6 +19,7 @@ class LabelHandler implements Handler{
 
     private labelCanvas: SVGElement
     private root: Element
+    private rootBBox: DOMRect
     private labels: Map<string, Label>
     private isGlobal: boolean
     private elementId: string
@@ -33,11 +34,16 @@ class LabelHandler implements Handler{
      * Set own canvas for manipulating labels
      */
     addCanvas(){
-        if(typeof this.labelCanvas === "undefined"){
+        this.root = document.getElementById(c._ROOTSVGID_)
+        this.rootBBox = this.root.getBoundingClientRect()
+        var rootWidth = this.rootBBox.width.toString()
+        var rootHeigth = this.rootBBox.height.toString()
+        
+        if(this.labelCanvas == undefined){
             this.labelCanvas = document.createElementNS(c._SVGNS_, "svg")
             this.labelCanvas.setAttribute("id", "labelCanvas")
+            this.labelCanvas.setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))
         }
-        this.root = document.getElementById(c._ROOTSVGID_)
         this.root.insertBefore(this.labelCanvas, this.root.firstChild)
 
         return this
@@ -134,11 +140,42 @@ class LabelHandler implements Handler{
         var nextNoteBBox = nextNote.getBoundingClientRect()
         var staffBBox = nextNote.closest(".staff").getBoundingClientRect()
 
-        var posx = nextNoteBBox.left - nextNoteBBox.width/2 - window.scrollX - rootBBox.x - root.scrollLeft
-        var posy = staffBBox.bottom - window.scrollY - rootBBox.y - root.scrollLeft
-        if(this.currentMEI.querySelector("harm[startid=\"" + nextNote.id + "\"]") === null && !this.labelCanvas.hasChildNodes()){
+        var canvasMatrix = (this.labelCanvas as unknown as SVGGraphicsElement).getScreenCTM().inverse()
+        var ptNoteLT = new DOMPoint(nextNoteBBox.left, nextNoteBBox.top)
+        ptNoteLT = ptNoteLT.matrixTransform(canvasMatrix)
+
+        var ptNoteRB = new DOMPoint(nextNoteBBox.right, nextNoteBBox.bottom)
+        ptNoteRB = ptNoteRB.matrixTransform(canvasMatrix)
+
+        var ptNoteWidth = Math.abs(ptNoteRB.x - ptNoteLT.x)
+        var ptNoteHeight = Math.abs(ptNoteRB.y - ptNoteLT.y)
+
+        var ptStaffLT = new DOMPoint(staffBBox.left, staffBBox.top)
+        ptStaffLT = ptStaffLT.matrixTransform(canvasMatrix)
+
+        var ptStaffRB = new DOMPoint(staffBBox.right, staffBBox.bottom)
+        ptStaffRB = ptStaffRB.matrixTransform(canvasMatrix)
+
+        var ptStaffWidth = Math.abs(ptStaffRB.x - ptStaffLT.x)
+        var ptStaffHeight = Math.abs(ptStaffRB.y - ptStaffLT.y)
+
+        var posx = ptNoteLT.x - ptNoteWidth/2 //nextNoteBBox.left - nextNoteBBox.width/2 - window.scrollX - rootBBox.x - root.scrollLeft
+        var posy = ptStaffRB.y //staffBBox.bottom - window.scrollY - rootBBox.y - root.scrollLeft
+        
+        var tstamp = meiOperation.getElementTimestampById(nextNote.id, this.currentMEI)
+        var existsTstamp = Array.from(this.currentMEI.getElementById(nextNote.id).closest("measure").querySelectorAll("harm")).some(h => {
+            if(h.getAttribute("tstamp") !== null){
+                return parseFloat(h.getAttribute("tstamp")) === tstamp
+            }else{
+                return false
+            }
+        })
+        var hasStartId = this.currentMEI.querySelector("harm[startid=\"" + nextNote.id + "\"]") !== null
+        var isEmptyLabelCanvas = !this.labelCanvas.hasChildNodes()
+        
+        if(!hasStartId && isEmptyLabelCanvas && !existsTstamp){
             this.createInputBox(posx, posy, nextNote.id, "harm") 
-        }else if(this.labelCanvas.hasChildNodes()){
+        }else if(!isEmptyLabelCanvas){
             this.closeModifyWindow()
         }
     }
@@ -185,10 +222,15 @@ class LabelHandler implements Handler{
     highlightNextHarmony(e: MouseEvent, active = true){
         if(!active){return}
 
-        var posx = coordinates.adjustToPage(e.pageX, "x")
-        var posy = coordinates.adjustToPage(e.pageY, "y")
+        var pt = new DOMPoint(e.clientX, e.clientY)
+        var rootMatrix = (this.labelCanvas as unknown as SVGGraphicsElement).getScreenCTM().inverse()
+        pt = pt.matrixTransform(rootMatrix)
+        var posx = pt.x //coordinates.adjustToPage(e.pageX, "x")
+        var posy = pt.y //coordinates.adjustToPage(e.pageY, "y")
 
         var nextNoteBBox = this.m2m.findScoreTarget(posx, posy)
+        if(nextNoteBBox == undefined){return}
+
         var el = document.getElementById(nextNoteBBox.id)
         
         if(el.closest(".chord") !== null){
@@ -222,10 +264,14 @@ class LabelHandler implements Handler{
         target = target.closest(labelSelectors)
         target.setAttribute("visibility", "hidden")
         var targetBBox = target.getBoundingClientRect()
-        var root = document.getElementById(c._ROOTSVGID_)
-        var rootBBox = root.getBoundingClientRect()
-        var posx = targetBBox.x - window.scrollX - rootBBox.left - root.scrollLeft //coordinates.adjustToPage(e.pageX, "x")
-        var posy = targetBBox.y - window.scrollY - rootBBox.top - root.scrollTop //coordinates.adjustToPage(e.pageY, "y")
+
+        var pt = new DOMPoint(targetBBox.x, targetBBox.y)
+        var rootMatrix = (this.labelCanvas as unknown as SVGGraphicsElement).getScreenCTM().inverse()
+        pt = pt.matrixTransform(rootMatrix)
+
+        var posx = pt.x //targetBBox.x - window.scrollX - rootBBox.left - root.scrollLeft //coordinates.adjustToPage(e.pageX, "x")
+        var posy = pt.y //targetBBox.y - window.scrollY - rootBBox.top - root.scrollTop //coordinates.adjustToPage(e.pageY, "y")
+
 
         // prevent double input boxes for same Element
         this.elementId = target.id
