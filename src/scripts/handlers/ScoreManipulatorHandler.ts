@@ -28,6 +28,7 @@ class ScoreManipulatorHandler implements Handler{
 
         this.manipulatorCanvas = document.createElementNS(c._SVGNS_, "svg")
         this.manipulatorCanvas.setAttribute("id", "manipulatorCanvas")
+        this.manipulatorCanvas.classList.add("canvas")
         this.manipulatorCanvas.setAttribute("preserveAspectRatio", "xMinYMin meet")
         this.manipulatorCanvas.setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))
         document.getElementById(c._ROOTSVGID_).append(this.manipulatorCanvas)

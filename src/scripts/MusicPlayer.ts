@@ -5,6 +5,7 @@ import MidiPlayer from 'midi-player-js';
 import * as Soundfont from 'soundfont-player'
 import { constants as c } from './constants'
 import ScoreGraph from './datastructures/ScoreGraph';
+import * as coordinates from "./utils/coordinates"
 
 const currentlyPlayingFlag = "currentlyPlaying"
 const followerRectID = "followerRect"
@@ -24,7 +25,7 @@ class MusicPlayer{
     private timeouts: Array<any>
     private currentNote: Element
     private noteEvent: Event
-    private canvasG: any;
+    private canvasMP: SVGSVGElement;
     private root: HTMLElement;
     private rootBBox: any;
 
@@ -55,13 +56,19 @@ class MusicPlayer{
      * Add Canvas in which all MusicPlayer SVGs are contained
      */
     addCanvas(){
-        if(typeof this.canvasG === "undefined"){
-            this.canvasG = document.createElementNS(c._SVGNS_, "svg")
-            this.canvasG.setAttribute("id", "canvasMusicPlayer")
-        }      
         this.root = document.getElementById(c._ROOTSVGID_)
-        this.root.insertBefore(this.canvasG, this.root.firstChild)
         this.rootBBox = this.root.getBoundingClientRect()
+        var rootWidth = this.rootBBox.width.toString()
+        var rootHeigth = this.rootBBox.height.toString()
+
+        if(this.canvasMP == undefined){
+            this.canvasMP = document.createElementNS(c._SVGNS_, "svg")
+            this.canvasMP.setAttribute("id", "canvasMusicPlayer")
+            this.canvasMP.classList.add("canvas")
+            this.canvasMP.setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))
+        }      
+
+        this.root.insertBefore(this.canvasMP, this.root.firstChild)
     }
 
     /**
@@ -417,23 +424,26 @@ class MusicPlayer{
      */
     drawFollowerRect(){
 
-        var rect =  document.getElementById(c._ROOTSVGID_)
-        var rectBBox = rect.getBoundingClientRect();
+        var canvas =  document.getElementById("canvasMusicPlayer")
+        var canvasBBox = canvas.getBoundingClientRect();
 
         var followerRect: Element
         if(document.getElementById(followerRectID) !== null){
             followerRect = document.getElementById(followerRectID)
         }else{
             followerRect = document.createElementNS(c._SVGNS_, "rect")
-            this.canvasG.appendChild(followerRect)
+            this.canvasMP.appendChild(followerRect)
         }
         var margin = 5
-        var currentNoteRect = this.currentNote.getBoundingClientRect()
+        var ptCurrentNote = coordinates.getDOMMatrixCoordinates(this.currentNote, canvas)
+
         var parentMeasureRect = this.currentNote.closest(".measure").getBoundingClientRect()
-        var upperBound = (parentMeasureRect.top - margin - rectBBox.y) //* this.scale
-        var lowerBound = (parentMeasureRect.bottom + margin - rectBBox.y) //* this.scale
-        var leftBound = (currentNoteRect.left - margin - rectBBox.x) //* this.scale
-        var rightBound = (currentNoteRect.right + margin - rectBBox.x) // * this.scale
+        var ptParentMeasure = coordinates.getDOMMatrixCoordinates(parentMeasureRect, canvas)
+
+        var upperBound = (ptParentMeasure.top - margin) // - canvasBBox.y) //* this.scale
+        var lowerBound = (ptParentMeasure.bottom + margin) // - canvasBBox.y) //* this.scale
+        var leftBound = (ptCurrentNote.left - margin)// - canvasBBox.x) //* this.scale
+        var rightBound = (ptCurrentNote.right + margin) // - canvasBBox.x) // * this.scale
 
         console.log("SCALE", this.scale)
         followerRect.setAttribute("id", followerRectID)

@@ -1,5 +1,6 @@
 import * as meiConverter from "../utils/MEIConverter"
 import * as meiOperation from "../utils/MEIOperations"
+import * as coordinates from "../utils/coordinates"
 import { Mouse2MEI } from "../utils/Mouse2MEI";
 import Handler from "./Handler";
 import { constants as c } from "../constants"
@@ -42,6 +43,7 @@ class LabelHandler implements Handler{
         if(this.labelCanvas == undefined){
             this.labelCanvas = document.createElementNS(c._SVGNS_, "svg")
             this.labelCanvas.setAttribute("id", "labelCanvas")
+            this.labelCanvas.classList.add("canvas")
             this.labelCanvas.setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))
         }
         this.root.insertBefore(this.labelCanvas, this.root.firstChild)
@@ -260,6 +262,7 @@ class LabelHandler implements Handler{
      * @returns 
      */
     modifyLabel(e: MouseEvent){
+        this.closeModifyWindow()
         var target = e.target as Element
         target = target.closest(labelSelectors)
         target.setAttribute("visibility", "hidden")

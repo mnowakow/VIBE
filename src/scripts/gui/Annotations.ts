@@ -38,6 +38,7 @@ class Annotations implements Handler{
         if(this.annotationCanvas == undefined){
             this.annotationCanvas = document.createElementNS(c._SVGNS_, "svg")
             this.annotationCanvas.setAttribute("id", "annotationCanvas")
+            this.annotationCanvas.classList.add("canvas")
             //this.annotationCanvas.setAttribute("preserveAspectRatio", "xMinYMin meet")
             this.annotationCanvas.setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))
             this.annotationCanvas.classList.add("back")

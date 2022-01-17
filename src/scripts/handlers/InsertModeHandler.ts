@@ -76,7 +76,7 @@ class InsertModeHandler implements Handler{
     this.phantomNoteHandler = new PhantomElementHandler
     this.setPhantomNote()
 
-    this.clickModeHandler = typeof this.clickModeHandler === "undefined" ? new ClickModeHandler() : this.clickModeHandler
+    this.clickModeHandler = this.clickModeHandler == undefined ? new ClickModeHandler() : this.clickModeHandler
     this.clickModeHandler
       .setInsertCallback(this.insertCallback)
       .setDeleteCallback(this.deleteCallback)
@@ -242,7 +242,7 @@ class InsertModeHandler implements Handler{
       this.deleteHandler.removeListeners()
     }
 
-    //activationmode should be always active. 
+    //selectionnmode should be always active. 
     //Listeners will overwritten if another mode listen same behaviour on same element (d3.js), e.g. annotation
     this.activateSelectionMode()
 

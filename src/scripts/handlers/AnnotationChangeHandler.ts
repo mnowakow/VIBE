@@ -5,8 +5,6 @@ import Handler from "./Handler";
 import interact from "interactjs"
 import { idxNoteMapFClef } from "../utils/mappings";
 import { Annotation, Coord } from "../utils/Types";
-import { isConstructorDeclaration } from "typescript";
-import { pathToFileURL } from "url";
 
 class AnnotationChangeHandler implements Handler{
     m2m?: Mouse2MEI;
@@ -24,6 +22,10 @@ class AnnotationChangeHandler implements Handler{
     private dragedRect: SVGRectElement
     private scale: number
 
+    private shapeListener: Interact.Interactable
+    private textListener: Interact.Interactable
+    private lineListener: Interact.Interactable
+
     constructor(){
         this.update()
     }
@@ -32,7 +34,7 @@ class AnnotationChangeHandler implements Handler{
     setListeners() {
         var that = this
 
-        interact('.customAnnotShape')
+        this.shapeListener = interact('.customAnnotShape')
         .resizable({
             // resize from all edges and corners
             edges: { left: true, right: true, bottom: true, top: true },
@@ -61,7 +63,7 @@ class AnnotationChangeHandler implements Handler{
             ]
         })
 
-        interact('.annotText')
+        this.textListener = interact('.annotText')
         .resizable({
             // resize from all edges and corners
             edges: { left: true, right: true, bottom: true, top: true },
@@ -90,7 +92,7 @@ class AnnotationChangeHandler implements Handler{
             ]
         })
 
-        interact(".lineDragRect.x1")
+        this.lineListener = interact(".lineDragRect.x1")
         .draggable({
             listeners: { 
                 move: this.dragLineListener.bind(this),
@@ -112,7 +114,10 @@ class AnnotationChangeHandler implements Handler{
     }
 
     removeListeners(): void {
-        interact(".customAnnotShape, .annotText, .lineDragRect").unset()
+        //interact(".customAnnotShape, .annotText, .lineDragRect").unset()
+        this.shapeListener?.unset()
+        this.lineListener?.unset()
+        this.textListener?.unset()
     }
 
     resetListeners(){
