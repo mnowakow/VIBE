@@ -285,7 +285,7 @@ class MusicPlayer{
         var eventTracks = this.player.getEvents()
         eventTracks.forEach(eventArray => {
             //@ts-ignore
-            Array.from(eventArray).forEach((event, eventIdx) => {
+            Array.from(eventArray).forEach((event, eventIdx) => { 
                 var e: any = event
                 if(e.name === "Set Tempo"){
                     this.pulse = (60000/ (e.data * 24))/10000 //duration is in seconds
@@ -354,9 +354,10 @@ class MusicPlayer{
             if(Math.abs(time - key) < temp ){
                 targetEntry = value
                 temp = Math.abs(time - key)
-            }else{
-                break
-            } 
+            }
+            // else{
+            //     break
+            // } 
         }
         return targetEntry
     }
