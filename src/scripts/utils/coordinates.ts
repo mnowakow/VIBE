@@ -8,7 +8,7 @@
 export function getDOMMatrixCoordinates(element: Element | DOMRect, canvas: Element = null): {left: number, top: number, right: number, bottom: number, width: number, height: number}{
     if(canvas === null){
         canvas = element instanceof Element ? element.closest(".canvas") : null
-        if(element instanceof DOMRect){throw new Error("Canvas must be provided, when input is of instance DOMRect") }
+        if(element instanceof DOMRect){throw new Error("Canvas must be provided, if input is instance of DOMRect. Actual instance: " + element.constructor.name) }
         if(canvas === null) return 
     }
 
@@ -22,4 +22,20 @@ export function getDOMMatrixCoordinates(element: Element | DOMRect, canvas: Elem
     var height = ptRB.y - ptLT.y
     
     return {left: ptLT.x, top: ptLT.y, right:ptRB.x, bottom: ptRB.y, width: width, height: height}
+}
+
+/**
+ * Transforms the given coordinates for a given canvas
+ * @param x 
+ * @param y 
+ * @param canvas 
+ * @returns 
+ */
+export function transformToDOMMatrixCoordinates(x: number, y: number, canvas: Element): {x: number, y: number}{
+    
+    var canvasMatrix = (canvas as unknown as SVGGraphicsElement).getScreenCTM().inverse()
+    var pt = new DOMPoint(x, y)
+    pt = pt.matrixTransform(canvasMatrix)
+
+    return {x: pt.x, y: pt.y}
 }

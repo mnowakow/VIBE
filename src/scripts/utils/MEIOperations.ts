@@ -10,11 +10,15 @@ import MeasureMatrix from '../datastructures/MeasureMatrix'
 
 
 const countableNoteUnitSelector: string =  
-":scope > note:not([grace])," +
-":scope > chord," +
-":scope > beam > chord," +
-":scope > beam > note:not([grace])," +
-":scope > rest"
+":scope *[dur]:not([grace])"
+
+const overfillMeasure = false
+
+// ":scope > note:not([grace])," +
+// ":scope > chord," +
+// ":scope > beam > chord," +
+// ":scope > beam > note:not([grace])," +
+// ":scope > rest"
 
 ////// DELETE //////
 /**
@@ -243,7 +247,6 @@ export function addToMEI(newSound: NewNote | NewChord, currentMEI: Document, rep
     }
 
     //check if measure is too long, return if too long
-    var overfillMeasure = false
     if(!overfillMeasure){
       var newMeasureRatio = getAbsoluteRatio(newElem.closest("layer"))
       if(newMeasureRatio > getMeterRatioGlobal(currentMEI)){
@@ -856,10 +859,37 @@ export function disableFeatures(features: Array<string>, xmlDoc: Document){
 }
 
 /**
+ * When a note is shortened, fill old remaining duration with rests
+ * @param newElement 
+ * @param oldElement 
+ * @param xmlDoc 
+ */
+export function fillWithRests(newElement: Element, oldElement: Element, xmlDoc: Document): Document{
+  var newRatio = getAbsoluteRatio(newElement)
+  var oldRatio = getAbsoluteRatio(oldElement)
+  if(newRatio < oldRatio){
+    var remainRatio = oldRatio - newRatio
+    var smallestUnit = gcd(remainRatio)
+    var restDur = ratioToDur(smallestUnit)[0]
+    var restCount = remainRatio/smallestUnit
+
+    newElement.classList.add("changed")
+    for(var i=0; i<restCount; i++){
+      var rest = createNewRestElement(restDur)
+      xmlDoc.getElementById(newElement.id).parentElement.insertBefore(rest, newElement.nextElementSibling)
+    }
+
+  }
+
+  return xmlDoc
+}
+
+
+/**
  * Fill Empty Space with rest
  * @param xmlDoc 
  */
-function fillWithRests(xmlDoc: Document){
+function _fillWithRests(xmlDoc: Document){
   var staffDef = xmlDoc.getElementsByTagName("staffDef").item(0)
   var meterCount: string
   var meterUnit: string
@@ -938,11 +968,13 @@ function replaceWithRest(element: Element, xmlDoc: Document){
  * @param xmlDoc Current MEI as Document
  * @param mode "prolong" or "reduce"
  * @param additionalElements Elements to be considered to be changed.
- * @param refElement Reference Element by which all determined elements (.marked and additionElements) will be changed (e.g. replacing duration during a note insert)
+ * @param refElement Reference Element after which all determined elements (.marked and additionElements) will be changed (e.g. replacing duration during a note insert).
+ * If no refElement is given, filter the additionalElements to exclude the refElement
  * @param marked Consider marked elements
  * @returns 
  */
-export function changeDuration(xmlDoc: Document, mode: string, additionalElements: Array<Element> = new Array(), refElement: Element = null){
+export function changeDuration(xmlDoc: Document, mode: string, additionalElements: Array<Element> = new Array(), refElement: Element = null): Document{
+  var currMeiClone = xmlDoc.cloneNode(true)
   var changedFlag = "changed"
   var multiplier: number
   switch(mode){
@@ -956,17 +988,21 @@ export function changeDuration(xmlDoc: Document, mode: string, additionalElement
       console.error(mode, "No such operation")
       return
   }
-  var refRatio = getAbsoluteRatio(xmlDoc.getElementById(refElement.id))
   var elements: Array<Element> = new Array();
-  elements = Array.from(document.querySelectorAll(".note.marked")).map(nm => {
-    if(!(additionalElements.some(ae => {ae.id === nm.id})) && nm.id !== refElement.id){
-      return xmlDoc.getElementById(nm.id)
-    }
-  })
+
+  if(refElement !== null){
+    elements = Array.from(document.querySelectorAll(".note.marked")).map(nm => {
+      if(!(additionalElements.some(ae => {ae.id === nm.id})) && nm.id !== refElement.id){
+        return xmlDoc.getElementById(nm.id)
+      }
+    })
+  }
   elements = elements[0] == undefined ? additionalElements : elements.concat(additionalElements)
 
+  var elmei: Element
+
   for(var i = 0; i < elements.length; i++){
-    var elmei = xmlDoc.getElementById(elements[i].id) as Element
+    elmei = xmlDoc.getElementById(elements[i].id) as Element
     var elmeiRatio = getAbsoluteRatio(elmei)
     var chord = elmei.closest("chord")
 
@@ -980,14 +1016,36 @@ export function changeDuration(xmlDoc: Document, mode: string, additionalElement
       }
     }
     var dur = parseInt(elmei.getAttribute("dur"))
+    var dots = parseInt(elmei.getAttribute("dots")) // is NaN if elmei has no dots
+
     if(dur > 0){
       dur = dur*multiplier
 
       if(mode === "reduce"){ 
         var globalRatio = getMeterRatioGlobal(xmlDoc)
         var layerRatio = getAbsoluteRatio(elmei.closest("layer"))
-        if(refElement == null){ // in this mode, also click replacements are handled
-          elmei.setAttribute("dur", dur.toString())
+
+      
+        if(refElement === null){ // in this mode, also click replacements are handled
+          var danglingRatio = layerRatio - globalRatio
+          if(danglingRatio > 0){
+            var nextElementRatio = getAbsoluteRatio(elmei)
+            var neNewRatio = nextElementRatio - danglingRatio
+            if(neNewRatio > 0 ){
+              var durArr = ratioToDur(neNewRatio)
+              elmei.setAttribute("dur", durArr[0].toString())
+              if(durArr[1] > 0){
+                elmei.setAttribute("dots", durArr[1].toString())
+              }else{
+                elmei.removeAttribute("dots")
+              }
+            }else{
+              elmei.remove()
+            }
+          }else{
+            //TODO???
+          }
+
           if(layerRatio < globalRatio){
             var newRest = xmlDoc.createElementNS(c._MEINS_, "rest")
             if(globalRatio - layerRatio < (1/dur)){
@@ -997,6 +1055,7 @@ export function changeDuration(xmlDoc: Document, mode: string, additionalElement
             elmei.parentElement.insertBefore(newRest, elmei.nextElementSibling)
           }
         }else if(layerRatio !== globalRatio){
+          var refRatio = getAbsoluteRatio(xmlDoc.getElementById(refElement.id))
           if(refRatio === elmeiRatio){
             elmei.remove()
             break;
@@ -1043,9 +1102,35 @@ export function changeDuration(xmlDoc: Document, mode: string, additionalElement
       }
     }
   }
+
+  if(!overfillMeasure && elmei?.closest("layer") !== null){
+    var newMeasureRatio = getAbsoluteRatio(elmei.closest("layer"))
+    if(newMeasureRatio > getMeterRatioGlobal(xmlDoc)){
+      xmlDoc = currMeiClone as Document
+    }
+  }
+
   //clean up after changing durations
   xmlDoc.querySelectorAll(".changed").forEach(c => c.classList.remove(changedFlag))
   cleanUp(xmlDoc)
+  return xmlDoc
+}
+
+/**
+ * Check if elment is overfilling the current layer element. Must provide previous MEI for reference.
+ * Violate rule: true; follow rules: false
+ * @param element 
+ * @param currMeiClone 
+ * @returns 
+ */
+export function elementIsOverfilling(element: Element, currMeiClone: Document): Boolean{
+  if(!overfillMeasure){
+    var newMeasureRatio = getAbsoluteRatio(element.closest("layer"))
+    if(newMeasureRatio > getMeterRatioGlobal(currMeiClone)){
+      return true
+    }
+  }
+  return false
 }
 
 
@@ -1129,14 +1214,14 @@ function reorganizeBeams(xmlDoc: Document){
 }
 
 /**
- * After shifting and removing notes, some elements could be empty
+ * After manipulating elements in the score, some elements could be empty
  * @param xmlDoc 
  */
  function removeEmptyElements(xmlDoc: Document) {
 
   Array.from(xmlDoc.querySelectorAll("beam")).forEach(b => {
     if(b.childElementCount === 0){
-      xmlDoc.getElementById(b.id).remove()
+      xmlDoc.getElementById(b.id)?.remove()
     }
     if(b.childElementCount === 1){
       //b.parentElement.insertBefore(b, b.firstChild)
@@ -1494,7 +1579,7 @@ function convertToNewNote(element: Element): NewNote{
 }
 
 function convertToElement(n: NewNote | NewChord, xmlDoc: Document): Element{
-  var nn
+  var nn: any
   var newElement: Element
   if(n.hasOwnProperty("pname")){
     nn = n as NewNote
@@ -1530,5 +1615,13 @@ function convertToNewChord(element: Element): NewChord{
   }
 
   return newChord
+}
+
+function createNewRestElement(dur: number, dots: number = undefined): Element{
+    var newElem = document.createElementNS(c._MEINS_, "rest");
+    newElem.setAttribute("dur", dur.toString())
+    if(dots != undefined) newElem.setAttribute("dots", dots.toString())
+    newElem.setAttribute("id", uuidv4())
+    return newElem
 }
 

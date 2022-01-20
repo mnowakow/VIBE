@@ -19,7 +19,6 @@ class Annotations implements Handler{
     private snapCoords: Coord
     private customAnnotationDrawer: CustomAnnotationShapeDrawer;
     private annotationChangeHandler: AnnotationChangeHandler;
-    private scale
     private undoStacks: Array<Array<Element>>;
 
     x
@@ -64,7 +63,6 @@ class Annotations implements Handler{
         this.annotationChangeHandler = new AnnotationChangeHandler()
         this.annotationChangeHandler
             .setUpdateCallback(this.resetListeners.bind(this))
-            .setScale(this.scale)
             .setM2M(this.m2m)
             .setAnnotations(this.annotations)
 
@@ -195,8 +193,8 @@ class Annotations implements Handler{
         text.setAttribute("x", "0")
         text.setAttribute("y", "0")
 
-        textForeignObject.setAttribute("x", ((posx + rectPadding) * this.scale).toString())
-        textForeignObject.setAttribute("y", (posy * this.scale).toString())
+        textForeignObject.setAttribute("x", (posx + rectPadding).toString())
+        textForeignObject.setAttribute("y", posy.toString())
         textForeignObject.setAttribute("height", (textDiv.clientHeight + 2*rectPadding).toString())
         textForeignObject.setAttribute("width", (100+2*rectPadding).toString())
 
@@ -377,11 +375,6 @@ class Annotations implements Handler{
 
     setMusicPlayer(musicPlayer: MusicPlayer){
         this.musicPlayer = musicPlayer
-        return this
-    }
-
-    setScale(scale: number){
-        this.scale = scale
         return this
     }
 

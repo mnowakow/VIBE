@@ -473,4 +473,10 @@ text{
 .tooltiptext.show{
     visibility: visible;
     opacity: 1;
-  }
+}
+
+.debug{
+    fill: firebrick;
+    stroke: black;
+    stroke-width: 1px;
+}

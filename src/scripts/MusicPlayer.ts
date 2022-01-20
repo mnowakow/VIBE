@@ -38,7 +38,6 @@ class MusicPlayer{
 
     private scoreGraph: ScoreGraph
     private isFirefox: boolean
-    scale: number;
 
     constructor(){
         this.noteEvent = new Event("currentNote")
@@ -440,12 +439,11 @@ class MusicPlayer{
         var parentMeasureRect = this.currentNote.closest(".measure").getBoundingClientRect()
         var ptParentMeasure = coordinates.getDOMMatrixCoordinates(parentMeasureRect, canvas)
 
-        var upperBound = (ptParentMeasure.top - margin) // - canvasBBox.y) //* this.scale
-        var lowerBound = (ptParentMeasure.bottom + margin) // - canvasBBox.y) //* this.scale
-        var leftBound = (ptCurrentNote.left - margin)// - canvasBBox.x) //* this.scale
-        var rightBound = (ptCurrentNote.right + margin) // - canvasBBox.x) // * this.scale
+        var upperBound = (ptParentMeasure.top - margin) 
+        var lowerBound = (ptParentMeasure.bottom + margin) 
+        var leftBound = (ptCurrentNote.left - margin)
+        var rightBound = (ptCurrentNote.right + margin)
 
-        console.log("SCALE", this.scale)
         followerRect.setAttribute("id", followerRectID)
         followerRect.setAttribute("y", upperBound.toString())
         followerRect.setAttribute("x", leftBound.toString())
@@ -537,12 +535,6 @@ class MusicPlayer{
 
     setRestartTimeByElement(el: Element){
         throw Error("Not yet implemented")
-    }
-
-    setScale(scale: number){
-        this.scale = scale
-        //this.update()
-        return this
     }
 
     getIsPlaying(){

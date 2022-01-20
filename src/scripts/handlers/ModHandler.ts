@@ -4,6 +4,7 @@ import Handler from "./Handler";
 import { constants as c} from "../constants"
 import { uuidv4 } from "../utils/random";
 import * as meiConverter from "../utils/MEIConverter"
+import * as meiOperation from "../utils/MEIOperations"
 import { noteToB } from "../utils/mappings";
 
 const modSelector = ".slur, .tie, .accid"
@@ -124,8 +125,11 @@ class ModHandler implements Handler{
      * @param e 
      */
     organizeBeams(e: MouseEvent){
-        var markedElements = Array.from(document.querySelectorAll(".note.marked"))
-        markedElements = markedElements.filter(me => me.closest(".layer").getAttribute("n") === markedElements[0].closest(".layer").getAttribute("n"))
+        var markedElements = Array.from(document.querySelectorAll(".note.marked, .chord.marked"))
+        markedElements = markedElements.filter(me => {
+            return me.closest(".layer").getAttribute("n") === markedElements[0].closest(".layer").getAttribute("n") 
+            && this.currentMEI.getElementById(me.id)?.getAttribute("dur") !== null
+        })
         if(markedElements.length === 0){return}
         
         var haveRightDur = markedElements.every(me => {
@@ -183,6 +187,7 @@ class ModHandler implements Handler{
             }
             
             var mei = meiConverter.restoreXmlIdTags(this.currentMEI)
+            meiOperation.cleanUp(mei)
             this.loadDataCallback("", mei, false, c._TARGETDIVID_)
         }
     } 

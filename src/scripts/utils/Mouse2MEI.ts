@@ -121,7 +121,6 @@ export class Mouse2MEI{
     }
 
     findBBoxes(){
-        console.log("FINDBBOX")
         var notes = document.querySelectorAll(".note, .rest, .mRest") ;
         var root = document.getElementById(c._ROOTSVGID_)
         var rootBBox = root.getBoundingClientRect()
@@ -520,44 +519,86 @@ export class Mouse2MEI{
         this.noteNewDur = dur.toString()
     }
 
+    /**
+     * Change note, chord or rest to given duration
+     * @param dur 
+     * @returns 
+     */
     setMarkedNoteDurations(dur: number | string): Boolean{
         var retVal = false
         var markedElements =  document.querySelectorAll(".note.marked, .rest.marked")
         markedElements.forEach(m => {
+            var currMeiClone = this.currentMEI.cloneNode(true) as Document
             var meiElement = this.currentMEI.getElementById(m.id)
-            meiElement.setAttribute("dur", dur.toString())
+            var oldMeiElement: Element = meiElement.cloneNode(true) as Element
+            var newMeiElement: Element
+            
             if(meiElement.closest("chord") !== null){
+                oldMeiElement = meiElement.closest("chord").cloneNode(true) as Element
                 meiElement.closest("chord").setAttribute("dur", dur.toString())
+                newMeiElement =  meiElement.closest("chord")
+            }else{
+                oldMeiElement = meiElement.cloneNode(true) as Element
+                meiElement.setAttribute("dur", dur.toString())
+                newMeiElement = meiElement
             }
-            retVal = true
+
+            this.currentMEI = meiOperation.fillWithRests(newMeiElement, oldMeiElement, this.currentMEI) //test for application of this method is made internally
+            if(this.currentMEI.querySelectorAll(".changed").length <= 0){
+                var additionalElements = Array.from(newMeiElement.closest("layer").querySelectorAll("*[dur]"))
+                additionalElements = additionalElements.filter((v, i) => i > additionalElements.indexOf(newMeiElement))
+                this.currentMEI = meiOperation.changeDuration(this.currentMEI, "reduce", additionalElements)
+            }
+            this.currentMEI.querySelectorAll(".changed").forEach(c => c.classList.remove("changed"))
+
+            //check if following events (notes, chords, rests) should be replaced 
+            if(meiOperation.elementIsOverfilling(meiElement, currMeiClone)){
+                this.currentMEI = currMeiClone
+            }else{
+                retVal = true
+            }
         })
-        // let isReplace = true
-        // let inserToggleBtn = document.getElementById("insertToggle")
-        // if(inserToggleBtn){
-        //     isReplace = inserToggleBtn.nextElementSibling.textContent === "Replace"
-        // }
-        // if(isReplace && markedElements.length === 1 && reduce){
-        //     let meiElement = this.currentMEI.getElementById(markedElements[0].id)
-        //     let ms = Array.from(meiElement.closest("layer").querySelectorAll("note:not(chord note), chord, rest, mRest")) as Element[]
-        //     let measureSiblings = ms.filter((v, i) => i > ms.indexOf(meiElement))
-        //     meiOperation.changeDuration(this.currentMEI, "reduce", measureSiblings, meiElement)
-        // }else{
-        //     // Do something with prolong
-        // }
 
         return retVal
     }
 
+    /**
+     * Change number of dots for note, chord or rest 
+     * @param dots 
+     * @returns 
+     */
     setMarkedNoteDots(dots: number | string): Boolean{
         var retVal = false
         var markedElements =  document.querySelectorAll(".note.marked, .rest.marked")
         markedElements.forEach(m => {
+            var currMeiClone = this.currentMEI.cloneNode(true) as Document
             var meiElement = this.currentMEI.getElementById(m.id)
-            meiElement.setAttribute("dots", dots.toString())
+            var oldMeiElement: Element = meiElement.cloneNode(true) as Element
+            var newMeiElement: Element
+            
             if(meiElement.closest("chord") !== null){
+                oldMeiElement = meiElement.closest("chord").cloneNode(true) as Element
                 meiElement.closest("chord").setAttribute("dots", dots.toString())
+                newMeiElement =  meiElement.closest("chord")
+            }else{
+                oldMeiElement = meiElement.cloneNode(true) as Element
+                meiElement.setAttribute("dots", dots.toString())
+                newMeiElement = meiElement
             }
-            retVal = true
+
+            this.currentMEI = meiOperation.fillWithRests(newMeiElement, oldMeiElement, this.currentMEI)
+            if(this.currentMEI.querySelectorAll(".changed").length <= 0){
+                var additionalElements = Array.from(newMeiElement.closest("layer").querySelectorAll("*[dur]"))
+                additionalElements = additionalElements.filter((v, i) => i > additionalElements.indexOf(newMeiElement))
+                this.currentMEI = meiOperation.changeDuration(this.currentMEI, "reduce", additionalElements)
+            }
+            this.currentMEI.querySelectorAll(".changed").forEach(c => c.classList.remove("changed"))
+
+            if(meiOperation.elementIsOverfilling(meiElement, currMeiClone)){
+                this.currentMEI = currMeiClone
+            }else{
+                retVal = true
+            }
         })
 
         return retVal

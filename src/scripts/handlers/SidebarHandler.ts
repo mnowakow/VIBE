@@ -5,12 +5,12 @@ import { keyIdToSig, clefToLine } from "../utils/mappings"
 import { constants as c } from "../constants"
 import * as meiConverter from "../utils/MEIConverter"
 import * as meiOperation from "../utils/MEIOperations"
-import { select } from "d3";
+import * as coordinates from "../utils/coordinates"
 
 /**
  * Handles all Events when interacting with the sidebar.
  * There is only one instance necessary.
- * Every change that result from a sidebar interaction is returned by a meiOperation
+ * Every change that results from a sidebar interaction is returned by a meiOperation
  */
 class SidebarHandler implements Handler{
     m2m?: Mouse2MEI;
@@ -36,10 +36,6 @@ class SidebarHandler implements Handler{
             event.preventDefault()
             event.stopPropagation()
             if(event.target === dragTarget){
-                document.querySelectorAll(".dropKey, .dropClef").forEach(e => {
-                    e.classList.remove("dropClef")
-                    e.classList.remove("dropKey")
-                })
                 that.removeSelectListeners()
             }
         }, false)
@@ -213,15 +209,15 @@ class SidebarHandler implements Handler{
     }
 
     /**
-     * Find next possible eleent to drop element from sidebar on
+     * Find next possible element to drop element from sidebar on
      * @param e 
      */
     findDropTarget(e: MouseEvent){
         e.preventDefault()
         var root = document.getElementById(c._ROOTSVGID_)
-        var rootBBox = root.getBoundingClientRect()
-        var posx = (e.pageX - window.pageXOffset - rootBBox.x - root.scrollLeft)
-        var posy = (e.pageY - window.pageYOffset - rootBBox.y - root.scrollTop)
+        var pt = coordinates.transformToDOMMatrixCoordinates(e.pageX, e.pageY, root)
+        var posx = pt.x
+        var posy = pt.y
 
         var eventTarget = e.target as Element
         var eventTargetParent = eventTarget.parentElement
@@ -244,8 +240,9 @@ class SidebarHandler implements Handler{
         var tempDist = Math.pow(10, 10)
         dropTargets.forEach(dt => {
             var blbbox = dt.getBoundingClientRect()
-            var bbx  = blbbox.x - window.pageXOffset - rootBBox.x - root.scrollLeft
-            var bby  = blbbox.y - window.pageYOffset - rootBBox.y - root.scrollTop
+            var ptdt = coordinates.getDOMMatrixCoordinates(blbbox, root)
+            var bbx  = ptdt.left
+            var bby  = ptdt.top
             var dist = Math.sqrt(Math.abs(bbx - posx)**2 + Math.abs(bby - posy)**2)
             if(dist < tempDist){
                 dropTargets.forEach(_dt => {

@@ -20,7 +20,6 @@ class AnnotationChangeHandler implements Handler{
     private snapCoords: { obj: Element; x: number; y: number; };
     private annotations: Annotation[];
     private dragedRect: SVGRectElement
-    private scale: number
 
     private shapeListener: Interact.Interactable
     private textListener: Interact.Interactable
@@ -453,8 +452,8 @@ class AnnotationChangeHandler implements Handler{
                 var otaptHeight = Math.abs(otapt.y - ptBottom.matrixTransform(this.canvasMatrix).y)
                 var otaptWidth = Math.abs(otapt.x - ptRight.matrixTransform(this.canvasMatrix).x)
                 annot.targetID = objToAttach.id
-                targetx = otapt.x //(objToAttach.getBoundingClientRect().x - this.rootBBox.x - window.pageXOffset - this.root.scrollLeft) * this.scale
-                targety = otapt.y //(objToAttach.getBoundingClientRect().y - this.rootBBox.y - window.pageYOffset - this.root.scrollTop) * this.scale
+                targetx = otapt.x 
+                targety = otapt.y 
 
 
                 // draw rect for highlighting
@@ -469,8 +468,6 @@ class AnnotationChangeHandler implements Handler{
                 highlightRect.classList.add("highlightAnnotation")
                 highlightRect.setAttribute("x", (targetx - highlightMargin).toString())
                 highlightRect.setAttribute("y", (targety - highlightMargin).toString())
-                // highlightRect.setAttribute("height", ((objToAttach.getBoundingClientRect().height + 2*highlightMargin) * this.scale).toString())
-                // highlightRect.setAttribute("width", ((objToAttach.getBoundingClientRect().width + 2*highlightMargin) * this.scale).toString())
                 highlightRect.setAttribute("height", (otaptHeight + 2*highlightMargin).toString())
                 highlightRect.setAttribute("width", (otaptWidth + 2*highlightMargin).toString())
 
@@ -589,12 +586,6 @@ class AnnotationChangeHandler implements Handler{
         this.m2m = m2m
         return this
     }
-
-    setScale(scale: number){
-        this.scale = scale
-        return this
-    }
-
 }
 
 export default AnnotationChangeHandler

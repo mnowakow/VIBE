@@ -5,6 +5,7 @@ import MusicPlayer from '../MusicPlayer';
 import {numToNoteButtonId, numToDotButtonId} from '../utils/mappings'
 import { constants as c } from "../constants"
 import LabelHandler from './LabelHandler';
+import * as coordinates from "../utils/coordinates"
 
 const marked = "marked"
 
@@ -28,7 +29,7 @@ class SelectionHandler implements Handler{
         function selStart(){
            //var container = document.getElementById(c._ROOTSVGID_).parentElement
            var pt = new DOMPoint(d3.event.sourceEvent.clientX, d3.event.sourceEvent.clientY)
-           var canvasMatrix = (document.getElementById("manipulatorCanvas") as unknown as SVGGraphicsElement).getScreenCTM().inverse()
+           var canvasMatrix = (document.getElementById("rootSVG") as unknown as SVGGraphicsElement).getScreenCTM().inverse()
            pt = pt.matrixTransform(canvasMatrix)
            that.initialX = pt.x //d3.event.x
            that.initialY = pt.y //d3.event.y
@@ -47,7 +48,7 @@ class SelectionHandler implements Handler{
             //var rootBBox = root.getBoundingClientRect()
 
             var pt = new DOMPoint(d3.event.sourceEvent.clientX, d3.event.sourceEvent.clientY)
-            var canvasMatrix = (document.getElementById("manipulatorCanvas") as unknown as SVGGraphicsElement).getScreenCTM().inverse()
+            var canvasMatrix = (document.getElementById("rootSVG") as unknown as SVGGraphicsElement).getScreenCTM().inverse()
             pt = pt.matrixTransform(canvasMatrix)
 
             const curX = pt.x //d3.event.x + container.scrollLeft 

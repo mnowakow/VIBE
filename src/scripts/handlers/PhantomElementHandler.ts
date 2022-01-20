@@ -15,7 +15,6 @@ class PhantomElementHandler implements Handler{
     private phantomCanvas: SVGSVGElement
     root: HTMLElement;
     rootBBox: DOMRect;
-    scale: number;
     phantom: PhantomElement
 
     constructor(){
@@ -93,11 +92,6 @@ class PhantomElementHandler implements Handler{
         var rootsvg = root as unknown as SVGGraphicsElement 
         var rootBBox = root.getBoundingClientRect()
         var rootpt = new DOMPoint(rootBBox.x, rootBBox.y)
-
-
-
-        // var relX = (e.pageX - window.pageXOffset - rootBBox.x - root.scrollLeft) // * this.scale //- window.pageXOffset
-        // var relY = (e.pageY - window.pageYOffset - rootBBox.y - root.scrollTop) * this.scale //- window.pageYOffset //- svgrect.y
 
         var pt = new DOMPoint(e.clientX, e.clientY)
         var relpt = pt.matrixTransform(rootsvg.getScreenCTM().inverse());

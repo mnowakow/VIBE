@@ -4,6 +4,7 @@ import MusicPlayer from "../MusicPlayer";
 import { Mouse2MEI } from "../utils/Mouse2MEI";
 import {uuidv4} from '../utils/random'
 import { constants as c } from "../constants"
+import * as coordinates from "../utils/coordinates"
 
 class CustomAnnotationShapeDrawer implements Handler{
     m2m?: Mouse2MEI;
@@ -18,7 +19,6 @@ class CustomAnnotationShapeDrawer implements Handler{
     private shapeID: string
     private shape: HTMLElement
     private shapes: Array<HTMLElement>
-    private scale: number
 
     private updateCallback: () => void
 
@@ -26,7 +26,6 @@ class CustomAnnotationShapeDrawer implements Handler{
         this.shapes = new Array()
         this.shapeID = ""
         this.dragged = false
-        //this.scale = (document.querySelector("#annotationCanvas") as SVGSVGElement).viewBox.baseVal.width / document.getElementById(c._ROOTSVGID_).getBoundingClientRect().width
         this.canvas = d3.select("#rootSVG"); // draw directly in svg
         this.dragBehaviour = d3.drag()
             .on('start', drawStart)
@@ -36,7 +35,7 @@ class CustomAnnotationShapeDrawer implements Handler{
         var that = this;
         function drawStart(){
             var pt = new DOMPoint(d3.event.sourceEvent.clientX, d3.event.sourceEvent.clientY)
-            var canvasMatrix = (document.getElementById("annotationCanvas") as unknown as SVGGraphicsElement).getScreenCTM().inverse()
+            var canvasMatrix = (document.getElementById("rootSVG") as unknown as SVGGraphicsElement).getScreenCTM().inverse()
             pt = pt.matrixTransform(canvasMatrix)
             that.initialX = pt.x //d3.event.x
             that.initialY = pt.y //d3.event.y
@@ -50,12 +49,12 @@ class CustomAnnotationShapeDrawer implements Handler{
 
     drawing(){
         var pt = new DOMPoint(d3.event.sourceEvent.clientX, d3.event.sourceEvent.clientY)
-        var canvasMatrix = (document.getElementById("annotationCanvas") as unknown as SVGGraphicsElement).getScreenCTM().inverse()
+        var canvasMatrix = (document.getElementById("rootSVG") as unknown as SVGGraphicsElement).getScreenCTM().inverse()
         pt = pt.matrixTransform(canvasMatrix)
         const curX = pt.x //d3.event.x
         const curY = pt.y //d3.event.y
 
-        if(typeof this.shape === "undefined"){return}
+        if(this.shape == undefined){return}
         
         if(Math.abs(curX - this.initialX) > 20 || Math.abs(curY - this.initialY) > 20){
             this.dragged = true
@@ -71,16 +70,18 @@ class CustomAnnotationShapeDrawer implements Handler{
 
     drawEnd(){
 
-        // this.shape?.setAttribute('x', (parseFloat(this.shape.getAttribute("x")) * this.scale).toString())
-        // this.shape?.setAttribute('y', (parseFloat(this.shape.getAttribute("y")) * this.scale).toString())
-        // this.shape?.setAttribute('width', (parseFloat(this.shape.getAttribute("width")) * this.scale).toString())
-        // this.shape?.setAttribute('height', (parseFloat(this.shape.getAttribute("height")) * this.scale).toString())
-
         if(!this.dragged){
             var elToRemove = document.getElementById(this.shapeID)
             if(elToRemove !== null){elToRemove.remove()}
         }else{
+            var annotCanvas = document.getElementById("annotationCanvas")
+            var pt = coordinates.getDOMMatrixCoordinates(this.shape, annotCanvas)
             document.getElementById("annotationCanvas").appendChild(this.shape)
+            this.shape.setAttribute("x", pt.left.toString())
+            this.shape.setAttribute("y", pt.top.toString())
+            this.shape.setAttribute("width", pt.width.toString())
+            this.shape.setAttribute("height", pt.height.toString())
+
             this.shapes.push(this.shape.cloneNode(true) as HTMLElement)
         }
        

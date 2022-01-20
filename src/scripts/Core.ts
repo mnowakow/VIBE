@@ -178,7 +178,6 @@ class Core {
         this.getMidi().then(midi => {
           this.musicplayer.setMidi(midi)
           this.musicplayer.addCanvas()
-          this.musicplayer.setScale(this.scoreContainerScale)
           this.getNoteTimes().then(md => {
             this.musicplayer.setNoteTimes(md)
             this.musicplayer.update()
@@ -228,7 +227,6 @@ class Core {
 
     this.insertModeHandler
       .setM2M(this.m2m)
-      .setScale(this.scoreContainerScale)
       .setMusicPlayer(this.musicplayer)
       .setDeleteHandler(this.deleteHandler)
       .setLabelHandler(this.labelHandler)
@@ -265,7 +263,6 @@ class Core {
     
     this.windowHandler
       .setM2M(this.m2m)
-      .setScaleCallback(this.resetScaleFunction)
       .setCurrentMEI(this.currentMEIDoc)
       .setLoadDataCallback(this.loadDataFunction)
       .setAnnotations(this.insertModeHandler.getAnnotations())
@@ -549,15 +546,6 @@ class Core {
   setMEIChangedCallback(meiChangedCallback: (mei: string) => void) {
     this.meiChangedCallback = meiChangedCallback
   }
-
-  resetScale(scale:number){
-    this.insertModeHandler.setScale(scale)
-    this.musicplayer.setScale(scale)
-  }
-
-  resetScaleFunction = (function resetScaleFunction(scale: number){
-    this.resetScale(scale)
-  }).bind(this)
   
 }
 
