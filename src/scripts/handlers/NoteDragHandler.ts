@@ -98,7 +98,8 @@ class NoteDragHandler implements Handler{
         var attr = this.elementAttrCallback(this.draggedElement.id);
         var svg = document.querySelector(c._ROOTSVGID_WITH_IDSELECTOR_) as SVGGElement
         var mm = new MeasureMatrix();
-        mm.populateFromSVG(svg)
+        //mm.populateFromSVG(svg)
+        mm.populateFromMEI(this.currentMEI)
         var staff = this.currentMEI.getElementById(this.draggedElement.id).closest("staff")
         var measure = staff.closest("measure")
         var staffIdx = parseInt(staff.getAttribute("n")) - 1

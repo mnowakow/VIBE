@@ -111,6 +111,31 @@ function getMeterRatioGlobal(xmlDoc: Document): number{
   return meterRatio
 }
 
+/**
+ * 
+ * @param xmlDoc 
+ * @param refElement Must be a staff-Element at most
+ */
+function getMeterRatioLocal(xmlDoc: Document, refElement: Element): number{
+  var staffElement: Element
+  if(refElement.tagName !== "staff"){
+    if(refElement.closest("staff") === null){
+      throw new Error("RefElement must be a staff-Element at most")
+    }else{
+      staffElement = refElement.closest("staff")
+    }
+  }else{
+    staffElement = refElement
+  }
+
+  var mm = new MeasureMatrix()
+  mm.populateFromMEI(xmlDoc as Document)
+  var measureIdx = staffElement.closest("measure").getAttribute("n")
+  var staffIdx = staffElement.getAttribute("n")
+  var mmStaff = mm.get(measureIdx, staffIdx)
+  return parseInt(mmStaff.meterSig.count)/parseInt(mmStaff.meterSig.unit)  
+}
+
 //////// INSERT ////////// 
   /**
    * Insert given sound event into MEI
@@ -246,10 +271,11 @@ export function addToMEI(newSound: NewNote | NewChord, currentMEI: Document, rep
       }
     }
 
-    //check if measure is too long, return if too long
+    //return if measure is too long
     if(!overfillMeasure){
       var newMeasureRatio = getAbsoluteRatio(newElem.closest("layer"))
-      if(newMeasureRatio > getMeterRatioGlobal(currentMEI)){
+      var measureRatio = getMeterRatioLocal(currMeiClone as Document, newElem)
+      if(newMeasureRatio > measureRatio){
         currentMEI = currMeiClone as Document
       }
     }
@@ -887,6 +913,7 @@ export function fillWithRests(newElement: Element, oldElement: Element, xmlDoc: 
 
 /**
  * Fill Empty Space with rest
+ * @deprecated
  * @param xmlDoc 
  */
 function _fillWithRests(xmlDoc: Document){
@@ -1022,12 +1049,11 @@ export function changeDuration(xmlDoc: Document, mode: string, additionalElement
       dur = dur*multiplier
 
       if(mode === "reduce"){ 
-        var globalRatio = getMeterRatioGlobal(xmlDoc)
-        var layerRatio = getAbsoluteRatio(elmei.closest("layer"))
+        var layerRatio = getAbsoluteRatio(elmei.closest("layer")) // current ratio of layer when inserting new sound event
+        var localRatio = getMeterRatioLocal(xmlDoc, elmei) //getMeterRatioGlobal(xmlDoc)
 
-      
         if(refElement === null){ // in this mode, also click replacements are handled
-          var danglingRatio = layerRatio - globalRatio
+          var danglingRatio = layerRatio - localRatio
           if(danglingRatio > 0){
             var nextElementRatio = getAbsoluteRatio(elmei)
             var neNewRatio = nextElementRatio - danglingRatio
@@ -1046,15 +1072,15 @@ export function changeDuration(xmlDoc: Document, mode: string, additionalElement
             //TODO???
           }
 
-          if(layerRatio < globalRatio){
+          if(layerRatio < localRatio){
             var newRest = xmlDoc.createElementNS(c._MEINS_, "rest")
-            if(globalRatio - layerRatio < (1/dur)){
-              dur = 1/(globalRatio - layerRatio)
+            if(localRatio - layerRatio < (1/dur)){
+              dur = 1/(localRatio - layerRatio)
             }
             newRest.setAttribute("dur", dur.toString())
             elmei.parentElement.insertBefore(newRest, elmei.nextElementSibling)
           }
-        }else if(layerRatio !== globalRatio){
+        }else if(layerRatio !== localRatio){
           var refRatio = getAbsoluteRatio(xmlDoc.getElementById(refElement.id))
           if(refRatio === elmeiRatio){
             elmei.remove()
@@ -1103,9 +1129,10 @@ export function changeDuration(xmlDoc: Document, mode: string, additionalElement
     }
   }
 
-  if(!overfillMeasure && elmei?.closest("layer") !== null){
+  if(!overfillMeasure && elmei != undefined && elmei?.closest("layer") !== null){
     var newMeasureRatio = getAbsoluteRatio(elmei.closest("layer"))
-    if(newMeasureRatio > getMeterRatioGlobal(xmlDoc)){
+    var localRatio = getMeterRatioLocal(xmlDoc, elmei)
+    if(newMeasureRatio > localRatio){ //getMeterRatioGlobal(xmlDoc)){
       xmlDoc = currMeiClone as Document
     }
   }
@@ -1126,7 +1153,8 @@ export function changeDuration(xmlDoc: Document, mode: string, additionalElement
 export function elementIsOverfilling(element: Element, currMeiClone: Document): Boolean{
   if(!overfillMeasure){
     var newMeasureRatio = getAbsoluteRatio(element.closest("layer"))
-    if(newMeasureRatio > getMeterRatioGlobal(currMeiClone)){
+    var localRatio = getMeterRatioLocal(currMeiClone, element)
+    if(newMeasureRatio > localRatio){ //getMeterRatioGlobal(currMeiClone)){
       return true
     }
   }
@@ -1146,46 +1174,67 @@ export function cleanUp(xmlDoc: Document){
   adjustRests(xmlDoc)
 }
 
+
+/**
+ * Delete all redundant definition sequences in staffDefs and layers
+ * @param xmlDoc 
+ */
 function deleteDefSequences(xmlDoc: Document){
   var staffCount = xmlDoc.querySelectorAll("staffDef").length
   for(var i = 0; i < staffCount; i++){
     var n = (i+1).toString()
-    var lastElement = null
-    var lastShape = null
-    var lastLine = null
+    var prevElement = null
+    var prevShape = null
+    var prevLine = null
     xmlDoc.querySelectorAll("staffDef[n=\"" + n +"\"] clef, staff[n=\"" + n +"\"] clef").forEach(clefElement => {
       var shape = clefElement.getAttribute("shape")
       var line = clefElement.getAttribute("line")
-      if(lastElement != null){
-        lastShape = lastElement.getAttribute("shape")
-        lastLine = lastElement.getAttribute("line")
-        if(lastShape === shape && lastLine === line){
+      if(prevElement != null){
+        prevShape = prevElement.getAttribute("shape")
+        prevLine = prevElement.getAttribute("line")
+        if(prevShape === shape && prevLine === line){
           clefElement.remove()
         }else{
-          lastElement = clefElement
+          prevElement = clefElement
         }
       }else{
-        lastElement = clefElement
+        prevElement = clefElement
       }
     })
 
-    lastElement = null
-    var lastSig = null
+    prevElement = null
+    var prevSig = null
     xmlDoc.querySelectorAll("staffDef[n=\"" + n +"\"] keySig, staff[n=\"" + n +"\"] keySig").forEach(sigElement => {
       var sig = sigElement.getAttribute("sig")
-      if(lastElement != null){
-        lastSig = lastElement.getAttribute("sig")
-        if(lastSig === sig){
+      if(prevElement != null){
+        prevSig = prevElement.getAttribute("sig")
+        if(prevSig === sig){
           sigElement.remove()
         }else{
-          lastElement = sigElement
+          prevElement = sigElement
         }
       }else{
-        lastElement = sigElement
+        prevElement = sigElement
+      }
+    })
+
+    prevElement = null
+    xmlDoc.querySelectorAll("staffDef[n=\"" + n +"\"] meterSig, staff[n=\"" + n +"\"] meterSig").forEach(meterElement => {
+      var count = meterElement.getAttribute("count")
+      var unit = meterElement.getAttribute("unit")
+      if(prevElement != null){
+        var lastCount= prevElement.getAttribute("count")
+        var lastUnit= prevElement.getAttribute("unit")
+        if(lastCount === count && lastUnit === unit){
+          meterElement.remove()
+        }else{
+          prevElement = meterElement
+        }
+      }else{
+        prevElement = meterElement
       }
     })
   }
-
 }
 
 function reorganizeBeams(xmlDoc: Document){
@@ -1491,6 +1540,13 @@ export function insertClef(target: Element, newClef: string, currentMEI: Documen
   return currentMEI
 }
 
+/**
+ * If Key is already defined in scoreDef, replace values
+ * @param target 
+ * @param newSig 
+ * @param currentMEI 
+ * @returns 
+ */
 export function replaceKeyInScoreDef(target: Element, newSig: string, currentMEI: Document): Document {
   console.log("REPLACE KEY IN SCOREDEF")
   var staffN = document.getElementById(target.id).closest(".staff").getAttribute("n")
@@ -1507,6 +1563,13 @@ export function replaceKeyInScoreDef(target: Element, newSig: string, currentMEI
   return currentMEI
 }
 
+/**
+ * Create a whole new Sig Element and Insert to MEI at given target
+ * @param target 
+ * @param newSig 
+ * @param currentMEI 
+ * @returns 
+ */
 export function insertKey(target: Element, newSig: string, currentMEI: Document): Document {
   console.log("INSERT KEY")
   var targetStaff = target.closest(".measure").querySelector(".staff[n=\"" + target.getAttribute("n") + "\"]") || target.closest(".staff")
@@ -1519,6 +1582,46 @@ export function insertKey(target: Element, newSig: string, currentMEI: Document)
   var newSigElement = new MeiTemplate().createKeySig("major", keyIdToSig.get(newSig))
   currentMEI.getElementById(targetLayerId).insertBefore(newSigElement, currentMEI.getElementById(targetLayerId).firstElementChild)
   adjustAccids(currentMEI)
+  cleanUp(currentMEI)
+  currentMEI = meiConverter.restoreXmlIdTags(currentMEI)
+
+  return currentMEI
+}
+
+export function replaceMeterInScoreDef(target: Element, currentMEI: Document): Document {
+  console.log("REPLACE METER")
+  var staffN = document.getElementById(target.id).closest(".staff").getAttribute("n")
+  var staffDefMeter = currentMEI.querySelector("staffDef[n=\"" + staffN + "\"] > meterSig")
+
+  var count = (document.getElementById("timeCount") as HTMLSelectElement).value
+  var unit = (document.getElementById("timeUnit") as HTMLSelectElement).value
+  staffDefMeter.setAttribute("count", count)
+  staffDefMeter.setAttribute("unit", unit)
+  cleanUp(currentMEI)
+  currentMEI = meiConverter.restoreXmlIdTags(currentMEI)
+  return currentMEI
+}
+
+export function insertMeter(target: Element, currentMEI: Document): Document {
+  console.log("INSERT METER")
+  var targetStaff = target.closest(".measure").querySelector(".staff[n=\"" + target.getAttribute("n") + "\"]") || target.closest(".staff")
+  var parentMeasure = currentMEI.getElementById(targetStaff.id).closest("measure")
+  var pmn = parseInt(parentMeasure.getAttribute("n")) + 1
+  var targetLayers = parentMeasure.parentElement.querySelectorAll("measure[n=\"" + pmn.toString() + "\"] layer")
+  targetLayers.forEach(tl => {
+    currentMEI.getElementById(tl.id).querySelectorAll("meterSig")?.forEach(c => c.remove())
+  })
+  
+  
+  var count = (document.getElementById("timeCount") as HTMLSelectElement).value
+  var unit = (document.getElementById("timeUnit") as HTMLSelectElement).value
+
+  // change for all layers in given measure
+  targetLayers.forEach(tl => {
+    let newMeterElement = new MeiTemplate().createMeterSig(count, unit) // must be in loop, otherwise same reference gets reassigned every time
+    currentMEI.getElementById(tl.id).insertBefore(newMeterElement, currentMEI.getElementById(tl.id).firstElementChild)
+  })
+  
   cleanUp(currentMEI)
   currentMEI = meiConverter.restoreXmlIdTags(currentMEI)
 
@@ -1545,7 +1648,7 @@ export function getElementTimestampById(id: string, currentMEI: Document): numbe
           if(currentMEI.querySelector("meterSig") !== null){
             fraction = parseInt(currentMEI.querySelector("meterSig").getAttribute("unit"))
           }
-          timestamp = (count * fraction + 1).toString() // add 1 to accomodate for shift ration sum
+          timestamp = (count * fraction + 1).toString() // add 1 to accomodate for shift ratio sum
           break
         }
         count += getAbsoluteRatio(units[i])
@@ -1624,4 +1727,7 @@ function createNewRestElement(dur: number, dots: number = undefined): Element{
     newElem.setAttribute("id", uuidv4())
     return newElem
 }
+
+
+
 

@@ -1,3 +1,4 @@
+import { Unit } from "tone";
 import { constants as c} from "../constants"
 
 class MeiTemplate{
@@ -95,6 +96,13 @@ class MeiTemplate{
         var newElem = document.createElementNS(c._MEINS_, "keySig")
         newElem.setAttribute("mode", mode)
         newElem.setAttribute("sig", sig)
+        return newElem
+    }
+
+    createMeterSig(count: string, unit: string): Node{
+        var newElem = document.createElementNS(c._MEINS_, "meterSig")
+        newElem.setAttribute("count", count)
+        newElem.setAttribute("unit", unit)
         return newElem
     }
 

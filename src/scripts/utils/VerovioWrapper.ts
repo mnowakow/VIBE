@@ -24,7 +24,8 @@ export default class VerovioWrapper {
           font: 'Bravura',
           adjustPageWidth: 0,
           adjustPageHeight: 0,
-          pageWidth: 1800
+          pageWidth: 1800, 
+          //pageHeight: 60000
       })
     }
 

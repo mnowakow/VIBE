@@ -37,7 +37,7 @@ export class Mouse2MEI{
 
         this.measureMatrix = new MeasureMatrix();
         this.setMouseEnterElementListeners();
-        this.findBBoxes();
+        //this.findBBoxes();
     }
 
     /*
@@ -143,7 +143,8 @@ export class Mouse2MEI{
         })
 
 
-        this.measureMatrix.populateFromSVG(document.querySelector(c._ROOTSVGID_WITH_IDSELECTOR_));
+        // this.measureMatrix.populateFromSVG(document.querySelector(c._ROOTSVGID_WITH_IDSELECTOR_));
+        this.measureMatrix.populateFromMEI(this.currentMEI)
         var staves = document.querySelectorAll(c._STAFF_WITH_CLASSSELECTOR_)
         Array.from(staves).forEach(element => {
             let g = document.querySelectorAll("#" + element.id + " > path")
@@ -610,6 +611,10 @@ export class Mouse2MEI{
 
     setCurrentMEI(xmlDoc: Document){
         this.currentMEI = xmlDoc
+        if(this.noteBBoxes?.length === 0){
+            this.findBBoxes()
+        }
+        return this
     }
 
     getCurrentMei(): Document{ 

@@ -29,6 +29,10 @@ class MeasureMatrix{
         }
     }
 
+    /**
+     * @deprecated
+     * @param svg 
+     */
     populateFromSVG(svg: SVGGElement){
         this.matrix =  new Array<Array<Staff>>();
         this.cols = svg.querySelectorAll(".measure").length;
@@ -78,25 +82,24 @@ class MeasureMatrix{
                     staff.keysig = keysig
                 }else if(i>0) {
                    staff.keysig = this.matrix[i-1][j].keysig;
-                }else{ // First measure, has no accidentials
+                }else{ // if first measure has no accidentials
                     staff.keysig = "0"
                 }
 
-                // TO BEI IMPLEMENTED...
-                // if(meterSigs.length > 0){
-                //     let lastIdx = keysigs.length -1
-                //     let meter = meterSigs[lastIdx].getAttribute("meter")
-                //     let count = meterSigs[lastIdx].getAttribute("count")
-                //     staff.meterSig = {meter: meter, count: count}
-                // }else if(i>0) {
-                //    staff.meterSig = this.matrix[i-1][j].meterSig;
-                // }else{
-                //     if(staves[j].querySelector("metersig") === null){
-                //         staff.meterSig = null
-                //     }else{
-                //         staff.meterSig = {meter: staves[j].querySelector("metersig").getAttribute("meter"), count: staves[j].querySelector("metersig").getAttribute("count")}
-                //     }
-                // }
+                if(meterSigs.length > 0){
+                    let lastIdx = meterSigs.length -1
+                    let unit = meterSigs[lastIdx].getAttribute("unit")
+                    let count = meterSigs[lastIdx].getAttribute("count")
+                    staff.meterSig = {unit: unit, count: count}
+                }else if(i>0) {
+                   staff.meterSig = this.matrix[i-1][j].meterSig;
+                }else{
+                    if(staves[j].querySelector("metersig") === null){
+                        staff.meterSig = null
+                    }else{
+                        staff.meterSig = {unit: staves[j].querySelector("metersig").getAttribute("unit"), count: staves[j].querySelector("metersig").getAttribute("count")}
+                    }
+                }
 
                 col.push(staff)
             }
@@ -162,17 +165,17 @@ class MeasureMatrix{
                 }
 
                 if(meterSigs.length > 0){
-                    let lastIdx = keysigs.length -1
-                    let meter = meterSigs[lastIdx].getAttribute("meter")
+                    let lastIdx = meterSigs.length -1
+                    let unit = meterSigs[lastIdx].getAttribute("unit")
                     let count = meterSigs[lastIdx].getAttribute("count")
-                    staff.meterSig = {meter: meter, count: count}
+                    staff.meterSig = {unit: unit, count: count}
                 }else if(i>0) {
                    staff.meterSig = this.matrix[i-1][j].meterSig;
                 }else{
-                    if(staffDef.querySelector("metersig") === null){
+                    if(staffDef.querySelector("meterSig") === null){
                         staff.meterSig = null
                     }else{
-                        staff.meterSig = {meter: staffDef.querySelector("metersig").getAttribute("meter"), count: staffDef.querySelector("metersig").getAttribute("count")}
+                        staff.meterSig = {unit: staffDef.querySelector("meterSig").getAttribute("unit"), count: staffDef.querySelector("meterSig").getAttribute("count")}
                     }
                 }
 

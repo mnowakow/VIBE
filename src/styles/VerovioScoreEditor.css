@@ -224,7 +224,7 @@ text{
     z-index: 1;
 }
 
-.dropKey, .dropClef{
+.dropKey, .dropClef, .dropTime{
     fill: orange;
     color: orange;
 }

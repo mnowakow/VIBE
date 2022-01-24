@@ -46,7 +46,7 @@ class Toolbar{
 
     private createSideBar(){
         this.createModList()
-        document.querySelectorAll("#sidebarList a").forEach(sa => {
+        document.querySelectorAll("#sidebarList a, #timeDiv").forEach(sa => {
             sa.setAttribute("draggable", "true")
         })
         this.createAnnotList()
