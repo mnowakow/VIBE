@@ -8,6 +8,9 @@ import * as meiConverter from '../utils/MEIConverter'
 
 const manipSelector = ".manipulator"
 
+/**
+ * Handler for all options which could modulate the given score from within the score. These functions are related to all seen inside a score
+ */
 class ScoreManipulatorHandler implements Handler{
     m2m?: Mouse2MEI;
     musicPlayer?: MusicPlayer;

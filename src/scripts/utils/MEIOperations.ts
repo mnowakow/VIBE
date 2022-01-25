@@ -1383,6 +1383,13 @@ export function addStaff(xmlDoc:Document, referenceStaff: Element, relPos: strin
       s.parentElement.insertBefore(newStaff, refElement)
     }
 
+    //copy elements from the current Staff that have to appear in new staff
+    var newLayer =  newStaff.querySelector("layer")
+    var copyMeter = s.querySelector("meterSig")?.cloneNode(true)
+    if(copyMeter != undefined && copyMeter !== null){
+      newLayer.insertBefore(copyMeter, newLayer.firstChild)
+    }
+
     refn = refElement?.getAttribute("n") || staffNum // s.getAttribute("n")
   })
 

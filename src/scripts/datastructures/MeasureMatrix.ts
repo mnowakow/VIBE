@@ -132,15 +132,14 @@ class MeasureMatrix{
                 let clefs = prevStaves[j].querySelectorAll("clef")
                 let keysigs = staves[j].querySelectorAll("keySig")
                 let meterSigs = staves[j].querySelectorAll("meterSig")
+                let clefIdx: number
                 if(clefs.length > 0){
-                    let clefIdx: number
                         if(i === 0){
                             clefIdx = 0
                         }else{
                             clefIdx = clefs.length -1
                         }
                     let clefShape = clefs[clefIdx].getAttribute("shape")
-                    clefShape = idToClef.get(clefShape);
                     staff.clef = clefShape;
                 }else{
                     if(i>0){

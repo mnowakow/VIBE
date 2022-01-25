@@ -45,6 +45,10 @@ class WindowHandler implements Handler{
     }
 
     update = (function update(e: Event){
+        // special rule for transition events since so much with different propertynames are fired
+        if(e instanceof TransitionEvent){ 
+            if(e.propertyName !== "width") return
+        }
         var that = this
         window.clearTimeout(isScrolling)
 

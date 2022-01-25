@@ -200,7 +200,7 @@ class Core {
    */
   initializeHandlers(){
     //must be first!!!
-    if(typeof this.m2m === "undefined"){
+    if(this.m2m == undefined){
       this.m2m = new Mouse2MEI()
     }else{
       this.m2m.update()
