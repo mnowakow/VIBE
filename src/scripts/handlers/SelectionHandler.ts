@@ -174,8 +174,15 @@ class SelectionHandler implements Handler{
             n.classList.remove(marked)
         })
         var target = e.target as Element
-        target = target.closest(".note, .rest") || target
+        target = target.closest(".note, .rest, .mRest") || target
         target.classList.add(marked)
+        
+        // change the selected durations in the toolbar
+        var firstMarkedNote = document.querySelector(".chord.marked, .note.marked, .rest.marked")?.id
+        var meiNote = this.m2m.getCurrentMei().getElementById(firstMarkedNote)
+        document.querySelectorAll("#noteGroup *, #dotGroup *").forEach(b => b.classList.remove("selected"))
+        document.getElementById(numToNoteButtonId.get(meiNote?.getAttribute("dur")))?.classList.add("selected")
+        document.getElementById(numToDotButtonId.get(meiNote?.getAttribute("dots")))?.classList.add("selected")
     }).bind(this)
 
 

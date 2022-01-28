@@ -347,17 +347,21 @@ class MusicPlayer{
         //console.log(this.durationMap, this.durationMapByNote)
     }
 
+    /**
+     * Computation of time and midi times have some divergence (by floating number)
+     * Finding closest entry is sufficient, but has to be made for all entries, since the miditimes-iterator is not ordered.
+     * @param time 
+     * @returns 
+     */
     getClosestEntry(time: number){
         var targetEntry
         var temp = Infinity
         for(const [key, value] of this.midiTimes.entries()){
-            if(Math.abs(time - key) < temp ){
+            var diff = Math.abs(time - key)
+            if(diff < temp ){
                 targetEntry = value
-                temp = Math.abs(time - key)
+                temp = diff
             }
-            // else{
-            //     break
-            // } 
         }
         return targetEntry
     }

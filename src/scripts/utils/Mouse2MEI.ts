@@ -548,7 +548,8 @@ export class Mouse2MEI{
             if(this.currentMEI.querySelectorAll(".changed").length <= 0){
                 var additionalElements = Array.from(newMeiElement.closest("layer").querySelectorAll("*[dur]"))
                 additionalElements = additionalElements.filter((v, i) => i > additionalElements.indexOf(newMeiElement))
-                this.currentMEI = meiOperation.changeDuration(this.currentMEI, "reduce", additionalElements)
+                //this.currentMEI = meiOperation.changeDuration(this.currentMEI, "reduce", additionalElements)
+                this.currentMEI = meiOperation.changeDuration(this.currentMEI, additionalElements)
             }
             this.currentMEI.querySelectorAll(".changed").forEach(c => c.classList.remove("changed"))
 
@@ -591,7 +592,8 @@ export class Mouse2MEI{
             if(this.currentMEI.querySelectorAll(".changed").length <= 0){
                 var additionalElements = Array.from(newMeiElement.closest("layer").querySelectorAll("*[dur]"))
                 additionalElements = additionalElements.filter((v, i) => i > additionalElements.indexOf(newMeiElement))
-                this.currentMEI = meiOperation.changeDuration(this.currentMEI, "reduce", additionalElements)
+                //this.currentMEI = meiOperation.changeDuration(this.currentMEI, "reduce", additionalElements)
+                this.currentMEI = meiOperation.changeDuration(this.currentMEI, additionalElements)
             }
             this.currentMEI.querySelectorAll(".changed").forEach(c => c.classList.remove("changed"))
 

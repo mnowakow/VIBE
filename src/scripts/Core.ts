@@ -83,6 +83,12 @@ class Core {
     this.windowHandler = new WindowHandler()
     this.svgFiller = new SVGFiller()
     this.scoreContainerScale = 1
+
+    window.addEventListener("error", (function(e){
+        console.error("Emergency Undo", e)
+        this.undo()
+      }).bind(this)
+    )// emergency reload if some error occurs
   }
 
   /**

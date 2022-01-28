@@ -320,28 +320,28 @@ class ScoreGraph {
     }
 
     nextUp() {
-        if (this.currentNode.getUp() !== null) {
+        if (this.currentNode != undefined && this.currentNode?.getUp() !== null) {
             this.currentNode = this.currentNode.getUp()
         }
         return this.currentNode
     }
 
     nextDown() {
-        if (this.currentNode.getDown() !== null) {
+        if (this.currentNode != undefined && this.currentNode?.getDown() !== null) {
             this.currentNode = this.currentNode.getDown()
         }
         return this.currentNode
     }
 
     nextRight() {
-        if (this.currentNode.getRight() !== null) {
+        if (this.currentNode != undefined && this.currentNode?.getRight() !== null) {
             this.currentNode = this.currentNode.getRight()
         }
         return this.currentNode
     }
 
     nextLeft() {
-        if (this.currentNode.getLeft() !== null) {
+        if (this.currentNode != undefined && this.currentNode?.getLeft() !== null) {
             this.currentNode = this.currentNode.getLeft()
         }
         return this.currentNode

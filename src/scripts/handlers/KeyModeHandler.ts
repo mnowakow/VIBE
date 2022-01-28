@@ -7,6 +7,7 @@ import { uuidv4 } from "../utils/random";
 import { NewNote } from "../utils/Types";
 import { constants as c } from "../constants"
 import Handler from "./Handler";
+import { textChangeRangeIsUnchanged } from "typescript";
 
 const marked = "marked"
 
@@ -30,15 +31,17 @@ class KeyModeHandler implements Handler{
     }
 
   setListeners() {
-    document.addEventListener('keydown', this.keyModeHandler)
-    document.addEventListener('keydown', this.keyInputHandler)
+    document.addEventListener('keydown', this.keyModeHandler);
+    document.addEventListener('keydown', this.keyInputHandler);
+    document.addEventListener("pasted", this.pastedHandler);
 
     this.cursor.setClickListener()
   }
 
   removeListeners() {
-    document.removeEventListener('keydown', this.keyModeHandler)
-    document.removeEventListener('keydown', this.keyInputHandler)
+    document.removeEventListener('keydown', this.keyModeHandler);
+    document.removeEventListener('keydown', this.keyInputHandler);
+    document.removeEventListener("pasted", this.pastedHandler);
 
     this.cursor.flashStop()
     this.cursor.removeClickListener()
@@ -59,6 +62,7 @@ class KeyModeHandler implements Handler{
       var pname = keyCodeNoteMap.get(evt.code)
       var oct = octToNum.get(document.querySelector("#octaveGroupKM .selected")?.id) || "4"
       const newNote: NewNote = this.createNewNote(pname, oct, null)
+      if(newNote == undefined) return
 
       var noteExists: Boolean = false
       var noteToDelete: Element
@@ -88,7 +92,9 @@ class KeyModeHandler implements Handler{
             currentTargetId = newNote.id
           }
           this.scoreGraph.setCurrentNodeById(currentTargetId)
-          this.cursor.definePosById(this.scoreGraph.getCurrentNode().getId())
+          if(this.scoreGraph.getCurrentNode() != undefined){
+            this.cursor.definePosById(this.scoreGraph.getCurrentNode().getId())
+          }
         })
         this.musicPlayer.generateTone(newNote)
       }else{
@@ -113,7 +119,8 @@ class KeyModeHandler implements Handler{
   createNewNote(pname: string, oct: string, options): NewNote{
     //get relevant staffinfo
     this.setCurrentNodeScoreGraph()
-    var nearestNodeId = this.scoreGraph.getCurrentNode().getId()
+    var nearestNodeId = this.scoreGraph.getCurrentNode()?.getId()
+    if(nearestNodeId == undefined) return
     var closestStaff = this.m2m.getCurrentMei().getElementById(nearestNodeId)?.closest("staff") || this.m2m.getCurrentMei().querySelector("measure > staff") //asume first measure first staff
     var closestMeasure = closestStaff.closest("measure")
     var closestStaffIdx = parseInt(closestStaff.getAttribute("n")) - 1
@@ -122,7 +129,7 @@ class KeyModeHandler implements Handler{
     var keysig = this.m2m.getMeasureMatrix().get(closestMeasureIdx, closestStaffIdx).keysig
     var accids: string[]
     var accid: string
-    if(typeof keysig !== "undefined"){
+    if(keysig == undefined){
         accids = keysigToNotes.get(keysig)
         accids = accids.filter((s:string) => {return s === pname})
         if(accids.length === 1){
@@ -161,8 +168,11 @@ class KeyModeHandler implements Handler{
    * Event Handler for any Keyboard input (except inserting)
    */
   keyInputHandler = (function keyInputHandler(e: KeyboardEvent){
+    
+    if(e.ctrlKey || e.metaKey) return //prevent confusion with global keyboard functionalities
+
     //this.setCurrentNodeScoreGraph()
-    if(typeof this.scoreGraph.getCurrentNode() === "undefined"){
+    if(this.scoreGraph.getCurrentNode() == undefined){
       this.scoreGraph?.setCurrentNodeById(this.cursor?.getNextElement().id)
     }
 
@@ -198,6 +208,8 @@ class KeyModeHandler implements Handler{
           this.scoreGraph.nextDown()
           break;
       }
+      if(this.scoreGraph.getCurrentNode() == undefined) return
+
       this.cursor.definePosById(this.scoreGraph.getCurrentNode().getId())
       if(this.scoreGraph.getCurrentNode().getId().indexOf("BOL") === -1){
         this.setCurrentNodeScoreGraph(this.scoreGraph.getCurrentNode().getId())
@@ -287,8 +299,9 @@ class KeyModeHandler implements Handler{
    * @param elementId Id of the current Element to be set in the ScoreGrap
    */
   setCurrentNodeScoreGraph(elementId: string = null){
-    if(typeof this.scoreGraph.getCurrentNode() === "undefined" || elementId === null){
+    if(this.scoreGraph.getCurrentNode() == undefined || elementId === null){
       var nextEl = this.cursor.getNextElement()
+      if(nextEl == undefined) return
       if(nextEl.classList.contains("staff")){
         nextEl = nextEl.querySelector(".layer")
       }
@@ -299,6 +312,15 @@ class KeyModeHandler implements Handler{
 
     return this
   }
+
+  /**
+   * Set Cursor to new position after pasting
+   */
+  pastedHandler = (function pastedHandler(e: CustomEvent){
+    console.log("PASTED ", e)
+    this.scoreGraph.setCurrentNodeById(e.detail)
+    this.cursor.definePosById(this.scoreGraph.getCurrentNode()?.getId())
+  }).bind(this)
 
   /**
    * Delete next element depending on Keyboad input (Backspace: left, Delete: right)

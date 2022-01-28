@@ -60,18 +60,30 @@ class Toolbar{
         this.sidebar.appendChild(accordeon)
         
         //Keysignatures
+        accordeon.appendChild(this.createKeySigAccItem())
+
+        //Music Key
+        accordeon.appendChild(this.createClefAccItem())
+
+        //Time Signature
+        accordeon.appendChild(this.createTimeSigAccItem())
+
+        //Tempo
+        //accordeon.appendChild(this.createTempoAccItem())
+    }
+
+    createKeySigAccItem(): Element{
         var keySelectItem = dc.makeNewAccordionItem("sidebarList", "selectKey", "selectKeyHeader", "selectKeyBtn", "Key",  buttonStyleDark, "selectKeyDiv")
-        accordeon.appendChild(keySelectItem)
 
         var keyListCMajRow = dc.makeNewDiv("keyListCDIV", "row")
         var keyListCMaj = dc.makeNewDiv("keyListC", "list-group flex-fill col")
-        accordeon.querySelector("#selectKeyDiv").appendChild(keyListCMajRow)
+        keySelectItem.querySelector("#selectKeyDiv").appendChild(keyListCMajRow)
         keyListCMajRow.appendChild(keyListCMaj)
         keyListCMaj.appendChild(dc.makeNewAElement("CMaj", "KeyCMaj", "list-group-item list-group-item-action", "#"))
         
         var keyListSignedRow = dc.makeNewDiv("keyListCrossDIV", "col row g-0")
         var keyListCross = dc.makeNewDiv("keyListCross", "list-group flex-fill col")
-        accordeon.querySelector("#selectKeyDiv").appendChild(keyListSignedRow)
+        keySelectItem.querySelector("#selectKeyDiv").appendChild(keyListSignedRow)
         keyListSignedRow.appendChild(keyListCross)
         keyListCross.appendChild(dc.makeNewAElement("GMaj", "KeyGMaj", "list-group-item list-group-item-action", "#"))
         keyListCross.appendChild(dc.makeNewAElement("DMaj", "KeyDMaj", "list-group-item list-group-item-action", "#"))
@@ -89,54 +101,66 @@ class Toolbar{
         keyListB.appendChild(dc.makeNewAElement("DbMaj", "KeyDbMaj", "list-group-item list-group-item-action", "#"))
         keyListB.appendChild(dc.makeNewAElement("GbMaj", "KeyGbMaj", "list-group-item list-group-item-action", "#"))
 
+        return keySelectItem
+    }
 
+    createClefAccItem(): Element{
         //Music Key
         var clefSelectItem = dc.makeNewAccordionItem("sidebarList", "selectClef", "selectClefHeader", "selectClefBtn", "Clef",  buttonStyleDark, "selectClefDiv")
-        accordeon.appendChild(clefSelectItem)
         var clefList = dc.makeNewDiv("clefList", "list-group flex-fill")
-        accordeon.querySelector("#selectClefDiv").appendChild(clefList)
+        clefSelectItem.querySelector("#selectClefDiv").appendChild(clefList)
         clefList.appendChild(dc.makeNewAElement("sopran", "GClef", "list-group-item list-group-item-action", "#"))
         clefList.appendChild(dc.makeNewAElement("alt", "CClef", "list-group-item list-group-item-action", "#"))
         clefList.appendChild(dc.makeNewAElement("bass", "FClef", "list-group-item list-group-item-action", "#"))
+        return clefSelectItem
+    }
 
-        //Time Signature
-        var timeSelectItem = dc.makeNewAccordionItem("sidebarList", "selectTime", "selectTimeHeader", "selectTimeBtn", "Time",  buttonStyleDark, "selectTimeDiv")
-        accordeon.appendChild(timeSelectItem)
-        var timeDiv = dc.makeNewDiv("timeDiv", "row align-items-start")
-        var countDiv = dc.makeNewDiv("countDiv", "col")
-        var tcdatalistname = "timeCountDatalist"
-        var timeCount = dc.makeNewInput("timeCount", "text", "", null, tcdatalistname)
+    createTimeSigAccItem(): Element{
+         //Time Signature
+         var timeSelectItem = dc.makeNewAccordionItem("sidebarList", "selectTime", "selectTimeHeader", "selectTimeBtn", "Time",  buttonStyleDark, "selectTimeDiv")
+         var timeDiv = dc.makeNewDiv("timeDiv", "row align-items-start")
+         var countDiv = dc.makeNewDiv("countDiv", "col")
+         var tcdatalistname = "timeCountDatalist"
+         var timeCount = dc.makeNewInput("timeCount", "text", "", null, tcdatalistname)
+ 
+         //create list for time code select
+         var tcOptionValues = new Array<string>();
+         for(var i = 0; i < 16; i++){
+             tcOptionValues.push((i+1).toString())
+         }
+         var tcDatalist = dc.makeNewSelect("timeCount", tcOptionValues)
+ 
+         //countDiv.appendChild(timeCount)
+         countDiv.appendChild(tcDatalist)
+         var slashDiv = dc.makeNewDiv("slash", "col")
+         slashDiv.textContent = "/"
+         var unitDiv = dc.makeNewDiv("unitDiv", "col")
+         var tudatalistname = "timeUnitDatalist"
+         var timeUnit = dc.makeNewInput("timeUnit", "text", "", null, tudatalistname)
+ 
+         //create list for time units select
+         var tuOptionValues = new Array<string>();
+         for(var i = 0; i <= 16; i++){
+             if(Number.isInteger(Math.log2(i))){
+                 tuOptionValues.push(i.toString())
+             }   
+         }
+         var tuDataList = dc.makeNewSelect("timeUnit", tuOptionValues)
+ 
+ 
+         unitDiv.appendChild(tuDataList)
+         timeSelectItem.querySelector("#selectTimeDiv").appendChild(timeDiv)
+         timeDiv.appendChild(countDiv)
+         timeDiv.appendChild(slashDiv)
+         timeDiv.appendChild(unitDiv)
 
-        //create list for time code
-        var tcOptionValues = new Array<string>();
-        for(var i = 0; i < 16; i++){
-            tcOptionValues.push((i+1).toString())
-        }
-        var tcDatalist = dc.makeNewSelect("timeCount", tcOptionValues)
+         return timeSelectItem
+    }
 
-        //countDiv.appendChild(timeCount)
-        countDiv.appendChild(tcDatalist)
-        var slashDiv = dc.makeNewDiv("slash", "col")
-        slashDiv.textContent = "/"
-        var unitDiv = dc.makeNewDiv("unitDiv", "col")
-        var tudatalistname = "timeUnitDatalist"
-        var timeUnit = dc.makeNewInput("timeUnit", "text", "", null, tudatalistname)
+    createTempoAccItem(): Element{
+        var tempoItem = dc.makeNewAccordionItem("sidebarList", "selectTempo", "selectTempoHeader", "selectTempoBtn", "Tempo",  buttonStyleDark, "selectTempoDiv")
 
-        //create list for time units
-        var tuOptionValues = new Array<string>();
-        for(var i = 0; i <= 16; i++){
-            if(Number.isInteger(Math.log2(i))){
-                tuOptionValues.push(i.toString())
-            }   
-        }
-        var tuDataList = dc.makeNewSelect("timeUnit", tuOptionValues)
-
-        //unitDiv.appendChild(timeUnit)
-        unitDiv.appendChild(tuDataList)
-        accordeon.querySelector("#selectTimeDiv").appendChild(timeDiv)
-        timeDiv.appendChild(countDiv)
-        timeDiv.appendChild(slashDiv)
-        timeDiv.appendChild(unitDiv)
+        return tempoItem
     }
 
     private optionalButtons(){

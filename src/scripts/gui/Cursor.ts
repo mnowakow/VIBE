@@ -78,7 +78,7 @@ class Cursor{
         var ptX = pt.matrixTransform(rootMatrix).x
         var ptY =  pt.matrixTransform(rootMatrix).y
         var element = this.findScoreTarget(ptX, ptY)
-        this.definePosById(element.id)
+        this.definePosById(element?.id)
         
     }).bind(this)
 
@@ -86,7 +86,8 @@ class Cursor{
         this.posx = x
         this.posy = y 
         var nbb = this.m2m.findScoreTarget(this.posx, this.posy, true, {left: true, right: false}) // only consider left Elements of click position
-        var element = document.getElementById(nbb.id)
+        var element = document.getElementById(nbb?.id)
+        if(element === null) return
         if(element.classList.contains("note") && element.closest(".chord") !== null){
             element = element.closest(".chord")
         }
@@ -105,8 +106,10 @@ class Cursor{
         document.querySelectorAll("*[fill=green]").forEach(fg => {
             fg.removeAttribute("fill")
         })
-        document.getElementById(id).setAttribute("fill", "green")
+        document.getElementById(id)?.setAttribute("fill", "green")
         //
+
+        if(id == undefined) return
 
         this.flashStop()
         this.cursor = document.getElementById("manipulatorCanvas") as unknown as SVGSVGElement
@@ -116,6 +119,7 @@ class Cursor{
 
         var elementBBox: DOMRect
         var currLayerY: number
+        var currLayer: Element
         var distToElement: number
         var elementHeight: number 
         if(navigator.userAgent.toLowerCase().indexOf("firefox") > -1){
@@ -133,12 +137,15 @@ class Cursor{
         //determine reference boundingbox for further computation of dimensions
         if(element !== null){
             elementBBox = element.getBoundingClientRect()
-            currLayerY = element.classList.contains("staff") ? element.getBoundingClientRect().y : element.closest(".layer")?.getBoundingClientRect().y || 0
+            currLayer = element.classList.contains("staff") ? element.querySelector(".layer") : element.closest(".layer")//element : element.closest(".layer")
+            currLayerY = currLayer?.getBoundingClientRect().y || 0//element.classList.contains("staff") ? element.getBoundingClientRect().y : element.closest(".layer")?.getBoundingClientRect().y || 0
             this.nextElement = element
             this.isBol = false
         }else{
-            currLayerY = document.querySelector(".layer[n=\"" + (parseInt(id[id.length-1]) + 1).toString() + "\"]").getBoundingClientRect().y
+            currLayer = document.querySelector(".layer[n=\"" + (parseInt(id[id.length-1]) + 1).toString() + "\"]")
+            currLayerY = currLayer.getBoundingClientRect().y
             elementBBox = this.nextElement.getBoundingClientRect()
+            element = this.nextElement as HTMLElement
             distToElement = -distToElement
             this.isBol = true
         }
@@ -189,6 +196,7 @@ class Cursor{
         }
         this.cursorRect.setAttribute("x", this.posx.toString());        
         this.cursorRect.setAttribute("y", this.posy.toString())
+        this.cursorRect.setAttribute("refId", element.classList.contains("staff") ? currLayer.id : element.id)
 
         //document.querySelector(c._ROOTSVGID_WITH_IDSELECTOR_).insertBefore(this.cursorRect, document.querySelector(c._ROOTSVGID_WITH_IDSELECTOR_).firstChild);
         //document.querySelector(c._ROOTSVGID_WITH_IDSELECTOR_).insertBefore(this.cursor, document.querySelector(c._ROOTSVGID_WITH_IDSELECTOR_).firstChild);

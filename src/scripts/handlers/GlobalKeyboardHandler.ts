@@ -38,7 +38,7 @@ class GlobalKeyboardHandler implements Handler{
     }
 
     keydownHandler = (function keydownHandler(e: KeyboardEvent){
-        if(typeof e.key === "undefined"){
+        if(e.key == undefined){
             return
         }
         if(e.ctrlKey || e.metaKey){
@@ -51,7 +51,7 @@ class GlobalKeyboardHandler implements Handler{
             //      this.handleHarmony(e)
             // }
         }else if(e.key.includes("Arrow")){
-            document.removeEventListener("keydown", this.keydownHandler)
+            //document.removeEventListener("keydown", this.keydownHandler)
             this.transposeHandler(e)
         }else if(e.key === "Escape"){
             this.resetHandler(e)
@@ -105,6 +105,7 @@ class GlobalKeyboardHandler implements Handler{
         document.querySelectorAll(".marked").forEach(m => {
             this.copiedIds.push(m.id)
         })
+        this.copiedIds.filter(n => n) //undefined and null Elements will be excluded
     }
 
     /**
@@ -112,12 +113,17 @@ class GlobalKeyboardHandler implements Handler{
      * @param e 
      */
     pasteHandler(e: KeyboardEvent){
-        e.preventDefault()
-        var pastePosition = document.querySelector(".chord.marked, .note.marked")?.id
+        //e.preventDefault()
+        console.log("pasteHandler")
+        var pastePosition = document.querySelector(".chord.marked, .note.marked, .rest.marked, .mRest.marked")?.id || document.querySelector("#cursor")?.getAttribute("refId")
         if(this.copiedIds != undefined && pastePosition != undefined){
-            meiOperation.paste(this.copiedIds, pastePosition, this.currentMEI)
+            var lastId = meiOperation.paste(this.copiedIds, pastePosition, this.currentMEI)
             var mei = meiConverter.restoreXmlIdTags(this.currentMEI)
-            this.loadDataCallback("", mei, false, c._TARGETDIVID_)
+            this.loadDataCallback("", mei, false, c._TARGETDIVID_).then(mei => {
+                //Tell everyone that a past just occured to readjust certain elements e.g.
+                var pastedEvent = new CustomEvent("pasted", {detail: lastId})
+                document.dispatchEvent(pastedEvent)
+            })
         }    
     }
 
@@ -158,7 +164,8 @@ class GlobalKeyboardHandler implements Handler{
     reduceDur(){
         var additionalElements = new Array<Element>();
         additionalElements.push(document.getElementById(this.scoreGraph.nextRight().getId()))
-        meiOperation.changeDuration(this.currentMEI, "reduce", additionalElements)
+        //meiOperation.changeDuration(this.currentMEI, "reduce", additionalElements)
+        meiOperation.changeDuration(this.currentMEI, additionalElements)
         var mei = meiConverter.restoreXmlIdTags(this.currentMEI)
         this.loadDataCallback("", mei, false, c._TARGETDIVID_)
     }
@@ -166,7 +173,8 @@ class GlobalKeyboardHandler implements Handler{
     prolongDur(){
         var additionalElements = new Array<Element>();
         additionalElements.push(document.getElementById(this.scoreGraph.nextRight().getId()))
-        meiOperation.changeDuration(this.currentMEI, "prolong", additionalElements)
+        //meiOperation.changeDuration(this.currentMEI, "prolong", additionalElements)
+        meiOperation.changeDuration(this.currentMEI, additionalElements)
         var mei = meiConverter.restoreXmlIdTags(this.currentMEI)
         this.loadDataCallback("", mei, false, c._TARGETDIVID_)
     }
