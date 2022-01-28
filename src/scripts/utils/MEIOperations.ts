@@ -4,7 +4,6 @@ import { constants as c} from '../constants'
 import { NewChord, NewNote, NewClef } from './Types'
 import { keysigToNotes, nextStepUp, nextStepDown, clefToLine, keyIdToSig } from './mappings'
 import MeiTemplate from '../assets/mei_template'
-import { csvFormatBody, xml } from 'd3'
 import ScoreGraph from '../datastructures/ScoreGraph'
 import MeasureMatrix from '../datastructures/MeasureMatrix'
 
@@ -266,10 +265,13 @@ export function addToMEI(newSound: NewNote | NewChord, currentMEI: Document, rep
       //TODO
       var newChord = newSound as NewChord
       newElem = convertToElement(newChord, currentMEI)
-      if(newChord.relPosX === "left"){
-        currentMEI.getElementById(newChord.nearestNoteId).parentElement.insertBefore(newElem, currentMEI.getElementById(newChord.nearestNoteId))
+      var nearestElem = currentMEI.getElementById(newChord.nearestNoteId)
+      if(nearestElem?.tagName.toUpperCase() === "LAYER"){
+       nearestElem.insertBefore(newElem, nearestElem.firstChild)
+      }else if(newChord.relPosX === "left"){
+        nearestElem.parentElement.insertBefore(newElem, currentMEI.getElementById(newChord.nearestNoteId))
       }else{
-        currentMEI.getElementById(newChord.nearestNoteId).parentElement.insertBefore(newElem, currentMEI.getElementById(newChord.nearestNoteId).nextSibling)
+        nearestElem.parentElement.insertBefore(newElem, currentMEI.getElementById(newChord.nearestNoteId).nextSibling)
       }
     }
 
@@ -997,7 +999,7 @@ function replaceWithRest(element: Element, currentMEI : Document){
 }
 
 /**
- * Change duration of the following sound events. Elements to change duration are determined by the class "marked". 
+ * Change duration of the following sound events. Elements to change duration are determined by the class to be "marked". 
  * @param currentMEI  Current MEI as Document
  * @param additionalElements Elements to be considered to be changed.
  * @param refElement Reference Element after which all determined elements (.marked and additionElements) will be changed (e.g. replacing duration during a note insert).
@@ -1414,6 +1416,7 @@ export function paste(ids: Array<string>, refId: string, currentMEI : Document):
   var meiElements = new Array<Array<Element>>()
   ids.forEach(id => {
     var el = currentMEI .getElementById(id)
+    //order copiable elements by staff
     if(["CHORD", "NOTE", "REST"].includes(el?.tagName.toUpperCase())){
       if(!(el.tagName.toUpperCase() === "NOTE" && el.closest("chord") !== null)){
         var staff = el.closest("staff")
@@ -1428,7 +1431,7 @@ export function paste(ids: Array<string>, refId: string, currentMEI : Document):
     }
   })
 
-  var refElement = currentMEI .getElementById(refId) as Element
+  var refElement = currentMEI.getElementById(refId) as Element
   refElement = refElement?.closest("chord") || refElement
   var refStaff = refElement?.closest("staff")
   var refLayer = refElement?.closest("layer")
@@ -1436,7 +1439,10 @@ export function paste(ids: Array<string>, refId: string, currentMEI : Document):
   var currentMeasure: Element
   let anyNew
 
+  console.log(...meiElements)
+
   meiElements.forEach((staff,staffIdx) => {
+    if(refElement === null) return
     currentMeasure = refElement.closest("measure")
     staff.forEach((element,elementIdx) => {
       if(["NOTE", "REST"].includes(element.tagName.toUpperCase())){
@@ -1455,6 +1461,13 @@ export function paste(ids: Array<string>, refId: string, currentMEI : Document):
       addToMEI(anyNew, currentMEI) 
       refElement = convertToElement(anyNew, currentMEI) //element
     })
+
+    //when changing next staff, refElement musst be staff + 1
+    var targetStaffN = (parseInt(currentMEI.getElementById(refElement.id)?.closest("staff")?.getAttribute("n"))+1)?.toString()
+    var refLayerN = currentMEI.getElementById(refElement.id)?.closest("layer")?.getAttribute("n")
+    var refMeasureN = currentMEI.getElementById(refElement.id)?.closest("measure")?.getAttribute("n")
+    refElement = currentMEI.querySelector("measure[n=\"" + refMeasureN + "\"] > staff[n=\"" + targetStaffN + "\"] > layer[n=\"" + refLayerN + "\"]")
+
   })
 
   //Element gets replaced in all other modes except keymode/textmode
