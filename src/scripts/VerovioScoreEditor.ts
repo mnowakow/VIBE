@@ -56,7 +56,12 @@ class VerovioScoreEditor{
             };
         
             script.src = "https://www.verovio.org/javascript/" + c._VEROVIO_VERSION_ + "/verovio-toolkit.js";
-            prior.parentNode.insertBefore(script, prior);
+            //script.src = "https://www.verovio.org/javascript/latest/verovio-toolkit.js";
+            if(document.querySelector("script[src=\"" + script.src + "\"]") === null){
+                prior.parentNode.insertBefore(script, prior);
+            }else{
+                resolve() // do not script multiple times
+            }
         })
     }
 

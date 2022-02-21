@@ -4,6 +4,7 @@ import PhantomElement from "../gui/PhantomElement";
 import MusicPlayer from "../MusicPlayer";
 import { Mouse2MEI } from "../utils/Mouse2MEI";
 import Handler from "./Handler";
+import * as coordinates from "../utils/coordinates"
 
 
 class PhantomElementHandler implements Handler{
@@ -16,10 +17,12 @@ class PhantomElementHandler implements Handler{
     root: HTMLElement;
     rootBBox: DOMRect;
     phantom: PhantomElement
+    private isTrackingMouse: boolean
 
     constructor(){
         this.addCanvas()
         this.phantom = new PhantomElement("note")
+        this.isTrackingMouse = false
     }
     
     
@@ -87,16 +90,21 @@ class PhantomElementHandler implements Handler{
      * @param e 
      */
     trackMouse(e: MouseEvent){
-      
-        var root = document.getElementById(c._ROOTSVGID_)
-        var rootsvg = root as unknown as SVGGraphicsElement 
-        var rootBBox = root.getBoundingClientRect()
-        var rootpt = new DOMPoint(rootBBox.x, rootBBox.y)
 
-        var pt = new DOMPoint(e.clientX, e.clientY)
-        var relpt = pt.matrixTransform(rootsvg.getScreenCTM().inverse());
-        var relX = relpt.x
-        var relY = relpt.y
+        var root = document.getElementById(c._ROOTSVGID_)
+
+        var pt = coordinates.transformToDOMMatrixCoordinates(e.clientX, e.clientY, root)
+        var relX = pt.x
+        var relY = pt.y
+
+        var definitionScale = root.querySelector(".definition-scale")
+        var dsCoords = coordinates.getDOMMatrixCoordinates(definitionScale, root)
+        if(relX < dsCoords.left || relX > dsCoords.right){
+            this.isTrackingMouse = false
+            return
+        }
+
+        this.isTrackingMouse = true
 
         var target = e.target as HTMLElement;
         var options = {}
@@ -163,6 +171,10 @@ class PhantomElementHandler implements Handler{
     setPhantomNote(note: PhantomElement = undefined){
         this.phantom = note || new PhantomElement("note")
         return this
+    }
+
+    getIsTrackingMouse(){
+        return this.isTrackingMouse
     }
 }
 

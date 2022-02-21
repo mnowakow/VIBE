@@ -82,6 +82,7 @@ class InsertModeHandler implements Handler{
       .setAnnotations(this.annotations)
       .setM2M(this.m2m)
       .setMusicPlayer(this.musicPlayer)
+      .setPhantomCursor(this.phantomNoteHandler)
       .resetListeners()
     // if(typeof this.selectionHandler !== "undefined"){
     //   this.selectionHandler.removeListeners()
@@ -130,8 +131,10 @@ class InsertModeHandler implements Handler{
 
   activateSelectionMode(){
     //this.insertDeactivate()
+    
     this.selectionHandler = new SelectionHandler()
     this.selectionHandler.setM2M(this.m2m)
+    
     //this.selectionHandler.setHarmonyHandler(this.harmonyHandler)
     //this.deleteHandler.setListeners()
 
@@ -161,14 +164,26 @@ class InsertModeHandler implements Handler{
   }
 
   activateHarmonyMode(clicked = false){
-    if(clicked){
-      if(this.unselectMenuItem("activateHarm")){return}
+    try{
+      if(clicked){
+        if(this.unselectMenuItem("activateHarm")){return}
+      }
+    }catch{
+      try{
+        var harmonyButton =  document.getElementById("harmonyAnnotButton")
+        if(!harmonyButton.classList.contains("selected")){
+          harmonyButton.classList.add("selected")
+        }
+      }catch(e){
+        console.error("There was a problem in activating harmonymode", e)
+        return
+      }
     }
     if(typeof this.labelHandler === "undefined"){
       this.labelHandler = new LabelHandler()
     }
     //Activate/ Deactivate Global functions according to selected harmonymode
-    if(document.querySelector("#activateHarm.selected") !== null){
+    if(document.querySelector("#activateHarm.selected, #harmonyAnnotButton.selected") !== null){
       this.insertDeactivate()
       document.body.classList.add("harmonyMode")
       this.isGlobal = false
@@ -281,6 +296,15 @@ class InsertModeHandler implements Handler{
           }
       })
     })
+
+    document.addEventListener("annotationButtonClicked", function(e: MouseEvent){
+      var t = e.target as HTMLElement
+      if(t.id === "harmonyAnnotButton"){
+        that.activateHarmonyMode(true)
+      }else{
+        that.activateHarmonyMode(false)
+      }
+    }, true)
 
     Array.from(document.querySelectorAll("#noteGroup > *")).forEach(b => {
       b.addEventListener("click", function(e){
@@ -407,7 +431,6 @@ class InsertModeHandler implements Handler{
 
   setPhantomNote(){
     if(this.phantomNoteHandler != undefined){
-      console.log("Set PHantomNOte")
       this.phantomNoteHandler
         .setPhantomNote()
         .setListeners()
@@ -438,7 +461,7 @@ class InsertModeHandler implements Handler{
 
   resetCanvas(){
     if(this.annotations != undefined){
-      document.getElementById(c._ROOTSVGID_).append(this.annotations.getAnnotationCanvas())
+      //document.getElementById(c._ROOTSVGID_).append(this.annotations.getAnnotationCanvas())
       this.annotations.addCanvas()
     }
     return this

@@ -119,12 +119,16 @@ function getMeterRatioLocal(currentMEI : Document, refElement: Element): number{
   var staffElement: Element
   if(refElement.tagName !== "staff"){
     if(refElement.closest("staff") === null){
-      throw new Error("RefElement must be a staff-Element at most")
+      staffElement = currentMEI.getElementById(refElement.id)?.closest("staff")
     }else{
       staffElement = refElement.closest("staff")
     }
   }else{
     staffElement = refElement
+  }
+
+  if(staffElement === null || staffElement == undefined){
+    throw new Error("RefElement must be a staff-Element at most")
   }
 
   var mm = new MeasureMatrix()
@@ -222,6 +226,8 @@ export function addToMEI(newSound: NewNote | NewChord, currentMEI: Document, rep
                 }
               }
           }
+
+          newElem.classList.add("marked")
 
           //if(replace && trueSibling.nextSibling !== null){
           if(replace){
@@ -1586,8 +1592,8 @@ export function insertMeter(target: Element, currentMEI: Document): Document {
   })
   
   
-  var count = (document.getElementById("timeCount") as HTMLSelectElement).value
-  var unit = (document.getElementById("timeUnit") as HTMLSelectElement).value
+  var count = (document.querySelector("#selectTime #timeCount") as HTMLSelectElement).value
+  var unit = (document.querySelector("#selectTime #timeUnit") as HTMLSelectElement).value
 
   // change for all layers in given measure
   targetLayers.forEach(tl => {
@@ -1598,6 +1604,27 @@ export function insertMeter(target: Element, currentMEI: Document): Document {
   cleanUp(currentMEI)
   currentMEI = meiConverter.restoreXmlIdTags(currentMEI)
 
+  return currentMEI
+}
+
+export function insertTempo(target: Element, currentMEI: Document): Document{
+  var measure = currentMEI.getElementById(target.id).closest("measure")
+  var existingTempo = measure.querySelectorAll("tempo")
+  var sameTempos = Array.from(existingTempo).filter(et => {
+    var hasSameTimeStamp = parseFloat(et.getAttribute("timeStamp")) === getElementTimestampById(target.id, currentMEI)
+    var hasSameStartId = et.getAttribute("startId") === target.id
+    return hasSameTimeStamp || hasSameStartId
+  })
+
+  var mmUnit = (document.querySelector("#selectTempo #timeCount") as HTMLSelectElement).value
+  var mm = (document.querySelector("#selectTempo #timeUnit") as HTMLSelectElement).value
+
+  measure.appendChild(new MeiTemplate().createTempo(mm, mmUnit, getElementTimestampById(target.id, currentMEI).toString(), target.id))
+  sameTempos.forEach(st => st.remove())    
+
+  cleanUp(currentMEI)
+  currentMEI = meiConverter.restoreXmlIdTags(currentMEI)
+    
   return currentMEI
 }
 

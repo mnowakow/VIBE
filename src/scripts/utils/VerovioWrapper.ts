@@ -22,9 +22,11 @@ export default class VerovioWrapper {
           pageMarginTop: 100,
           pageMarginBottom: 10,
           font: 'Bravura',
-          adjustPageWidth: 0,
-          adjustPageHeight: 0,
-          pageWidth: 1800, 
+          //adjustPageWidth: 0,
+          //adjustPageHeight: 0,
+          noJustification: 1,
+          pageWidth: 1800,
+          svgRemoveXlink: 0,
           //pageHeight: 60000
       })
     }
@@ -46,6 +48,8 @@ export default class VerovioWrapper {
             case 'getTimeForElement':
               result.time = this.getTimeForElement();
               break;
+            case "getTimesForElement":
+              result.times = this.getTimesForElement();
             case 'edit':
               result.result = this.edit();
               break;
@@ -107,6 +111,10 @@ export default class VerovioWrapper {
 
     getTimeForElement(){
       return this.vrvToolkit.getTimeForElement(this.data.elementId)
+    }
+
+    getTimesForElement(){
+      return this.vrvToolkit.getTimesForElement(this.data.elementId)
     }
 
     edit(){

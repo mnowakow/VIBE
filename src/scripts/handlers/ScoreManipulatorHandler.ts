@@ -19,9 +19,11 @@ class ScoreManipulatorHandler implements Handler{
     private sm: ScoreManipulator;
     loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>;
     manipulatorCanvas: SVGSVGElement;
+    private manipulateEvent: Event
 
     constructor(){
         this.sm = new ScoreManipulator()
+        this.manipulateEvent = new Event("manipulated")
     }
 
     addCanvas(){
@@ -84,6 +86,7 @@ class ScoreManipulatorHandler implements Handler{
     }
 
     addMeasure = (function handler(e: MouseEvent){
+        e.target.dispatchEvent(this.manipulateEvent)
         e.preventDefault()
         e.stopPropagation()
         meiOperation.addMeasure(this.currentMEI as Document)
@@ -91,6 +94,7 @@ class ScoreManipulatorHandler implements Handler{
     }).bind(this)
 
     removeMeasure = (function handler(e: MouseEvent){
+        e.target.dispatchEvent(this.manipulateEvent)
         e.preventDefault()
         e.stopPropagation()
         meiOperation.removeMeasure(this.currentMEI as Document)
@@ -98,23 +102,27 @@ class ScoreManipulatorHandler implements Handler{
     }).bind(this)
 
     addStaff = (function handler(e: MouseEvent){
+        var target = (e.target as Element).closest(".manipulator")
+        target.dispatchEvent(this.manipulateEvent)
         e.preventDefault()
         e.stopPropagation()
-        var target = (e.target as Element).closest(".manipulator")
         var relpos = target.classList.contains("below") ? "below" : "above"
         meiOperation.addStaff(this.currentMEI as Document, document.getElementById(target.getAttribute("refId")), relpos)
         this.musicPlayer.resetInstruments()
         this.loadDataCallback("", meiConverter.restoreXmlIdTags(this.currentMEI), false, c._TARGETDIVID_)
+      
     }).bind(this)
 
     removeStaff = (function handler(e: MouseEvent){
+        var target = (e.target as Element).closest(".manipulator")
+        target.dispatchEvent(this.manipulateEvent)
         e.preventDefault()
         e.stopPropagation()
-        var target = (e.target as Element).closest(".manipulator")
         var relpos = target.classList.contains("below") ? "below" : "above"
         meiOperation.removeStaff(this.currentMEI as Document, document.getElementById(target.getAttribute("refId")), relpos)
         this.musicPlayer.resetInstruments()
         this.loadDataCallback("", meiConverter.restoreXmlIdTags(this.currentMEI), false, c._TARGETDIVID_)
+        e.target.dispatchEvent(this.manipulateEvent)
     }).bind(this)
 
 

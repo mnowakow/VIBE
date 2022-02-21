@@ -51,12 +51,19 @@ export class Mouse2MEI{
    setMouseEnterElementListeners(): void{     
        var that = this;
        var mouseEventName = "mouseover"
+        var enteredFlag = "lastEntered"
 
         document.querySelectorAll(".system").forEach(sy => {
             sy.addEventListener(mouseEventName, function(evt){
                 evt.preventDefault()
                 var target = evt.target as HTMLElement
                 that.lastSystemMouseEnter = target.closest(".system")
+                if(!that.lastSystemMouseEnter.classList.contains(enteredFlag)){
+                    document.querySelectorAll(".system").forEach(s => {
+                        s.classList.remove(enteredFlag)
+                    })
+                    that.lastSystemMouseEnter.classList.add(enteredFlag)
+                }
             })
         });
 
@@ -65,7 +72,12 @@ export class Mouse2MEI{
                 evt.preventDefault()
                 var target = evt.target as HTMLElement
                 that.lastStaffMouseEnter = target.closest(".staff")
-                //console.log("CURRENT STAFF: ", that.lastStaffMouseEnter)
+                if(!that.lastStaffMouseEnter.classList.contains(enteredFlag)){
+                    document.querySelectorAll(".staff").forEach(s => {
+                        s.classList.remove(enteredFlag)
+                    })
+                    that.lastStaffMouseEnter.classList.add(enteredFlag)
+                }
             })
         });
 
@@ -74,7 +86,12 @@ export class Mouse2MEI{
                 evt.preventDefault()
                 var target = evt.target as HTMLElement
                 that.lastMeasureMouseEnter = target.closest(".measure")
-                //console.log("CURRENT MEASURE: ", that.lastMeasureMouseEnter)
+                if(!that.lastMeasureMouseEnter.classList.contains(enteredFlag)){
+                    document.querySelectorAll(".measure").forEach(m => {
+                        m.classList.remove(enteredFlag)
+                    })
+                    that.lastMeasureMouseEnter.classList.add(enteredFlag)
+                }
             })
         });
 
@@ -83,7 +100,12 @@ export class Mouse2MEI{
                 evt.preventDefault()
                 var target = evt.target as HTMLElement
                 that.lastLayerMouseEnter = target.closest(".layer")
-                //console.log("CURRENT LAYER: ", that.lastLayerMouseEnter)
+                if(!that.lastLayerMouseEnter.classList.contains(enteredFlag)){
+                    document.querySelectorAll(".layer").forEach(l => {
+                        l.classList.remove(enteredFlag)
+                    })
+                    that.lastLayerMouseEnter.classList.add(enteredFlag)
+                }
             })
         });
 
@@ -353,7 +375,7 @@ export class Mouse2MEI{
         }else{
             // Decide if Staffline is given or not
             this.phantomLines = undefined
-            if(typeof options.staffLineId === "undefined"){
+            if(options.staffLineId == undefined){
                 let sbb = []
                 this.staffLineBBoxes.forEach(bb => {if(bb.id === this.lastStaffMouseEnter.id) sbb.push(bb)});
                 sbb.forEach(bb => {
@@ -389,7 +411,12 @@ export class Mouse2MEI{
                 oct = map.get(nextPitchIdx).charAt(1)
                 
             }else{
-                let pitch: string[] = document.getElementById(options.staffLineId).getAttribute("class").split(" ")
+                let pitch: string[]
+                try{
+                    pitch = document.getElementById(options.staffLineId).getAttribute("class").split(" ")
+                }catch{
+                    return
+                }
                 let p: string[] = pitch.filter(function(obj){
                     let isPname = obj.charAt(0) === obj.charAt(0).toLowerCase(); // noch regexe?
                     let isOct = !isNaN(parseInt(obj.charAt(1)));

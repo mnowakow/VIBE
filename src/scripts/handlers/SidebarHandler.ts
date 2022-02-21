@@ -98,7 +98,7 @@ class SidebarHandler implements Handler{
             }
         })
 
-        document.querySelectorAll("#sidebarList a, #timeDiv").forEach(sa => {
+        document.querySelectorAll("#sidebarList a, #timeDiv, #tempoDiv").forEach(sa => {
             sa.addEventListener("drag", this.findDropTargetFunction)
             sa.addEventListener("dragend", this.dropOnTargetFunction)
         })
@@ -223,7 +223,8 @@ class SidebarHandler implements Handler{
         var eventTargetParent = eventTarget.parentElement
         var eventTargetIsClef = eventTargetParent.id.toLowerCase().includes("clef")
         var eventTargetIsKey = eventTargetParent.id.toLowerCase().includes("key")
-        var eventTargetIsTIme = eventTarget.id.toLocaleLowerCase().includes("time")
+        var eventTargetIsTime = eventTarget.id.toLocaleLowerCase().includes("time")
+        var eventTargetIsTempo = eventTarget.id.toLocaleLowerCase().includes("tempo")
         var dropTargets: NodeListOf<Element>
         var dropFlag: string
 
@@ -233,9 +234,12 @@ class SidebarHandler implements Handler{
         }else if(eventTargetIsKey){
             dropTargets = document.querySelectorAll(".keySig, .barLine > path, .clef")
             dropFlag = "dropKey"
-        }else if(eventTargetIsTIme){
+        }else if(eventTargetIsTime){
             dropTargets = document.querySelectorAll(".meterSig, .barLine > path, .clef")
             dropFlag = "dropTime"
+        }else if(eventTargetIsTempo){
+            dropTargets = document.querySelectorAll(".note, .chord, .rest, .mRest")
+            dropFlag = "dropTempo"
         }
         else{
             return
@@ -268,13 +272,14 @@ class SidebarHandler implements Handler{
      */
     dropOnTarget(e: MouseEvent){
         e.preventDefault()
-        var selectedElement = document.querySelector(".dropClef, .dropKey, .dropTime") 
+        var selectedElement = document.querySelector(".dropClef, .dropKey, .dropTime, .dropTempo") 
         var t = e.target as Element
         var mei: Document
 
-        var isFirstClef = Array.from(document.querySelectorAll(".measure[n=\"1\"] .clef")).some(mc => mc.id === selectedElement.id)
-        var isFirstKey = Array.from(document.querySelectorAll(".measure[n=\"1\"] .keySig")).some(mc => mc.id === selectedElement.id)
-        var isFirstMeter = Array.from(document.querySelectorAll(".measure[n=\"1\"] .meterSig")).some(mc => mc.id === selectedElement.id)
+        var isFirstClef = Array.from(document.querySelectorAll(".measure[n=\"1\"] .clef")).some(mc => mc?.id === selectedElement?.id)
+        var isFirstKey = Array.from(document.querySelectorAll(".measure[n=\"1\"] .keySig")).some(mc => mc?.id === selectedElement?.id)
+        var isFirstMeter = Array.from(document.querySelectorAll(".measure[n=\"1\"] .meterSig")).some(mc => mc?.id === selectedElement?.id)
+        
         if(selectedElement?.classList.contains("dropClef")){
             if(isFirstClef){
                 mei = meiOperation.replaceClefinScoreDef(selectedElement, t.id, this.currentMEI)
@@ -288,7 +293,6 @@ class SidebarHandler implements Handler{
             }else{
                 mei = meiOperation.insertKey(selectedElement, t.id, this.currentMEI)
             }
-        
         }else if(selectedElement?.classList.contains("dropTime")){
             console.log(selectedElement.toString(), isFirstMeter.toString(), isFirstClef.toString())
             if(isFirstMeter || isFirstClef){
@@ -296,6 +300,8 @@ class SidebarHandler implements Handler{
             }else{
                 mei = meiOperation.insertMeter(selectedElement, this.currentMEI)
             }
+        }else if(selectedElement?.classList.contains("dropTempo")){
+            mei = meiOperation.insertTempo(selectedElement, this.currentMEI)
         }
         else{
             return

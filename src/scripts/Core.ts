@@ -17,6 +17,7 @@ import WindowHandler from "./handlers/WindowHandler"
 import SidebarHandler from './handlers/SideBarHandler';
 import LabelHandler from './handlers/LabelHandler';
 import ModHandler from './handlers/ModHandler';
+import { rejects } from 'assert';
 
 
 /**
@@ -119,6 +120,7 @@ class Core {
           break;
         case 'XMLDocument':
           data = meiOperation.disableFeatures(["grace", "arpeg"], (data as Document)) // for Debugging
+          this.svgFiller.copyClassesFromMei(data)
           d = new XMLSerializer().serializeToString(data as Document);
           u = false;
           break;
@@ -146,6 +148,7 @@ class Core {
       var svg
 
       response = this.verovioWrapper.setMessage(message);
+
       svg = response.mei;
       svg = svg.replace("<svg", "<svg id=\"" + c._ROOTSVGID_ + "\"");
       try{
@@ -243,8 +246,8 @@ class Core {
       .setLoadDataCallback(this.loadDataFunction)
       .setScoreGraph(this.scoreGraph)
       .setUndoAnnotationStacks(this.undoAnnotationStacks)
-      .resetCanvas()
       .resetModes()
+      .resetCanvas()
 
     this.deleteHandler
       .setDeleteCallback(this.delete)
@@ -256,6 +259,7 @@ class Core {
       .setEditCallback(this.edit)
       .setElementAttrCallback(this.getElementAttr)
       .setMusicPlayer(this.musicplayer)
+      .setM2M(this.m2m)
 
     this.keyboardHandler
       .setUndoCallback(this.undo)
@@ -314,13 +318,18 @@ class Core {
   insert = (function insert (newNote: NewNote, replace: Boolean = false): Promise<boolean> {    
     this.lastInsertedNoteId = newNote.id
 
-    return new Promise((resolve): void => {
+    return new Promise((resolve, reject): void => {
       this.getMEI("").then(mei => {
         var updatedMEI = meiOperation.addToMEI(newNote, this.currentMEIDoc, replace, this.scoreGraph)
+        if(updatedMEI?.documentElement.innerHTML.indexOf(newNote.id) === -1){
+          reject()
+        }
         if(updatedMEI != undefined){
           this.loadData("", updatedMEI, false, c._TARGETDIVID_).then(() => {
               resolve(true)       
           })
+        }else{
+          reject()
         }
       })
     });
@@ -344,6 +353,7 @@ class Core {
             annotCanvas.replaceWith(annotstate[0])
             annotList.replaceWith(annotstate[1])
             this.keyboardHandler.resetListeners()
+            document.dispatchEvent(new Event("annotationCanvasChanged"))
           }
           resolve(true)
           return
@@ -492,6 +502,7 @@ class Core {
               id: uuidv4(),
               elementId: node.id
             }
+
             var response: VerovioResponse = this.verovioWrapper.setMessage(message)
             if(!noteTimes.has(response.time)){
               noteTimes.set(response.time, new Array())

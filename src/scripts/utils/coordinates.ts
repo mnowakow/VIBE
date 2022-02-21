@@ -39,3 +39,12 @@ export function transformToDOMMatrixCoordinates(x: number, y: number, canvas: El
 
     return {x: pt.x, y: pt.y}
 }
+
+export function transformToSVGMatrixCoordinates(x: number, y: number, canvas: Element): {x: number, y: number}{
+    
+    var canvasMatrix = (canvas as unknown as SVGGraphicsElement).getCTM()
+    var pt = new DOMPoint(x, y)
+    pt = pt.matrixTransform(canvasMatrix)
+
+    return {x: pt.x, y: pt.y}
+}

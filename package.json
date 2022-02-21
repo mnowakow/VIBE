@@ -60,6 +60,7 @@
     ],
     "devDependencies": {
         "@types/utf8": "^3.0.0",
-        "utf8": "^3.0.0"
+        "utf8": "^3.0.0",
+        "web-audio-api": "^0.2.2"
     }
 }

@@ -25,8 +25,18 @@ class AnnotationChangeHandler implements Handler{
     private textListener: Interact.Interactable
     private lineListener: Interact.Interactable
 
+    private annotResizedEvent: Event
+    private dragAnnotStartEvent: Event
+    private dragAnnotEndEvent: Event
+    private interactTarget: Element
+    private isInteracting: Boolean
+
     constructor(){
         this.update()
+        this.annotResizedEvent = new Event("annotResized")
+        this.dragAnnotStartEvent = new Event("dragAnnotStart")
+        this.dragAnnotEndEvent = new Event("dragAnnotEnd")
+        this.isInteracting = false
     }
 
 
@@ -43,6 +53,8 @@ class AnnotationChangeHandler implements Handler{
                 end(event){
                     document.dispatchEvent(new Event("annotationCanvasChanged"))
                     that.deleteTempDistances()
+                    that.interactTarget.dispatchEvent(that.annotResizedEvent)
+                    that.isInteracting = false
                 }  
             },
         })
@@ -52,6 +64,8 @@ class AnnotationChangeHandler implements Handler{
                 end(event){
                     document.dispatchEvent(new Event("annotationCanvasChanged"))
                     that.deleteTempDistances()
+                    that.interactTarget.dispatchEvent(that.dragAnnotEndEvent)
+                    that.isInteracting = false
                 } 
             },
             modifiers: [
@@ -62,7 +76,7 @@ class AnnotationChangeHandler implements Handler{
             ]
         })
 
-        this.textListener = interact('.annotText')
+        this.textListener = interact('.annotLinkedText, .annotStaticText')
         .resizable({
             // resize from all edges and corners
             edges: { left: true, right: true, bottom: true, top: true },
@@ -72,6 +86,8 @@ class AnnotationChangeHandler implements Handler{
                 end(event){
                     that.deleteTempDistances()
                     document.dispatchEvent(new Event("annotationCanvasChanged"))
+                    that.interactTarget.dispatchEvent(that.annotResizedEvent)
+                    that.isInteracting = false
                 }  
             },
         })
@@ -81,6 +97,8 @@ class AnnotationChangeHandler implements Handler{
                 end(event){
                     document.dispatchEvent(new Event("annotationCanvasChanged"))
                     that.deleteTempDistances()
+                    that.interactTarget.dispatchEvent(that.dragAnnotEndEvent)
+                    that.isInteracting = false
                 }  
             },
             modifiers: [
@@ -100,6 +118,8 @@ class AnnotationChangeHandler implements Handler{
                     that.snapToObj()
                     document.dispatchEvent(new Event("annotationCanvasChanged"))
                     that.deleteTempDistances()
+                    that.interactTarget.dispatchEvent(that.dragAnnotEndEvent)
+                    that.isInteracting = false
                 }
             },
             modifiers: [
@@ -113,7 +133,7 @@ class AnnotationChangeHandler implements Handler{
     }
 
     removeListeners(): void {
-        //interact(".customAnnotShape, .annotText, .lineDragRect").unset()
+        //interact(".customAnnotShape, .annotLinkedText, .lineDragRect").unset()
         this.shapeListener?.unset()
         this.lineListener?.unset()
         this.textListener?.unset()
@@ -127,6 +147,11 @@ class AnnotationChangeHandler implements Handler{
     // SHAPES
     dragShapeListener (event) {
         var target = event.target as HTMLElement
+        this.interactTarget = target
+        if(!this.isInteracting){
+            this.interactTarget.dispatchEvent(this.dragAnnotStartEvent)
+        }
+        this.isInteracting = true
         var pt = new DOMPoint(event.clientX, event.clientY)
         this.canvasMatrix = (document.getElementById("annotationCanvas") as unknown as SVGGraphicsElement).getScreenCTM().inverse()
         var edx = pt.matrixTransform(this.canvasMatrix).x
@@ -158,6 +183,7 @@ class AnnotationChangeHandler implements Handler{
 
     resizeShapeListener(event){
         var target = event.target as HTMLElement
+        this.interactTarget = target
         this.canvasMatrix = (document.getElementById("annotationCanvas") as unknown as SVGGraphicsElement).getScreenCTM().inverse()
 
         // update overal dimensions
@@ -213,6 +239,7 @@ class AnnotationChangeHandler implements Handler{
     // TEXTBOXES
     resizeTextListener(event){
         var target = event.target.querySelector(".annotFO") as HTMLElement
+        this.interactTarget = target
         this.canvasMatrix = (document.getElementById("annotationCanvas") as unknown as SVGGraphicsElement).getScreenCTM().inverse()
 
         // update overal dimensions
@@ -267,6 +294,11 @@ class AnnotationChangeHandler implements Handler{
 
     dragTextListener(event){
         var target = event.target.querySelector(".annotFO")
+        this.interactTarget = target
+        if(!this.isInteracting){
+            this.interactTarget.dispatchEvent(this.dragAnnotStartEvent)
+        }
+        this.isInteracting = true
         this.canvasMatrix = (document.getElementById("annotationCanvas") as unknown as SVGGraphicsElement).getScreenCTM().inverse()
         var pt = new DOMPoint(event.clientX, event.clientY)
         var edx = pt.matrixTransform(this.canvasMatrix).x
@@ -309,8 +341,12 @@ class AnnotationChangeHandler implements Handler{
     //LINES
 
     dragLineListener(event){
-
         var target = event.target as SVGRectElement
+        this.interactTarget = target
+        if(!this.isInteracting){
+            this.interactTarget.dispatchEvent(this.dragAnnotStartEvent)
+        }
+        this.isInteracting = true
         this.canvasMatrix = (document.getElementById("annotationCanvas") as unknown as SVGGraphicsElement).getScreenCTM().inverse()
         this.dragedRect = target
         var pt = new DOMPoint(event.clientX, event.clientY)

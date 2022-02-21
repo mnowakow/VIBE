@@ -6,6 +6,7 @@ import MusicPlayer from '../MusicPlayer';
 import DeleteHandler from './DeleteHandler';
 import Handler from './Handler';
 import { Mouse2MEI } from '../utils/Mouse2MEI';
+import * as coordinates from "../utils/coordinates"
 
 //@ts-ignore
 //const $ = H5P.jQuery;
@@ -14,32 +15,45 @@ import { Mouse2MEI } from '../utils/Mouse2MEI';
  * Class that handles insert mode, events, and actions.
  */
 class NoteDragHandler implements Handler{
-  private dragStartCoords: Array<number>;
+  private dragStartCoords: {x:number, y:number}
   private dx: number;
   private dy: number;
   private notes;
   private draggedElement: SVGSVGElement;
+  private draggedUseChild: Element
   musicPlayer: MusicPlayer;
   m2m?: Mouse2MEI;
   currentMEI: Document
   private wasDragged: boolean = false;
+  private oldNote: Array<string>
+
+  private noteDraggedEvent: Event
 
   private editCallback: (action: EditorAction) => Promise<any>
   private elementAttrCallback: (id: string) => Attributes
 
   private deleteHandler: DeleteHandler
 
+
   constructor(){
     this.dragInit();
+    this.noteDraggedEvent = new Event("noteDragged")
   }
 
 
   setListeners() {
-    throw new Error('Method not implemented.');
+
   }
+
   removeListeners(): void {
-    throw new Error('Method not implemented.');
+   
   }
+
+  resetListeners(){
+    this.removeListeners()
+    this.setListeners()
+  }
+  
 
   /**
    * Initialize the dragging action and handler for selected elements.
@@ -53,14 +67,13 @@ class NoteDragHandler implements Handler{
       .on('end', this.dragEnded.bind(this));
 
     this.notes = d3.selectAll(c._NOTE_WITH_CLASSSELECTOR_); 
-    this.dragStartCoords = new Array(this.notes.size());
     this.draggedElement = null;
     this.notes.call(dragBehaviour);
 
       // Drag effects
     function dragStarted (): void {        
-      this.draggedElement =  d3.event.sourceEvent.currentTarget;
-      this.dragStartCoords = [d3.event.x, d3.event.y];
+      this.draggedElement =  d3.event.sourceEvent.currentTarget
+      this.dragStartCoords = [d3.event.x, d3.event.y]//coordinates.transformToDOMMatrixCoordinates(d3.event.sourceEvent.clientX, d3.event.sourceEvent.clientY, document.getElementById(c._ROOTSVGID_))
       this.dx = 0; //this.dragStartCoords[0]
       this.dy = 0; //this.dragStartCoords[1]
     }
@@ -69,15 +82,29 @@ class NoteDragHandler implements Handler{
   dragging(): void{
     this.dx = d3.event.x
     this.dy = d3.event.y
+    var coords = coordinates.transformToDOMMatrixCoordinates(d3.event.sourceEvent.clientX, d3.event.sourceEvent.clientY, document.getElementById(c._ROOTSVGID_))
 
-    const relativeY = d3.event.y - this.dragStartCoords[1];
-    const relativeX = 0//d3.event.x - this.dragStartCoords[0];
-
-    this.draggedElement.setAttribute('transform', 'translate(' + [relativeX, relativeY] + ')')
 
     var diffY = Math.abs(this.dy - this.dragStartCoords[1])
     if(diffY > 15){
       this.wasDragged = true;
+    }
+
+    //snap while dragging
+    this.m2m.defineNote(coords.x, coords.y, {})
+    var newNote = [this.m2m.getNewNote().pname, this.m2m.getNewNote().oct]
+    if(this.oldNote == undefined){
+      this.oldNote = newNote
+    }
+
+    const relativeY = d3.event.y - this.dragStartCoords[1] //d3.event.y - this.dragStartCoords[1]
+    const relativeX = 0//d3.event.x - this.dragStartCoords[0];
+  
+    var shiftY = 10
+    shiftY = relativeY < 0 ? -shiftY : shiftY
+    if(!this.oldNote.every((v, i) => v === newNote[i])){
+      this.draggedElement.setAttribute('transform', 'translate(' + [relativeX, relativeY + shiftY] + ')')
+      this.oldNote = newNote
     }
   }
 
@@ -85,6 +112,9 @@ class NoteDragHandler implements Handler{
     if(this.wasDragged){
       this.notes.on("drag", null);
       this.wasDragged = false;
+
+      this.draggedElement.dispatchEvent(this.noteDraggedEvent)
+
       document.getElementById(this.draggedElement.id).classList.remove(this.deleteHandler.getDeleteFlag()) //remove flag to delete after dragging
       const action: EditorAction = {
         action: "drag",
@@ -128,6 +158,11 @@ class NoteDragHandler implements Handler{
 
   setCurrentMEI(xmlDoc: Document){
     this.currentMEI = xmlDoc
+    return this
+  }
+
+  setM2M(m2m: Mouse2MEI){
+    this.m2m = m2m
     return this
   }
 

@@ -38,7 +38,7 @@ text{
 
 
 /*
-#svg_output, .annotText, .annotText *{
+#svg_output, .annotLinkedText, .annotLinkedText *{
     white-space: pre;
 }
 */
@@ -47,6 +47,10 @@ text{
     position: relative;
     height: 100%;
     overflow: scroll;
+}
+
+.staff.lastEntered > .staffLine:first-of-type, .staff.lastEntered > .staffLine:last-of-type, .staff.lastEntered ~ .barLine{
+    filter: drop-shadow(5px 16px 15px black)
 }
 
 .note, .note *, .staff, .measure, .manipulator, .slur, .tie *{
@@ -224,7 +228,7 @@ text{
     z-index: 1;
 }
 
-.dropKey, .dropClef, .dropTime{
+.dropKey, .dropClef, .dropTime, .dropTempo{
     fill: orange;
     color: orange;
 }
@@ -271,13 +275,19 @@ text{
     opacity: 1;
  }
  
-.annotFO{
+.annotLinkedText .annotFO{
     background-color: rgba(255, 255, 153, 0.8);
     border-radius: 0px 10px 10px 10px;
 }
 
+
+.annotStaticText .annotFO div{
+    background-color: white;
+    border: 1px solid black;
+}
+
 .annotDiv{
-    height: 40px;
+    height: 100%;
     width: 100%;
 }
 
@@ -304,20 +314,29 @@ text{
     outline-color: black;
 }
 
-.layer[n="1"] .note.highlighted, #phantomNote.l1{
+.layer[n="1"] .highlighted{
+    /**fill: rgb(255, 71, 255)*/
+    filter: drop-shadow(30px 10px 4px rgb(255, 71, 255));
+}
+
+#phantomNote.l1{
     fill: rgb(255, 71, 255)
 }
 
-.layer[n="2"] .note.highlighted, #phantomNote.l2{
-    fill: green
+
+.layer[n="2"] .highlighted, #phantomNote.l2{
+    /**fill: green*/
+    filter: drop-shadow(30px 10px 4px green);
 }
 
-.layer[n="3"]  .note.highlighted, #phantomNote.l3{
-    fill: blue
+.layer[n="3"]  .highlighted, #phantomNote.l3{
+    /*fill: blue*/
+    filter: drop-shadow(30px 10px 4px blue);
 }
 
-.layer[n="4"]  .note.highlighted, #phantomNote.l4{
-    fill: orange
+.layer[n="4"]  .highlighted, #phantomNote.l4{
+    /*fill: orange*/
+    filter: drop-shadow(30px 10px 4px orange);
 }
 
 .customAnnotShape{
@@ -335,7 +354,7 @@ text{
 }
 
 
-.annotText.selected > .annotFO{
+.annotLinkedText.selected > .annotFO, .annotStaticText.selected > .annotFO{
     border-color:cornflowerblue;
     border-width: 1;
     border-style: dashed;

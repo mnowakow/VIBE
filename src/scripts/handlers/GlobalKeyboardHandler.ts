@@ -29,12 +29,12 @@ class GlobalKeyboardHandler implements Handler{
 
     setListeners(){
         document.addEventListener("keydown", this.keydownHandler)
-        document.addEventListener("keydown", this.prolongHandler)
+        //document.addEventListener("keydown", this.prolongHandler)
     }
 
     removeListeners(){
         document.removeEventListener("keydown", this.keydownHandler)
-        document.removeEventListener("keydown", this.prolongHandler)
+        //document.removeEventListener("keydown", this.prolongHandler)
     }
 
     keydownHandler = (function keydownHandler(e: KeyboardEvent){
@@ -136,7 +136,7 @@ class GlobalKeyboardHandler implements Handler{
     }
 
     transposeHandler(e: KeyboardEvent){
-        e.preventDefault()
+        //e.preventDefault()
         if(document.querySelectorAll(".note.marked").length === 0){return}
 
         var mei: Document

@@ -7,12 +7,14 @@ import { Annotation, Coord } from "../utils/Types";
 import { uuidv4 } from "../utils/random";
 import AnnotationChangeHandler from "../handlers/AnnotationChangeHandler"
 import CustomAnnotationShapeDrawer from "../handlers/CustomAnnotationShapeDrawer";
+import LabelHandler from "../handlers/LabelHandler";
+import { isBreakOrContinueStatement } from "typescript";
 
 class Annotations implements Handler{
     m2m?: Mouse2MEI;
     musicPlayer?: MusicPlayer;
     currentMEI?: string | Document;
-    private annotationCanvas: SVGGElement
+    private annotationCanvas: SVGSVGElement
     private root: HTMLElement
     private rootBBox: DOMRect
     private annotations: Annotation[]
@@ -20,8 +22,10 @@ class Annotations implements Handler{
     private customAnnotationDrawer: CustomAnnotationShapeDrawer;
     private annotationChangeHandler: AnnotationChangeHandler;
     private undoStacks: Array<Array<Element>>;
+    private redoStacks: Array<Array<Element>>;
+    private annotList: Element
+    private harmonyLabelHandler: LabelHandler;
 
-    x
     constructor(){
         this.addCanvas()
         this.annotations = new Array();
@@ -33,7 +37,6 @@ class Annotations implements Handler{
         var rootWidth = this.rootBBox.width.toString()
         var rootHeigth = this.rootBBox.height.toString()
         
-
         if(this.annotationCanvas == undefined){
             this.annotationCanvas = document.createElementNS(c._SVGNS_, "svg")
             this.annotationCanvas.setAttribute("id", "annotationCanvas")
@@ -54,15 +57,37 @@ class Annotations implements Handler{
         document.getElementById("activateAnnot").addEventListener("click", this.clickHandler)
         return this
     }
-    
-    setListeners() {
 
+    setListeners(){
+        this.resetTextListeners()
+        var harmonyButton = document.getElementById("harmonyAnnotButton")
+        var that = this 
+        document.querySelectorAll("#staticTextButton, #linkedAnnotButton").forEach(b => {
+            b.addEventListener("click", function(){
+                that.setToFront()
+                harmonyButton.classList.remove("selected")
+                that.resetTextListeners()
+                b.dispatchEvent(new Event("annotationButtonClicked"))
+            })
+        })
+
+        harmonyButton.addEventListener("click", function(){
+                that.removeTextListeners()
+                harmonyButton.dispatchEvent(new Event("annotationButtonClicked"))
+        })
+    }
+
+    removeListeners(){
+        this.removeTextListeners()
+    }
+    
+    setTextListeners() {
         this.customAnnotationDrawer = new CustomAnnotationShapeDrawer()
-        this.customAnnotationDrawer.setUpdateCallback(this.resetListeners.bind(this))
+        this.customAnnotationDrawer.setUpdateCallback(this.resetTextListeners.bind(this))
 
         this.annotationChangeHandler = new AnnotationChangeHandler()
         this.annotationChangeHandler
-            .setUpdateCallback(this.resetListeners.bind(this))
+            .setUpdateCallback(this.resetTextListeners.bind(this))
             .setM2M(this.m2m)
             .setAnnotations(this.annotations)
 
@@ -88,11 +113,12 @@ class Annotations implements Handler{
         document.addEventListener("keydown", this.deleteHandler)
 
         document.addEventListener("annotationCanvasChanged", this.updateUndoStacks)
+        //document.addEventListener("annotationCanvasChanged", this.updateRedoStacks)
 
         return this
     }
 
-    removeListeners() {
+    removeTextListeners() {
         document.getElementById("activateAnnot").removeEventListener("click", this.clickHandler)
         this.setMenuClickHandler()
         document.getElementById(c._ROOTSVGID_).removeEventListener("dblclick", this.createAnnotationHandler)
@@ -113,9 +139,13 @@ class Annotations implements Handler{
         return this
     }
 
+    resetTextListeners(){
+        this.removeTextListeners();
+        this.setTextListeners()
+    }
+
     resetListeners(){
-        this.removeListeners();
-        this.setListeners()
+        this.resetTextListeners()
     }
 
     setCustomShapeListener(){
@@ -144,12 +174,36 @@ class Annotations implements Handler{
        }
     }).bind(this)
 
+
     /**
-     * Create a new annotation Instance
+     * Select a specific annotation methon based on selected button
+     * @param e 
+     */
+    createAnnotation(e: MouseEvent){
+        var selectedButton = document.querySelector("#annotGroupKM > .selected")?.id
+        if(selectedButton === null) return
+        switch(selectedButton){
+            case "linkedAnnotButton":
+                this.createTextAnnotation(e, selectedButton)
+                break;
+            case "staticTextButton":
+                this.createTextAnnotation(e, selectedButton)
+                break;
+            case "harmonyAnnotButton":
+                //this.createHarmonyAnnot(e)
+                console.log(selectedButton, "Please implement me o(；△；)o")
+                break;
+            default:
+                console.log("There is no implementation at all")
+        }
+    }
+
+    /**
+     * Create a new linked annotation Instance
      * @param e 
      * @returns 
      */
-    createAnnotation(e: MouseEvent){
+    createTextAnnotation(e: MouseEvent, textButtonId: string){
         if((e.target as HTMLElement).id !== c._ROOTSVGID_){
             return 
         }
@@ -161,6 +215,17 @@ class Annotations implements Handler{
         })
         if(selcount > 0){
             return
+        }
+
+        var isLinked = false;
+        var isStaticText = false
+        switch(textButtonId){
+            case "linkedAnnotButton":
+                isLinked = true;
+                break;
+            case "staticTextButton":
+                isStaticText = true;
+                break;
         }
 
         var pt = new DOMPoint(e.clientX, e.clientY)
@@ -175,10 +240,13 @@ class Annotations implements Handler{
         textGroup.setAttribute("id", uuidv4())
 
         var text = document.createElementNS(c._SVGNS_, "svg")
-        text.classList.add("annotText")
+    
+        if(isLinked) text.classList.add("annotLinkedText")
+        else if(isStaticText) text.classList.add("annotStaticText")
 
         var textForeignObject = document.createElementNS(c._SVGNS_, "foreignObject")
         textForeignObject.classList.add("annotFO")
+        
         var textDiv = document.createElement("div")
         textDiv.setAttribute("contenteditable", "false")
         textDiv.setAttribute("data-text", "New Annotation")
@@ -195,20 +263,22 @@ class Annotations implements Handler{
 
         textForeignObject.setAttribute("x", (posx + rectPadding).toString())
         textForeignObject.setAttribute("y", posy.toString())
-        textForeignObject.setAttribute("height", (textDiv.clientHeight + 2*rectPadding).toString())
-        textForeignObject.setAttribute("width", (100+2*rectPadding).toString())
+        textForeignObject.setAttribute("height", (textDiv.clientHeight + 2*rectPadding + 50 ).toString())
+        textForeignObject.setAttribute("width", (100+2*rectPadding+50).toString())
 
-        var line = document.createElementNS(c._SVGNS_, "line")
-        line.classList.add("annotLine")
-        line.setAttribute("x2", textForeignObject.x.baseVal.valueAsString)
-        line.setAttribute("y2", textForeignObject.y.baseVal.valueAsString)
-        line.setAttribute("x1", annotationTarget.x.toString()) //(annotationTarget.x - this.rootBBox.x - window.pageXOffset).toString())
-        line.setAttribute("y1", annotationTarget.y.toString()) //(annotationTarget.y - this.rootBBox.y - window.pageYOffset).toString())
-        line.classList.add("annotLine")
+        if(isLinked){
+            var line = document.createElementNS(c._SVGNS_, "line")
+            line.classList.add("annotLine")
+            line.setAttribute("x2", textForeignObject.x.baseVal.valueAsString)
+            line.setAttribute("y2", textForeignObject.y.baseVal.valueAsString)
+            line.setAttribute("x1", annotationTarget.x.toString()) //(annotationTarget.x - this.rootBBox.x - window.pageXOffset).toString())
+            line.setAttribute("y1", annotationTarget.y.toString()) //(annotationTarget.y - this.rootBBox.y - window.pageYOffset).toString())
+            line.classList.add("annotLine")
+            textGroup.appendChild(line)
+        }
 
         textForeignObject.append(textDiv)
         textGroup.appendChild(text)
-        textGroup.appendChild(line)
 
         var newAnnot: Annotation = {
             sourceID: textGroup.id,
@@ -221,12 +291,12 @@ class Annotations implements Handler{
 
         this.annotations.push(newAnnot)
         
-       this.annotationCanvas.appendChild(textGroup)
-       this.deactivateEdit()
-       this.resetListeners()
+        this.annotationCanvas.appendChild(textGroup)
+        this.deactivateEdit()
+        this.resetTextListeners()
 
-       document.dispatchEvent(new Event("annotChanged"))
-       document.dispatchEvent(new Event("annotationCanvasChanged"))
+        document.dispatchEvent(new Event("annotChanged"))
+        document.dispatchEvent(new Event("annotationCanvasChanged"))
 
     }
 
@@ -237,8 +307,15 @@ class Annotations implements Handler{
     updateUndoStacks = (function updateUndoStacks(e: Event){
         var canvasClone = document.querySelector("#annotationCanvas").cloneNode(true) as Element
         var listClone = document.querySelector("#annotList").cloneNode(true) as Element
+        this.annotList = document.querySelector("#annotList")
         this.undoStacks.push([canvasClone, listClone])
         this.annotationCanvas = document.querySelector("#annotationCanvas")
+    }).bind(this)
+
+    updateRedoStacks = (function updateRedoStacks(e: Event){
+        this.redoStacks.push([this.annotationCanvas, this.annotList])
+        this.annotationCanvas = this.undoStacks[0][0]
+        this.annotList = this.undoStacks[0][1]
     }).bind(this)
 
     /**
@@ -248,8 +325,7 @@ class Annotations implements Handler{
     select(e: MouseEvent){
         e.stopPropagation() //do not trigger other events
         var t = e.target as Element
-        if(t.classList.contains("annotDiv")){
-            t = t.tagName === "svg" ? t : t.closest("svg") as Element
+        if(t.classList.contains("annotDiv") && t.closest(".annotLinkedText") !== null){ // only apply for linked texts
             //Add A selection Rect to line target
             document.querySelectorAll(".lineDragRect").forEach(ldr => ldr.remove())
             var line = t.closest("g").querySelector(".annotLine") as SVGLineElement
@@ -271,7 +347,8 @@ class Annotations implements Handler{
 
             //this.AnnotationLineHandler.initDragRects()
         }
-        t.classList.add("selected")
+        t = t.tagName === "svg" ? t : t.closest("svg") as Element
+        t.classList?.add("selected")
         this.annotationChangeHandler.resetListeners()
     }
 
@@ -284,6 +361,7 @@ class Annotations implements Handler{
         target.setAttribute("contenteditable", "true")
 
         target.focus()
+        this.annotationChangeHandler.removeListeners()
     }).bind(this)
 
     deactivateEdit(){
@@ -291,6 +369,7 @@ class Annotations implements Handler{
             ad.setAttribute("contenteditable", "false")
             ad.removeEventListener("dblclick", this.activateEditHandler)
         })
+        this.annotationChangeHandler.removeListeners()
     }
 
     /**
@@ -304,7 +383,7 @@ class Annotations implements Handler{
         var listHasFocus = Array.from(document.querySelectorAll("#annotList > *")).some(le => le === document.activeElement)
 
         if(isValidKey && isInAnnotMode && !hasEditableElement && !listHasFocus){
-            document.querySelectorAll(".annotText.selected, .customAnnotShape.selected").forEach(el => {
+            document.querySelectorAll(".annotLinkedText.selected, .customAnnotShape.selected").forEach(el => {
                 if(el.closest("g") !== null){
                     el.closest("g").remove()
                 }else{
@@ -331,7 +410,7 @@ class Annotations implements Handler{
         if(this.annotationCanvas.classList.contains("back")){
             this.removeListeners()
         }else{
-            this.resetListeners()
+            this.resetTextListeners()
         }
     }
 
@@ -342,6 +421,7 @@ class Annotations implements Handler{
      * @returns 
      */
     setToFront(){
+        if( this.annotationCanvas.classList.contains("front")){return}
         this.annotationCanvas.classList.remove("back")
         this.annotationCanvas.classList.add("front")
         this.root.insertBefore(this.getAnnotationCanvas(), this.root.lastChild.nextSibling)
@@ -356,6 +436,7 @@ class Annotations implements Handler{
      * @returns 
      */
     setToBack(){
+        if( this.annotationCanvas.classList.contains("back")){return}
         this.annotationCanvas.classList.remove("front")
         this.annotationCanvas.classList.add("back")
         if((this.getAnnotationCanvas() !== (this.root.firstChild as SVGSVGElement) && this.getAnnotationCanvas() !== null)){
@@ -379,7 +460,7 @@ class Annotations implements Handler{
     }
 
     getAnnotationCanvas(): SVGSVGElement{
-        return document.querySelector("#annotationCanvas")
+        return document.querySelector("#annotationCanvas") || this.annotationCanvas
     }
 
     setUndoStacks(arr: Array<Array<Element>>){
@@ -388,6 +469,7 @@ class Annotations implements Handler{
             var canvasClone = document.querySelector("#annotationCanvas").cloneNode(true) as Element
             var listClone = document.querySelector("#annotList").cloneNode(true) as Element
             this.undoStacks.push([canvasClone, listClone])
+            //this.annotationCanvas = document.getElementById("annotationCanvas") as unknown as SVGSVGElement
         }
         return this
     }

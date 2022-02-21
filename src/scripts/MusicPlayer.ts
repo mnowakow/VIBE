@@ -10,7 +10,7 @@ import * as coordinates from "./utils/coordinates"
 const currentlyPlayingFlag = "currentlyPlaying"
 const followerRectID = "followerRect"
 
-const AudioContext = window.AudioContext
+const ac = window.AudioContext
 const synth = new Tone.Synth().toDestination()
 
 class MusicPlayer{
@@ -38,9 +38,13 @@ class MusicPlayer{
 
     private scoreGraph: ScoreGraph
     private isFirefox: boolean
+    private playStartEvent: Event;
+    private playEndEvent: Event;
 
     constructor(){
         this.noteEvent = new Event("currentNote")
+        this.playStartEvent = new Event("playStart")
+        this.playEndEvent = new Event("playEnd")
         this.restartTime = 0
 
         this.setPlayListener()
@@ -78,25 +82,28 @@ class MusicPlayer{
 
         //@ts-ignore
         this.player = new MidiPlayer.Player(function(event) {
+            //console.log(event)
             if(event.name === "Set Tempo"){
-                that.pulse = (60000/ (event.data * 24))/10000 //duration is in seconds
+                that.tempo = event.data
+                //that.pulse = (60000/ (event.data / 2 * 24))/10 //(60000/ (event.data * 24))/10000 //duration is in seconds
+                that.pulse = ((60/event.data)*1000)/120
             }
-            if (event.name === 'Note on') {
+            if (event.name === 'Note on' && event.velocity !== 0) {
                 var track = event.track
-                var time = event.tick * that.pulse * 1000 * 2
+                var time = event.tick * that.pulse //* 1000 * 2
                 var key = track.toString() + "," + event.byteIndex.toString()
                 if(!that.durationMap.has(key)){
                     return
                 }
                 var duration = that.durationMap.get(key).duration
                 that.restartTime = event.tick
-                that.highlight(time, duration * 1000 * 2)
+                that.highlight(time, duration * 1000)
                 if(!that.isFirefox){
                     that.drawFollowerRect()
                 }
 
                 var instr = that.instruments[track - 2]
-                if(typeof instr !== "undefined"){
+                if(instr !== undefined){
                     instr.play(event.noteName, that.context.currentTime, {gain:event.velocity/100, duration: duration}); 
                 }   
                                    
@@ -116,8 +123,8 @@ class MusicPlayer{
        
         this.player.loadArrayBuffer(stringToBuffer(this.midi))
         this.mapDurations()
-        if(typeof this.instruments === "undefined"){ // instruments only have to be updated, when new instrument (= track) is added
-            this.context = new AudioContext()
+        if(this.instruments == undefined){ // instruments only have to be updated, when new instrument (= track) is added
+            this.context = new ac()
             this.instruments = new Array(this.player.getEvents().length - 1)
             this.initInstruments()
         }
@@ -128,6 +135,7 @@ class MusicPlayer{
      * Stop playing
      */
     stopInstruments(){
+        document.dispatchEvent(this.playEndEvent)
         this.player.stop()
         this.instruments.forEach(instr => instr.stop(this.context.currentTime))
         this.player = undefined
@@ -177,11 +185,12 @@ class MusicPlayer{
             this.player.on("endOfFile", () => {
                 this.rewind()
             })
-            this.player.division = this.tempo
-            this.player.tempo = this.tempo
+            this.player.division = 120
+            //this.player.tempo = this.tempo
             this.player.tick = this.restartTime
             this.player.skipToTick(this.restartTime)
             this.player.play() 
+            document.dispatchEvent(this.playStartEvent)
         }
     }
 
@@ -279,29 +288,36 @@ class MusicPlayer{
      * Map all durations and notes to make them available asynchronically
      */
     mapDurations(){
-        this.tempo = 120
         var durationMap = new Map<string, {note: Element, duration: number, tick: number}>() // key: tracknumber,byteindex
         var mapByNote = new Map<Element, {duration: number, tick: number}>()
         var eventTracks = this.player.getEvents()
+        //console.log(this.midiTimes)
         eventTracks.forEach(eventArray => {
             //@ts-ignore
             Array.from(eventArray).forEach((event, eventIdx) => { 
                 var e: any = event
+                //console.log(e)
                 if(e.name === "Set Tempo"){
-                    this.pulse = (60000/ (e.data * 24))/10000 //duration is in seconds
+                    this.tempo = e.data
+                    this.pulse = ((60/e.data)*1000)/120
                 }
-                if(e.name === "Note on"){
-                    var time = e.tick * this.pulse * 1000 * 2
-                    var notes = this.midiTimes.get(time) || this.midiTimes.get(Math.floor(time)) || this.getClosestEntry(time)
-                    if(typeof notes === "undefined"){
+                else if(e.name === "Note on"){
+                    var time = e.tick * this.pulse //* 1000 * 2
+                    //var notes = this.midiTimes.get(time) || this.midiTimes.get(Math.floor(time)) || this.getClosestEntry(time)
+                    var notes = this.getClosestEntry(time)
+                    if(notes == undefined){
+                        //console.log("rejected event", e)
                         return
                     }
+                    //console.log(...notes, e, time)
+                    //iterate because notes can be in a chord
                     notes.forEach(note => {
                         var meiNote = this.mei.getElementById(note.id)
                         var staffNumber = parseInt(meiNote.closest("staff").getAttribute("n")) + 1
                         if(!meiNote.hasAttribute("grace")){
                             var key = e.track.toString() + "," + e.byteIndex.toString()
-                            if(!durationMap.has(key) && e.track === staffNumber && e.velocity !== 0){
+                            //if(!durationMap.has(key) && e.track === staffNumber && e.velocity !== 0){
+                            if(!durationMap.has(key) && e.track === staffNumber){
                                 if(!meiNote.hasAttribute("dur")){
                                     meiNote = meiNote.closest("chord")
                                 }
@@ -320,20 +336,23 @@ class MusicPlayer{
                                 }
 
                                 //concat duration
-                                var dur =  baseDur * this.tempo * this.pulse 
+                                var dur =  baseDur * 60/this.tempo
                                 var valueFound = false
-                                var it = durationMap.values()
+                                var it = durationMap.values()  
                                 var res = it.next()
-                                while(!res.done){
-                                    if(res.value.note === note && res.value.duration === dur){
-                                        valueFound = true
-                                        break;
-                                    }
-                                    res = it.next()
-                                }
-                                if(!valueFound){
+                                // while(!res.done){
+                                //     if(res.value.note === note && res.value.duration === dur){
+                                //         valueFound = true
+                                //         break;
+                                //     }
+                                //     res = it.next()
+                                // }
+                                if(!valueFound ){ // why do I check here?
                                     durationMap.set(key, {note: note, duration: dur, tick: e.tick as number})
                                     mapByNote.set(note, {duration: dur, tick: e.tick as number})
+                                }else{
+                                    //console.log(key, note, dur, e.tick)
+                                    //console.log(durationMap.get(key))
                                 }
                             }
                         }
@@ -398,7 +417,8 @@ class MusicPlayer{
      * @param duration Duration of Element (in ms)
      */
     highlight(time: number, duration: number){
-        var notes = this.midiTimes.get(time) || this.midiTimes.get(Math.floor(time)) || this.getClosestEntry(time)
+        //var notes = this.midiTimes.get(time) || this.midiTimes.get(Math.floor(time)) || this.getClosestEntry(time)
+        var notes = this.getClosestEntry(time)
         this.timeouts = new Array()
         notes.forEach(n => {
             this.addClass(n, currentlyPlayingFlag).then(() => {

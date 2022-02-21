@@ -1,5 +1,6 @@
 import { Unit } from "tone";
 import { constants as c} from "../constants"
+import { uuidv4 } from "../utils/random";
 
 class MeiTemplate{
     private xmlDoc: XMLDocument;
@@ -148,6 +149,31 @@ class MeiTemplate{
     createMRest(): any {
         var newElem = document.createElementNS(c._MEINS_, "mRest");
         return newElem;
+    }
+
+    createTempo(mm: string, mmUnit: string, tstamp: string = null, startId: string = null): any{
+        var newElement = document.createElementNS(c._MEINS_, "tempo");
+        newElement.setAttribute("id", uuidv4())
+        newElement.setAttribute("place", "above")
+        if(startId === null && tstamp === null){
+            throw new Error("Tempo MUST either have timestamp or startId")
+        }
+        if(tstamp !== null) newElement.setAttribute("tstamp", tstamp)
+        if(startId !== null) newElement.setAttribute("startId", startId)
+        newElement.setAttribute("mm", mm)
+        newElement.setAttribute("mm.unit", mmUnit)
+        newElement.setAttribute("midi.bpm", (parseFloat(mm)*parseFloat(mmUnit)).toString())
+        newElement.setAttribute("staff", "1")
+
+        var rend = document.createElementNS(c._MEINS_, "rend");
+        rend.setAttribute("id", uuidv4())
+        rend.setAttribute("fontname", "VerovioText")
+        rend.textContent = "__"
+        
+        newElement.appendChild(rend)
+        newElement.textContent = "__ = " + mm
+
+        return newElement
     }
 
     appendToRoot(node: Node){

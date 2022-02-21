@@ -25,6 +25,7 @@ export type VerovioResponse = {
   info?: object;
   midi?: string;
   time?: number;
+  times?: {}
 };
 
 /** Modeled after the [W3 Web Annotation Data Model.](https://www.w3.org/TR/annotation-model/) */

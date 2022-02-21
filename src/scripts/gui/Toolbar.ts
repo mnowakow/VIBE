@@ -4,6 +4,7 @@ import {Dropdown, Collapse } from 'bootstrap'
 import interact from 'interactjs'
 import { constants as c } from '../constants'
 import * as meioperations from "../utils/MEIOperations"
+import { time } from 'console'
 
 
 const buttonStyleDarkOutline = "btn btn-outline-dark btn-md"
@@ -21,6 +22,7 @@ class Toolbar{
     private customToolbar: HTMLElement
     private chordGroupKM: HTMLElement
     private octaveGroupKM: HTMLElement
+    private annotGroupKM: HTMLElement
     private insertSelectGroup: HTMLElement
     private options: customType.InstanceOptions
 
@@ -46,7 +48,7 @@ class Toolbar{
 
     private createSideBar(){
         this.createModList()
-        document.querySelectorAll("#sidebarList a, #timeDiv").forEach(sa => {
+        document.querySelectorAll("#sidebarList a, #timeDiv, #tempoDiv").forEach(sa => {
             sa.setAttribute("draggable", "true")
         })
         this.createAnnotList()
@@ -160,6 +162,35 @@ class Toolbar{
     createTempoAccItem(): Element{
         var tempoItem = dc.makeNewAccordionItem("sidebarList", "selectTempo", "selectTempoHeader", "selectTempoBtn", "Tempo",  buttonStyleDark, "selectTempoDiv")
 
+        var tempoDiv = dc.makeNewDiv("tempoDiv", "row align-items-start")
+        var tempoRefDurDiv = dc.makeNewDiv("tempoRefDurDif", "col")
+        var tcdatalistname = "timeCountDatalist"
+        var timeCount = dc.makeNewInput("timeCount", "text", "", null, tcdatalistname)
+
+        //create list for time code select
+        var tcOptionValues = new Array<string>();
+        for(var i = 0; i <= 16; i++){
+            if(Number.isInteger(Math.log2(i))){
+                tcOptionValues.push(i.toString())
+                tcOptionValues.push(i.toString()+".")
+            }   
+        }
+        var tcDatalist = dc.makeNewSelect("timeCount", tcOptionValues)
+
+        tempoRefDurDiv.appendChild(tcDatalist)
+
+        var equal = dc.makeNewDiv("equal", "col")
+        equal.textContent = "="
+        
+        var unitDiv = dc.makeNewDiv("unitDiv", "col")
+        var timeUnit = dc.makeNewInput("timeUnit", "text", "", null)
+        unitDiv.appendChild(timeUnit)
+
+        tempoItem.querySelector("#selectTempoDiv").appendChild(tempoDiv)
+        tempoDiv.appendChild(tempoRefDurDiv)
+        tempoDiv.appendChild(equal)
+        tempoDiv.appendChild(unitDiv)
+
         return tempoItem
     }
 
@@ -193,7 +224,7 @@ class Toolbar{
             a.addEventListener("click", function(){
                 document.querySelectorAll(".selected").forEach(s => s.classList.remove("selected"))
                 document.getElementById(c.id).focus()
-                document.getElementById(c.id).querySelector(".annotText").classList.add("selected")
+                document.getElementById(c.id).querySelector(".annotLinkedText, .annotStaticText")?.classList.add("selected")
             })
             a.addEventListener("blur", function(e: KeyboardEvent){
                 var t = e.target as HTMLElement
@@ -222,11 +253,11 @@ class Toolbar{
         // Buttons können in eigenes package ausgelagert werden (Editor)
 
         var handlerDropdown =  dc.makeNewDiv("insertDropdown", "dropdown-menu")
-        handlerDropdown.append(dc.makeNewAElement("Click Mode", "clickInsert", "dropdown-item", "#"))
-        handlerDropdown.append(dc.makeNewAElement("Key Mode", "keyMode", "dropdown-item", "#"))
+        handlerDropdown.append(dc.makeNewAElement("Mouse Input", "clickInsert", "dropdown-item", "#"))
+        handlerDropdown.append(dc.makeNewAElement("Keyboard Input", "keyMode", "dropdown-item", "#"))
         //handlerDropdown.append(dc.makeNewAElement("Select Mode", "activateSelect", "dropdown-item", "#"))
-        handlerDropdown.append(dc.makeNewAElement("Annotation Mode", "activateAnnot", "dropdown-item", "#"))
-        handlerDropdown.append(dc.makeNewAElement("Harmony Mode", "activateHarm", "dropdown-item", "#"))
+        handlerDropdown.append(dc.makeNewAElement("Annotations", "activateAnnot", "dropdown-item", "#"))
+        //handlerDropdown.append(dc.makeNewAElement("Harmony Mode", "activateHarm", "dropdown-item", "#"))
 
         this.handlerGroup = document.getElementById("handlerGroup")
         this.handlerGroup.append(dc.makeNewButton("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;", "insertMode", buttonStyleDarkOutline + " empty", "dropdown"))
@@ -258,7 +289,7 @@ class Toolbar{
 
     createInsertSelect(){
         //InsertSelect DropdownMenu
-        this.insertSelectGroup = dc.makeNewDiv("insertGroup", "btn-group me-2 h-100", {role: "group"}) as HTMLElement
+        this.insertSelectGroup = dc.makeNewDiv("insertGroup", "customGroup btn-group me-2 h-100", {role: "group"}) as HTMLElement
         var toggle = dc.makeNewToggle("insertToggle", buttonStyleDarkOutline, "Replace", "insertToggleDiv")
         toggle.addEventListener("click", function(e){
             var label = e.target as Element
@@ -278,7 +309,7 @@ class Toolbar{
     createButtonsKeyMode(){
 
         //ChordGroup
-        this.chordGroupKM = dc.makeNewDiv("chordGroupKM", "btn-group me-2 h-100", {role: "group"}) as HTMLElement
+        this.chordGroupKM = dc.makeNewDiv("chordGroupKM", "customGroup btn-group me-2 h-100", {role: "group"}) as HTMLElement
         this.chordGroupKM.append(dc.makeNewButton("CHORD", "chordButton", buttonStyleDarkOutline))
         this.chordGroupKM.addEventListener("click", this.exclusiveSelectHandler)
 
@@ -326,6 +357,14 @@ class Toolbar{
 
     }
 
+    createButtonsAnnotationMode(){
+        this.annotGroupKM = dc.makeNewDiv("annotGroupKM", "customGroup btn-group me-2 h-100", {role: "group"}) as HTMLElement
+        this.annotGroupKM.append(dc.makeNewButton("TEXT", "staticTextButton", buttonStyleDarkOutline))
+        this.annotGroupKM.append(dc.makeNewButton("LINKED ANNOTATION", "linkedAnnotButton", buttonStyleDarkOutline + " selected"))
+        this.annotGroupKM.append(dc.makeNewButton("HARMONY", "harmonyAnnotButton", buttonStyleDarkOutline))
+        this.annotGroupKM.addEventListener("click", this.exclusiveSelectHandler)
+    }
+
     createMainToolbar(){
         this.createButtonsMainToolbar();
 
@@ -341,6 +380,7 @@ class Toolbar{
     createCustomToolbar(){
         this.createButtonsKeyMode()
         this.createInsertSelect()
+        this.createButtonsAnnotationMode()
         this.customToolbar = document.getElementById("customToolbar")
     }
 
@@ -490,14 +530,14 @@ class Toolbar{
     exclusiveSelectHandler = (function exclusiveSelectHandler(evt: MouseEvent): void{
         var target = evt.target as Element
         var tagname = "BUTTON"
-        var allowedParentGroupIDs = ["dotGroup", "chordGroupKM", "octaveGroupKM", "modGroup"]
+        var allowedParentClass = "customGroup" //["dotGroup", "chordGroupKM", "octaveGroupKM", "annotGroupKM", "modGroup"]
         if(target.tagName === tagname && target.id !== "toggleSidebar"){ // this should have no effect on the sidebar
             Array.from(target.parentElement.children).forEach(btn => {
                 if(btn.tagName === tagname && btn !== target){
                     btn.classList.remove("selected")
                 }
             })
-            if(target.classList.contains("selected") && allowedParentGroupIDs.includes(target.parentElement.id)){ //enable deselect for dotGroup and modgroup
+            if(target.classList.contains("selected") && !target.parentElement.classList.contains(allowedParentClass)){ //allowedParentClass.includes(target.parentElement.id)){ //enable deselect for dotGroup and modgroup
                 target.classList.remove("selected")
             }else{
                 target.classList.add("selected")
@@ -561,7 +601,6 @@ class Toolbar{
         this.customToolbar.appendChild(this.insertSelectGroup)
         this.customToolbar.appendChild(this.chordGroupKM)
         this.customToolbar.appendChild(this.octaveGroupKM)
-
     }
 
     harmHandler(){
@@ -569,7 +608,8 @@ class Toolbar{
     }
 
     annotHandler(){
-        this.removeAllCustomGroups()
+        //this.removeAllCustomGroups()
+        this.customToolbar.append(this.annotGroupKM)
     }
 }
 

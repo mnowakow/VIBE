@@ -4,6 +4,8 @@ import Handler from "./Handler";
 import { constants as c } from '../constants'
 import Annotations from "../gui/Annotations";
 import { NewNote } from "../utils/Types";
+import Cursor from "../gui/Cursor";
+import PhantomElementHandler from "./PhantomElementHandler";
 
 
 class ClickModeHandler implements Handler{
@@ -11,6 +13,7 @@ class ClickModeHandler implements Handler{
     musicPlayer?: MusicPlayer;
     currentMEI?: string | Document;
     annotations: Annotations;
+    private phantomElementHandler: PhantomElementHandler
     insertCallback: (newNote: NewNote, replace: Boolean) => Promise<any>;
     deleteCallback: (notes: Array<Element>) => Promise<any>;
 
@@ -66,6 +69,7 @@ class ClickModeHandler implements Handler{
      * Event handler for inserting Notes
      */
     clickHandler = (function clickHandler (evt: MouseEvent): void{
+        if(!this.phantomElementHandler.getIsTrackingMouse()){return}
         if(this.musicPlayer.getIsPlaying() === true){return} // getIsPlaying could also be undefined
         
         var pt = new DOMPoint(evt.clientX, evt.clientY)
@@ -92,7 +96,7 @@ class ClickModeHandler implements Handler{
         var pitchExists: Boolean = false
 
         // do not insert same note more than once in chord
-        if(typeof newNote.chordElement !== "undefined"){
+        if(newNote.chordElement != undefined){
             var chordEl = meiDoc.getElementById(newNote.chordElement.id)
             if(chordEl.getAttribute("pname") === newNote.pname && chordEl.getAttribute("oct") === newNote.oct){
                 pitchExists = true
@@ -108,20 +112,24 @@ class ClickModeHandler implements Handler{
 
         if(!pitchExists){
             var replace = (document.getElementById("insertToggle") as HTMLInputElement).checked && newNote.chordElement == undefined
-            this.insertCallback(this.m2m.getNewNote(), replace)
-            this.musicPlayer.generateTone(this.m2m.getNewNote())
+            this.insertCallback(this.m2m.getNewNote(), replace).then(() => {
+                this.musicPlayer.generateTone(this.m2m.getNewNote())
+            }).catch(() => {
+                //alert("Your bar is to small")
+            })
         }
     }).bind(this)
 
 
     mouseOverChordHandler = (function mouseOverHandler (evt: MouseEvent): void{
+        if(!this.phantomElementHandler.getIsTrackingMouse()){return}
         var root = document.getElementById(c._ROOTSVGID_)
         var rootBBox = root.getBoundingClientRect()    
         var posx = evt.offsetX
         var posy = evt.offsetY
 
         var elementToHighlight: Element = this.findScoreTarget(posx, posy)
-        if(elementToHighlight == undefined){return}
+        if(elementToHighlight == undefined || elementToHighlight.closest(".mRest") !== null){return}
         if(this.prevElementToHighlight == undefined || this.currentElementToHighlight !== elementToHighlight){
             
             // in css: elements get highlight color according to layer
@@ -236,28 +244,33 @@ class ClickModeHandler implements Handler{
     setM2M(m2m: Mouse2MEI){
         this.m2m = m2m
         return this
-      }
-    
-      setMusicPlayer(musicPlayer: MusicPlayer){
+    }
+
+    setMusicPlayer(musicPlayer: MusicPlayer){
         this.musicPlayer = musicPlayer
         return this
-      }
+    }
 
 
-      setAnnotations(annotations: Annotations){
-          this.annotations = annotations
-          return this
-      }
-    
-      setInsertCallback(insertCallback: (newNote: NewNote, replace: Boolean) => Promise<any>){
+    setAnnotations(annotations: Annotations){
+        this.annotations = annotations
+        return this
+    }
+
+    setInsertCallback(insertCallback: (newNote: NewNote, replace: Boolean) => Promise<any>){
         this.insertCallback = insertCallback
         return this
-      }
-    
-      setDeleteCallback(deleteCallback: (notes: Array<Element>) => Promise<any>){
+    }
+
+    setDeleteCallback(deleteCallback: (notes: Array<Element>) => Promise<any>){
         this.deleteCallback = deleteCallback
         return this
-      }
+    }
+
+    setPhantomCursor(peh: PhantomElementHandler){
+        this.phantomElementHandler = peh
+        return this
+    }
 
 }
 

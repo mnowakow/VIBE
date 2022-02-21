@@ -16,24 +16,34 @@ class SelectionHandler implements Handler{
     private initialY: number;
     m2m: Mouse2MEI;
     private dsa: any
+    private selectStartEvent: Event;
+    private selectEndEvent: Event;
+    private shiftPressed: boolean
 
     constructor(){
 
+        this.selectStartEvent = new Event("selectStart")
+        this.selectEndEvent = new Event("selectEnd")
+        this.shiftPressed = false
+        this.setKeyListeners()
+
+
         this.canvas = d3.select("#rootSVG"); // draw directly in svg
-        var dragSelectAction = d3.drag()
+        var dragSelectAction = d3.drag() 
         .on('start', selStart)
         .on('drag', selecting)
         .on('end', selEnd)
 
         var that = this;
         function selStart(){
-           //var container = document.getElementById(c._ROOTSVGID_).parentElement
-           var pt = new DOMPoint(d3.event.sourceEvent.clientX, d3.event.sourceEvent.clientY)
-           var canvasMatrix = (document.getElementById("rootSVG") as unknown as SVGGraphicsElement).getScreenCTM().inverse()
-           pt = pt.matrixTransform(canvasMatrix)
-           that.initialX = pt.x //d3.event.x
-           that.initialY = pt.y //d3.event.y
-            if(!document.body.classList.contains("harmonyMode")){ //!that.harmonyHandler.getGlobal()){
+            //document.dispatchEvent(that.selectStartEvent)
+            //var container = document.getElementById(c._ROOTSVGID_).parentElement
+            var pt = new DOMPoint(d3.event.sourceEvent.clientX, d3.event.sourceEvent.clientY)
+            var canvasMatrix = (document.getElementById("rootSVG") as unknown as SVGGraphicsElement).getScreenCTM().inverse()
+            pt = pt.matrixTransform(canvasMatrix)
+            that.initialX = pt.x //d3.event.x
+            that.initialY = pt.y //d3.event.y
+            if(!document.body.classList.contains("harmonyMode") && !that.shiftPressed){ //!that.harmonyHandler.getGlobal()){
                 that.m2m.getNoteBBoxes().forEach(bb => {
                     let note = document.getElementById(bb.id)
                     note.classList.remove(marked)
@@ -96,7 +106,7 @@ class SelectionHandler implements Handler{
                                 chord.classList.add(marked)
                             }
                         }
-                    }else{
+                    }else if(!that.shiftPressed){
                         note.classList.remove(marked)
                         stem?.classList.remove(marked)
                         accid?.classList.remove(marked)
@@ -108,7 +118,11 @@ class SelectionHandler implements Handler{
         }
 
         function selEnd(){
-            document.querySelector("#selectRect")?.remove();
+            var selectRect =  document.querySelector("#selectRect")
+            if(selectRect !== null && selectRect?.getAttribute("width") !== "0" && selectRect?.getAttribute("height") !== "0" ){
+                document.dispatchEvent(that.selectEndEvent)
+            }
+            selectRect?.remove();
             var firstMarkedNote = document.querySelector(".chord.marked, .note.marked")?.id
             var meiNote = that.m2m.getCurrentMei().getElementById(firstMarkedNote)
             document.querySelectorAll("#noteGroup *, #dotGroup *").forEach(b => b.classList.remove("selected"))
@@ -152,6 +166,8 @@ class SelectionHandler implements Handler{
         document.querySelectorAll(".note, .rest").forEach(el => {
             el.removeEventListener("click", this.markedHandler)
         })
+        document.removeEventListener("keydown", this.shiftKeyHandler)
+        document.removeEventListener("keyup", this.shiftKeyHandler)
     }
 
     setListeners():void{
@@ -161,18 +177,26 @@ class SelectionHandler implements Handler{
         })
     }
 
+    setKeyListeners(){
+        document.addEventListener("keydown", this.shiftKeyHandler)
+        document.addEventListener("keyup", this.shiftKeyHandler)
+    }
+
     resetListeners(){
         //this.removeListeners()
         this.setListeners()
     }
 
-     /**
+    /**
      *  Mark clicked element
      */
-      markedHandler = (function markedHandler(e: MouseEvent){
-        Array.from(document.querySelectorAll("." + marked)).forEach(n => {
-            n.classList.remove(marked)
-        })
+    markedHandler = (function markedHandler(e: MouseEvent){ 
+        if(!this.shiftPressed){
+            console.log("markedhandler")
+            Array.from(document.querySelectorAll("." + marked)).forEach(n => {
+                n.classList.remove(marked)
+            })
+        }
         var target = e.target as Element
         target = target.closest(".note, .rest, .mRest") || target
         target.classList.add(marked)
@@ -183,6 +207,16 @@ class SelectionHandler implements Handler{
         document.querySelectorAll("#noteGroup *, #dotGroup *").forEach(b => b.classList.remove("selected"))
         document.getElementById(numToNoteButtonId.get(meiNote?.getAttribute("dur")))?.classList.add("selected")
         document.getElementById(numToDotButtonId.get(meiNote?.getAttribute("dots")))?.classList.add("selected")
+    }).bind(this)
+    
+    shiftKeyHandler = (function shiftKeyHandler(e: KeyboardEvent){
+        if(e.key === "Shift"){
+            if(e.type === "keydown"){
+                this.shiftPressed = true
+            }else if(e.type === "keyup"){
+                this.shiftPressed = false
+            }
+        }
     }).bind(this)
 
 

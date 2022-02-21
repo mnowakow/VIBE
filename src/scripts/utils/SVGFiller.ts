@@ -1,9 +1,11 @@
 /**
  * Class to fill SVG of Score in HTML with information from underlying mei
  */
+
 class SVGFiller{
 
-    private classListMap: Map<string, DOMTokenList>
+    private classListMap: Map<string, Array<string>>
+    private allowedMeiClasses = ["marked"]
 
     constructor(){}
 
@@ -42,9 +44,40 @@ class SVGFiller{
         this.classListMap = new Map();
         svg.querySelectorAll("*").forEach(el => {
             if(el.tagName.toLowerCase() === "g" && el.getAttribute("id") !== null){
-                this.classListMap.set(el.getAttribute("id"), el.classList)
+                if(!this.classListMap.has(el.id)){
+                    this.classListMap.set(el.id, new Array())
+                }
+                var classes = el.getAttribute("class")?.split(" ")
+                classes?.forEach(c => {
+                    if(!this.classListMap.get(el.id).includes(c)){
+                        this.classListMap.get(el.id).push(c.slice())
+                    }
+                })
             }
         })
+        return this
+    }
+
+    copyClassesFromMei(mei: Document){
+        if(this.classListMap == undefined){
+            return this
+        }
+        mei.querySelectorAll("score  *").forEach(el => {
+            if(el.hasAttribute("class")){
+                var id = el.getAttribute("id") || el.getAttribute("xml:id")
+                if(!this.classListMap.has(id)){
+                    this.classListMap.set(id, new Array())
+                }
+                var classes = el.getAttribute("class")?.split(" ")
+                classes?.forEach(c => {
+                    if(!this.classListMap.get(id).includes(c) && this.allowedMeiClasses.includes(c)){
+                        this.classListMap.get(id).push(c.slice())
+                    }
+                })
+                el.removeAttribute("class")
+            }
+        })
+        console.log(this.classListMap)
         return this
     }
 
@@ -53,20 +86,16 @@ class SVGFiller{
      * @returns this (for chaining convenience)
      */
     loadClasses(){
-        if(typeof this.classListMap === "undefined"){
+        if(this.classListMap == undefined){
             return this
         }
 
         for(const [key, value] of this.classListMap.entries()){
             var el = document.getElementById(key)
             if(el !== null){
-                el.removeAttribute("class")
+                //el.removeAttribute("class")
                 value.forEach(v => {
-                    if(!el.hasAttribute("class")){
-                        el.setAttribute("class", v)
-                    }else{
-                        el.classList.add(v)
-                    }
+                    el.classList.add(v)
                 })
             }
         }

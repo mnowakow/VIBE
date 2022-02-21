@@ -95,8 +95,10 @@ class KeyModeHandler implements Handler{
           if(this.scoreGraph.getCurrentNode() != undefined){
             this.cursor.definePosById(this.scoreGraph.getCurrentNode().getId())
           }
+          this.musicPlayer.generateTone(newNote)
+        }).catch(() => {
+          //alert("your bar is too small")
         })
-        this.musicPlayer.generateTone(newNote)
       }else{
         this.deleteCallback([noteToDelete]).then(() => {
           this.m2m.update();
@@ -170,6 +172,7 @@ class KeyModeHandler implements Handler{
   keyInputHandler = (function keyInputHandler(e: KeyboardEvent){
     
     if(e.ctrlKey || e.metaKey) return //prevent confusion with global keyboard functionalities
+    if(document.querySelector("div[contenteditable=true]") !== null) return // prevent navigating in scrore, when label editor is open
 
     //this.setCurrentNodeScoreGraph()
     if(this.scoreGraph.getCurrentNode() == undefined){

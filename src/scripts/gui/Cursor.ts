@@ -63,7 +63,7 @@ class Cursor{
     }
 
     clickHandler = (function clickHandler(evt: MouseEvent){
-        evt.stopPropagation();
+        //evt.stopPropagation();
 
         var selectRect = document.querySelector("#keyModeSelectRect")
         if(selectRect !== null){

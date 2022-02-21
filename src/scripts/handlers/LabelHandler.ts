@@ -61,11 +61,11 @@ class LabelHandler implements Handler{
             var inputString: string 
             switch(className){
                 case "harm":
-                    inputString = Array.from(document.getElementById(el.id).querySelectorAll(".text")).filter(el => el.textContent !== null)[0].textContent.trim()
+                    inputString = Array.from(document.getElementById(el.id).querySelectorAll(".text")).filter(el => el.textContent !== null)[0]?.textContent.trim()
                     this.labels.set(el.id, new HarmonyLabel(inputString, el.id, this.currentMEI))
                     break;
                 case "tempo":
-                    inputString = Array.from(document.getElementById(el.id).querySelectorAll(".text")).filter(e => /\d+/.test(e.textContent))[0].textContent.match(/\d+/).join("") || ""
+                    inputString = Array.from(document.getElementById(el.id).querySelectorAll(".text")).filter(e => /\d+/.test(e.textContent))[0]?.textContent.match(/\d+/).join("") || ""
                     this.labels.set(el.id, new TempoLabel(inputString, el.id, this.currentMEI))
                     break;
             }
