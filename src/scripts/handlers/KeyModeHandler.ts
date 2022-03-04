@@ -7,7 +7,7 @@ import { uuidv4 } from "../utils/random";
 import { NewNote } from "../utils/Types";
 import { constants as c } from "../constants"
 import Handler from "./Handler";
-import { textChangeRangeIsUnchanged } from "typescript";
+import * as cq from "../utils/convenienceQueries"
 
 const marked = "marked"
 
@@ -25,9 +25,15 @@ class KeyModeHandler implements Handler{
     insertCallback: (newNote: NewNote, replace: Boolean) => Promise<any>;
     deleteCallback: (notes: Array<Element>) => Promise<any>;
 
+    containerId: string
+    container: Element
+    rootSVG: Element
+    interactionOverlay: Element
 
-    constructor(){
-        this.cursor = new Cursor()
+
+    constructor(containerId: string){
+      this.setContainerId(containerId)
+      this.cursor = new Cursor(containerId)
     }
 
   setListeners() {
@@ -56,11 +62,12 @@ class KeyModeHandler implements Handler{
    * Event handler for inserting Notes
    */
   keyModeHandler = (function keyModeHandler (evt: KeyboardEvent): void {
+    if(!cq.hasActiveElement(this.containerId)) return
     if(this.musicPlayer.getIsPlaying() === true){return} // getIsPlaying could also be undefined
     if(keyCodeNoteMap.has(evt.code) && typeof this.cursor !== "undefined"){
       evt.preventDefault()
       var pname = keyCodeNoteMap.get(evt.code)
-      var oct = octToNum.get(document.querySelector("#octaveGroupKM .selected")?.id) || "4"
+      var oct = octToNum.get(this.container.querySelector("#octaveGroupKM .selected")?.id) || "4"
       const newNote: NewNote = this.createNewNote(pname, oct, null)
       if(newNote == undefined) return
 
@@ -81,13 +88,13 @@ class KeyModeHandler implements Handler{
 
       
       if(!noteExists){
-        var replace = (document.getElementById("insertToggle") as HTMLInputElement).checked
+        var replace = (this.container.querySelector("#insertToggle") as HTMLInputElement).checked
         this.insertCallback(newNote, replace).then(() => {
           this.m2m.update();
           this.resetListeners()
           var currentTargetId;
-          if(typeof newNote.chordElement !== "undefined"){
-            currentTargetId = document.getElementById(newNote.chordElement.id).closest(".chord").id // new chord with own ID is created, if note is added
+          if(newNote.chordElement != undefined){
+            currentTargetId = this.rootSvg.querySelector("#" + newNote.chordElement.id).closest(".chord").id // new chord with own ID is created, if note is added
           }else{
             currentTargetId = newNote.id
           }
@@ -140,15 +147,15 @@ class KeyModeHandler implements Handler{
     }
 
     var targetChord: Element
-    if(document.getElementById("chordButton").classList.contains("selected")){
-      targetChord = document.getElementById(nearestNodeId)
-      if(targetChord.closest(".chord") !== null){
+    if(this.container.querySelector("#chordButton").classList.contains("selected")){
+      targetChord = this.rootSVG.querySelector("#"+nearestNodeId)
+      if(targetChord?.closest(".chord") !== null){
         targetChord = targetChord.closest(".chord")
       }
     }
     
     var relPosX = this.cursor.isBOL() ? "left" : "right"
-
+    this.setContainerId(this.containerId)
     var newNote: NewNote = {
         pname: pname,
         id: uuidv4(),
@@ -159,9 +166,9 @@ class KeyModeHandler implements Handler{
         accid: accid,
         nearestNoteId: nearestNodeId,
         relPosX: relPosX,
-        staffId: document.getElementById(nearestNodeId).closest(".staff").id,
+        staffId: this.rootSVG.querySelector("#" + nearestNodeId).closest(".staff").id,
         chordElement: targetChord,
-        rest: document.getElementById("pauseNote").classList.contains("selected")
+        rest: this.container.querySelector("#pauseNote").classList.contains("selected")
     }
     return newNote
 }
@@ -170,9 +177,9 @@ class KeyModeHandler implements Handler{
    * Event Handler for any Keyboard input (except inserting)
    */
   keyInputHandler = (function keyInputHandler(e: KeyboardEvent){
-    
+    if(!cq.hasActiveElement(this.containerId)) return
     if(e.ctrlKey || e.metaKey) return //prevent confusion with global keyboard functionalities
-    if(document.querySelector("div[contenteditable=true]") !== null) return // prevent navigating in scrore, when label editor is open
+    if(this.interactionOverlay.querySelector("div[contenteditable=true]") !== null) return // prevent navigating in scrore, when label editor is open
 
     //this.setCurrentNodeScoreGraph()
     if(this.scoreGraph.getCurrentNode() == undefined){
@@ -290,7 +297,7 @@ class KeyModeHandler implements Handler{
     this.startSelect = undefined
     if(this.selectRect !== null && typeof this.selectRect !== "undefined"){
       this.selectRect.remove()
-      document.querySelectorAll(".marked").forEach(m => {
+      this.rootSVG.querySelectorAll(".marked").forEach(m => {
         m.classList.remove("marked")
       })
     }
@@ -332,17 +339,17 @@ class KeyModeHandler implements Handler{
   deleteByKey(key: string){
     var elementToDelete: Element
     var currNodeId: string
-    var isFocusedChord = document.getElementById("chordButton").classList.contains("selected") ? true : false
+    var isFocusedChord = this.container.querySelector("#chordButton").classList.contains("selected") ? true : false
     if(isFocusedChord){key = "Backspace"}
     switch(key){
       case "Delete":
-        elementToDelete = document.getElementById(this.scoreGraph.getCurrentNode().getRight().getId())
+        elementToDelete = this.rootSVG.querySelector("#" + this.scoreGraph.getCurrentNode().getRight().getId())
         break;
       case "Backspace":
-        elementToDelete = document.getElementById(this.scoreGraph.getCurrentNode().getId())
+        elementToDelete = this.rootSVG.querySelector("#" + this.scoreGraph.getCurrentNode().getId())
         
         if(this.scoreGraph.getCurrentNode().isLayer()){
-          elementToDelete = document.getElementById(this.scoreGraph.getCurrentNode().getLeft().getId())
+          elementToDelete = this.rootSVG.querySelector("#" + this.scoreGraph.getCurrentNode().getLeft().getId())
           this.navigateCursor("ArrowLeft")
         }
         
@@ -355,7 +362,7 @@ class KeyModeHandler implements Handler{
     }
 
     currNodeId = this.scoreGraph.getCurrentNode().getId()
-    if(document.querySelector(".marked") === null){
+    if(this.rootSVG.querySelector(".marked") === null){
       this.deleteCallback([elementToDelete]).then(() => {
         this.m2m.update();
         this.resetListeners()
@@ -384,6 +391,14 @@ class KeyModeHandler implements Handler{
 
   setCurrentMEI(mei: Document){
     this.currentMEI = mei
+    return this
+  }
+
+  setContainerId(id: string){
+    this.containerId = id
+    this.rootSVG = cq.getRootSVG(id)
+    this.interactionOverlay = cq.getInteractOverlay(id)
+    this.container = document.getElementById(id)
     return this
   }
 

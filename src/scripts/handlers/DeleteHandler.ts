@@ -1,6 +1,7 @@
 import { constants as c } from '../constants';
 import Core from '../Core';
 import Handler from './Handler';
+import * as cq from "../utils/convenienceQueries"
 
 const action = "mousedown"
 
@@ -10,13 +11,18 @@ class DeleteHandler implements Handler{
     private deleteFlag:string = "marked"
 
     private deleteCallback: (items: Array<Element>) => Promise<any> 
+    containerId: string;
+    container: Element
+    rootSVG: Element
+    interactionOverlay: Element
 
-    constructor(){
+    constructor(containerId){
+        this.setContainerId(containerId)
     }
 
     setListeners(){
         // Listenere for whole SVG (maybe just layer?)
-        var notes = document.querySelectorAll(c._NOTE_WITH_CLASSSELECTOR_)
+        var notes = this.rootSVG.querySelectorAll(".note")
         Array.from(notes).forEach(element => {
             element.addEventListener(action , this.clickHandler)
         });
@@ -24,7 +30,7 @@ class DeleteHandler implements Handler{
     }
     
     removeListeners(){
-        var notes = document.querySelectorAll(c._NOTE_WITH_CLASSSELECTOR_)
+        var notes = this.rootSVG.querySelectorAll(".note")
         Array.from(notes).forEach(element => {
             element.removeEventListener(action, this.clickHandler)
         });
@@ -53,8 +59,9 @@ class DeleteHandler implements Handler{
      * Delete all Elements which are marked
      */
     backSpaceHandler = (function backSpaceHandler(e: KeyboardEvent){
-        Array.from(document.querySelectorAll("." + this.deleteFlag)).forEach(el => this.selectedElements.push(el))
-        if((e.code === "Backspace" || e.code === "Delete") && this.selectedElements.length > 0 && document.querySelectorAll(".harmonyDiv").length === 0){
+        if(!cq.hasActiveElement(this.containerId)) return
+        Array.from(cq.getRootSVG(this.containerId).querySelectorAll("." + this.deleteFlag)).forEach(el => this.selectedElements.push(el))
+        if((e.code === "Backspace" || e.code === "Delete") && this.selectedElements.length > 0 && this.container.querySelectorAll(".harmonyDiv").length === 0){
             this.deleteCallback(this.selectedElements).then(() => {
                 this.selectedElements.length = 0
             }) 
@@ -63,6 +70,7 @@ class DeleteHandler implements Handler{
 
     update(){
         this.selectedElements = new Array;
+        this.setContainerId(this.containerId)
         this.removeListeners();
         this.setListeners();
         return this
@@ -71,6 +79,14 @@ class DeleteHandler implements Handler{
     /////////// GETTER/ SETTER ////////////
     setDeleteCallback(deleteCallback: (items: Array<Element>) => Promise<any>){
         this.deleteCallback = deleteCallback
+        return this
+    }
+
+    setContainerId(containerId: string) {
+        this.containerId = containerId
+        this.container = cq.getContainer(containerId)
+        this.rootSVG = cq.getRootSVG(containerId)
+        this.interactionOverlay = cq.getInteractOverlay(containerId)
         return this
     }
 

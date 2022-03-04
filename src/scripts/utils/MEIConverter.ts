@@ -21,7 +21,7 @@ export function reformatMEI(mei: string): string{
 }
 
 /**
- * Converts MEI to DOM-conform objec
+ * Converts MEI-String to DOM-conform objec
  * @param mei 
  * @returns MEI as Document
  */

@@ -6,6 +6,7 @@ import { uuidv4 } from "../utils/random";
 import * as meiConverter from "../utils/MEIConverter"
 import * as meiOperation from "../utils/MEIOperations"
 import { noteToB } from "../utils/mappings";
+import * as cq from "../utils/convenienceQueries"
 
 const modSelector = ".slur, .tie, .accid"
 
@@ -27,15 +28,20 @@ class ModHandler implements Handler{
     private alterDUpButton: Element
     private alterButtons: Array<Element>
     private loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>;
+    containerId: string;
+    interactionOverlay: Element
+    container: Element
+    rootSVG: Element
   
-    constructor(){
-        this.tieNotesButton = document.getElementById("tieNotes")
-        this.organizeBeamsButton = document.getElementById("organizeBeams")
-        var a = this.alterUpButton = document.getElementById("alterUp")
-        var b = this.alterDownButton = document.getElementById("alterDown")
-        var c = this.alterNeutralButton = document.getElementById("alterNeutral")
-        var d = this.alterDUpButton = document.getElementById("alterDUp")
-        var e = this.alterDDownButton = document.getElementById("alterDDown")
+    constructor(containerId){
+        this.setContainerId(containerId)
+        this.tieNotesButton = this.container.querySelector("#tieNotes")
+        this.organizeBeamsButton = this.container.querySelector("#organizeBeams")
+        var a = this.alterUpButton = this.container.querySelector("#alterUp")
+        var b = this.alterDownButton = this.container.querySelector("#alterDown")
+        var c = this.alterNeutralButton = this.container.querySelector("#alterNeutral")
+        var d = this.alterDUpButton = this.container.querySelector("#alterDUp")
+        var e = this.alterDDownButton = this.container.querySelector("#alterDDown")
         this.alterButtons = [a, b, c, d, e]
 
     }
@@ -89,7 +95,7 @@ class ModHandler implements Handler{
      * @param e 
      */
     connectNotes(e: MouseEvent){
-        var markedElements = Array.from(document.querySelectorAll(".note.marked"))
+        var markedElements = Array.from(this.rootSVG.querySelectorAll(".note.marked"))
         markedElements = markedElements.filter(me => me.closest(".layer").getAttribute("n") === markedElements[0].closest(".layer").getAttribute("n"))
         if(markedElements.length <= 1){return}
         var makeSlur = markedElements.length > 2
@@ -125,7 +131,7 @@ class ModHandler implements Handler{
      * @param e 
      */
     organizeBeams(e: MouseEvent){
-        var markedElements = Array.from(document.querySelectorAll(".note.marked, .chord.marked"))
+        var markedElements = Array.from(this.rootSVG.querySelectorAll(".note.marked, .chord.marked"))
         markedElements = markedElements.filter(me => {
             return me.closest(".layer").getAttribute("n") === markedElements[0].closest(".layer").getAttribute("n") 
             && this.currentMEI.getElementById(me.id)?.getAttribute("dur") !== null
@@ -222,7 +228,7 @@ class ModHandler implements Handler{
                 return
         }
 
-        document.querySelectorAll(".note.marked").forEach(nm => {
+        this.rootSVG.querySelectorAll(".note.marked").forEach(nm => {
             var meiElement = this.currentMEI.getElementById(nm.id)
             meiElement.setAttribute("accid", accidSig)
             meiElement.removeAttribute("accid.ges")
@@ -237,10 +243,10 @@ class ModHandler implements Handler{
      * @returns this
      */
      makeScoreElementsClickable(){
-        document.querySelectorAll(modSelector).forEach(c => {
+        cq.getInteractOverlay(this.containerId).querySelectorAll(modSelector).forEach(c => {
             c.addEventListener("click", function(e: MouseEvent){
                 e.stopImmediatePropagation()
-                document.querySelectorAll(modSelector).forEach(c => c.classList.remove("marked"))
+                this.rootSVG.querySelectorAll(modSelector).forEach(c => c.classList.remove("marked"))
                 if(c.classList.contains("marked")){
                     c.classList.remove("marked")
                 }else{
@@ -259,7 +265,15 @@ class ModHandler implements Handler{
     setLoadDataCallback(loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>){
         this.loadDataCallback = loadDataCallback
         return this
-      }
+    }
+
+    setContainerId(containerId: string) {
+        this.containerId = containerId
+        this.interactionOverlay = cq.getInteractOverlay(containerId)
+        this.rootSVG = cq.getRootSVG(containerId)
+        this.container = document.getElementById(containerId)
+        return this
+    }
 
 }
 

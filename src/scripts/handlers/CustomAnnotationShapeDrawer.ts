@@ -5,6 +5,8 @@ import { Mouse2MEI } from "../utils/Mouse2MEI";
 import {uuidv4} from '../utils/random'
 import { constants as c } from "../constants"
 import * as coordinates from "../utils/coordinates"
+import * as cq from "../utils/convenienceQueries"
+import { textSpanIntersectsWithTextSpan } from 'typescript';
 
 class CustomAnnotationShapeDrawer implements Handler{
     m2m?: Mouse2MEI;
@@ -20,13 +22,19 @@ class CustomAnnotationShapeDrawer implements Handler{
     private shape: HTMLElement
     private shapes: Array<HTMLElement>
 
+    private containerId: string
+    private container: Element
+    private interactionOverlay: Element
+    private rootSVG: Element
+
     private updateCallback: () => void
 
-    constructor(){
+    constructor(containerId){
+        this.setContainerId(containerId)
         this.shapes = new Array()
         this.shapeID = ""
         this.dragged = false
-        this.canvas = d3.select("#rootSVG"); // draw directly in svg
+        this.canvas = d3.select("#"+this.containerId+ " #interactionOverlay"); // draw directly in svg
         this.dragBehaviour = d3.drag()
             .on('start', drawStart)
             .on('drag', this.drawing.bind(this))
@@ -34,12 +42,12 @@ class CustomAnnotationShapeDrawer implements Handler{
 
         var that = this;
         function drawStart(){
-            var pt = new DOMPoint(d3.event.sourceEvent.clientX, d3.event.sourceEvent.clientY)
-            var canvasMatrix = (document.getElementById("rootSVG") as unknown as SVGGraphicsElement).getScreenCTM().inverse()
-            pt = pt.matrixTransform(canvasMatrix)
+            var pt = coordinates.transformToDOMMatrixCoordinates(d3.event.sourceEvent.clientX, d3.event.sourceEvent.clientY, that.interactionOverlay)
+            //var canvasMatrix = (document.getElementById("rootSVG") as unknown as SVGGraphicsElement).getScreenCTM().inverse()
+            //pt = pt.matrixTransform(canvasMatrix)
             that.initialX = pt.x //d3.event.x
             that.initialY = pt.y //d3.event.y
-            if(d3.event.sourceEvent.srcElement.id === c._ROOTSVGID_){
+            if(d3.event.sourceEvent.srcElement.id === that.interactionOverlay.id){
                 that.initRect(that.initialX, that.initialY)
                 //that.initCircle(that.initialX, that.initialY)
             }
@@ -48,9 +56,9 @@ class CustomAnnotationShapeDrawer implements Handler{
     }
 
     drawing(){
-        var pt = new DOMPoint(d3.event.sourceEvent.clientX, d3.event.sourceEvent.clientY)
-        var canvasMatrix = (document.getElementById("rootSVG") as unknown as SVGGraphicsElement).getScreenCTM().inverse()
-        pt = pt.matrixTransform(canvasMatrix)
+        var pt = coordinates.transformToDOMMatrixCoordinates(d3.event.sourceEvent.clientX, d3.event.sourceEvent.clientY, this.interactionOverlay)
+        //var canvasMatrix = (document.getElementById("rootSVG") as unknown as SVGGraphicsElement).getScreenCTM().inverse()
+        //pt = pt.matrixTransform(canvasMatrix)
         const curX = pt.x //d3.event.x
         const curY = pt.y //d3.event.y
 
@@ -69,14 +77,14 @@ class CustomAnnotationShapeDrawer implements Handler{
     }
 
     drawEnd(){
-
+        if(this.shapeID === "") return
         if(!this.dragged){
-            var elToRemove = document.getElementById(this.shapeID)
+            var elToRemove = this.interactionOverlay.querySelector("#" + this.shapeID)
             if(elToRemove !== null){elToRemove.remove()}
         }else{
-            var annotCanvas = document.getElementById("annotationCanvas")
+            var annotCanvas = this.interactionOverlay.querySelector("#annotationCanvas")
             var pt = coordinates.getDOMMatrixCoordinates(this.shape, annotCanvas)
-            document.getElementById("annotationCanvas").appendChild(this.shape)
+            this.interactionOverlay.querySelector("#annotationCanvas").appendChild(this.shape)
             this.shape.setAttribute("x", pt.left.toString())
             this.shape.setAttribute("y", pt.top.toString())
             this.shape.setAttribute("width", pt.width.toString())
@@ -129,7 +137,7 @@ class CustomAnnotationShapeDrawer implements Handler{
     }
 
     removeListeners(): void{
-        d3.select("#rootSVG").on('mousedown.drag', null)
+        d3.select("#"+this.containerId+ " #interactionOverlay").on('mousedown.drag', null)
     }
 
     setListeners():void{
@@ -147,6 +155,13 @@ class CustomAnnotationShapeDrawer implements Handler{
 
     setM2M(m2m: Mouse2MEI){
         this.m2m = m2m
+    }
+
+    setContainerId(id: string){
+        this.containerId = id
+        this.container = document.getElementById(id)
+        this.interactionOverlay = cq.getInteractOverlay(id)
+        this.rootSVG = cq.getRootSVG(id)
     }
 
     getShapes(): Array<HTMLElement>{

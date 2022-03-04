@@ -6,6 +6,7 @@ import { constants as c } from "../constants"
 import * as meiConverter from "../utils/MEIConverter"
 import * as meiOperation from "../utils/MEIOperations"
 import * as coordinates from "../utils/coordinates"
+import * as cq from "../utils/convenienceQueries"
 
 /**
  * Handles all Events when interacting with the sidebar.
@@ -13,10 +14,15 @@ import * as coordinates from "../utils/coordinates"
  * Every change that results from a sidebar interaction is returned by a meiOperation
  */
 class SidebarHandler implements Handler{
+    
     m2m?: Mouse2MEI;
     musicPlayer?: MusicPlayer;
     currentMEI?: Document;
     loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>;
+    containerId: string;
+    container: Element
+    interactionOverlay: Element
+    rootSVG: Element
 
     constructor(){
         //this.setListeners()
@@ -31,8 +37,8 @@ class SidebarHandler implements Handler{
 
         // Controll dpossible drag and drop zones on screen
         var that = this
-        var dragTarget =  document.getElementById("rootSVG")
-        document.getElementById("rootSVG").addEventListener("dragleave", function(event){
+        var dragTarget = this.interactionOverlay.querySelector("#scoreRects") //document.getElementById("rootSVG")
+       this.interactionOverlay.addEventListener("dragleave", function(event){
             event.preventDefault()
             event.stopPropagation()
             if(event.target === dragTarget){
@@ -41,7 +47,7 @@ class SidebarHandler implements Handler{
         }, false)
     
 
-        document.getElementById("rootSVG").addEventListener("dragenter", function(event){
+       this.interactionOverlay.addEventListener("dragenter", function(event){
             event.preventDefault()
             event.stopPropagation()
             if(Array.from(dragTarget.querySelectorAll("*")).every(c => c !== event.target)){
@@ -58,13 +64,13 @@ class SidebarHandler implements Handler{
     }
 
     removeSelectListeners(){
-        document.querySelectorAll("*[id*=keyList] > *").forEach(k => {
+       this.container.querySelectorAll("*[id*=keyList] > *").forEach(k => {
             if(k.tagName === "A"){
                 k.removeEventListener("dblclick", this.keySigSelectHandler)
             }
         })
 
-        document.querySelectorAll("*[id*=clefList] > *").forEach(k => {
+        this.container.querySelectorAll("*[id*=clefList] > *").forEach(k => {
             if(k.tagName === "A"){
                 k.removeEventListener("dblclick", this.clefSelectHandler)
             }
@@ -72,7 +78,7 @@ class SidebarHandler implements Handler{
         document.removeEventListener("dragover", (e) => {
             e.preventDefault()
         })
-        document.querySelectorAll("#sidebarList a, #timeDiv").forEach(sa => {
+        this.container.querySelectorAll("#sidebarList a, #timeDiv").forEach(sa => {
             sa.removeEventListener("drag", this.findDropTargetFunction)
             sa.removeEventListener("dragend", this.dropOnTargetFunction)
         })
@@ -86,19 +92,19 @@ class SidebarHandler implements Handler{
     }
 
     setSelectListeners(){
-        document.querySelectorAll("*[id*=keyList] > *").forEach(k => {
+        this.container.querySelectorAll("*[id*=keyList] > *").forEach(k => {
             if(k.tagName === "A"){
                 k.addEventListener("dblclick", this.keySigSelectHandler)
             }
         })
 
-        document.querySelectorAll("*[id*=clefList] > *").forEach(k => {
+        this.container.querySelectorAll("*[id*=clefList] > *").forEach(k => {
             if(k.tagName === "A"){
                 k.addEventListener("dblclick", this.clefSelectHandler)
             }
         })
 
-        document.querySelectorAll("#sidebarList a, #timeDiv, #tempoDiv").forEach(sa => {
+        this.container.querySelectorAll("#sidebarList a, #timeDiv, #tempoDiv").forEach(sa => {
             sa.addEventListener("drag", this.findDropTargetFunction)
             sa.addEventListener("dragend", this.dropOnTargetFunction)
         })
@@ -112,13 +118,16 @@ class SidebarHandler implements Handler{
      * @returns this
      */
     makeScoreElementsClickable(){
+        var that = this
         // Clefs are clickable and will be filled red (see css)
-        document.querySelectorAll(".clef, .keySig").forEach(c => {
+        this.interactionOverlay.querySelectorAll(".clef, .keySig").forEach(c => {
             c.addEventListener("click", function(){
                 if(c.classList.contains("marked")){
                     c.classList.remove("marked")
+                    that.getElementInSVG(c.getAttribute("refId"))?.classList.remove("marked")
                 }else{
                     c.classList.add("marked")
+                    that.getElementInSVG(c.getAttribute("refId"))?.classList.add("marked")
                 }
             })
         })
@@ -154,8 +163,8 @@ class SidebarHandler implements Handler{
         if(staffDef !== null){
             var hasMeter = staffDef.getAttribute("meter.count") !== null && staffDef.getAttribute("meter.unit") !== null
             if(hasMeter){
-                document.getElementById("timeCount").setAttribute("value", staffDef.getAttribute("meter.count"))
-                document.getElementById("timeUnit").setAttribute("value", staffDef.getAttribute("meter.unit"))
+                this.container.querySelector("#timeCount").setAttribute("value", staffDef.getAttribute("meter.count"))
+                this.container.querySelector("#timeUnit").setAttribute("value", staffDef.getAttribute("meter.unit"))
             }
         }
         return this
@@ -165,8 +174,8 @@ class SidebarHandler implements Handler{
      * Listen on Change when input is changed for Time Signatures
      */
     setChangeMeterListeners(){
-        document.getElementById("timeCount").addEventListener("change", this.changeMeterHandler)
-        document.getElementById("timeUnit").addEventListener("change", this.changeMeterHandler)
+        this.container.querySelector("#timeCount").addEventListener("change", this.changeMeterHandler)
+        this.container.querySelector("#timeUnit").addEventListener("change", this.changeMeterHandler)
     }
 
     /**
@@ -191,7 +200,7 @@ class SidebarHandler implements Handler{
      */
     setClefGlobal(e: MouseEvent){
         var target = e.target as Element
-        var markedClefs = Array.from(document.querySelectorAll(".clef.marked"))
+        var markedClefs = Array.from(this.rootSVG.querySelectorAll(".clef.marked"))
         var reload = false
         markedClefs.forEach(mc => {
             var rowNum = parseInt(mc.closest(".staff").getAttribute("n")) - 1
@@ -213,9 +222,9 @@ class SidebarHandler implements Handler{
      * @param e 
      */
     findDropTarget(e: MouseEvent){
+        /** TODO: dropflags müssen auch in scoreRects eigegeben werden */
         e.preventDefault()
-        var root = document.getElementById(c._ROOTSVGID_)
-        var pt = coordinates.transformToDOMMatrixCoordinates(e.pageX, e.pageY, root)
+        var pt = coordinates.transformToDOMMatrixCoordinates(e.pageX, e.pageY, this.rootSVG)
         var posx = pt.x
         var posy = pt.y
 
@@ -229,16 +238,16 @@ class SidebarHandler implements Handler{
         var dropFlag: string
 
         if(eventTargetIsClef){
-            dropTargets = document.querySelectorAll(".clef, .barLine > path")
+            dropTargets = this.rootSVG.querySelectorAll(".clef, .barLine > path")
             dropFlag = "dropClef"
         }else if(eventTargetIsKey){
-            dropTargets = document.querySelectorAll(".keySig, .barLine > path, .clef")
+            dropTargets = this.rootSVG.querySelectorAll(".keySig, .barLine > path, .clef")
             dropFlag = "dropKey"
         }else if(eventTargetIsTime){
-            dropTargets = document.querySelectorAll(".meterSig, .barLine > path, .clef")
+            dropTargets = this.rootSVG.querySelectorAll(".meterSig, .barLine > path, .clef")
             dropFlag = "dropTime"
         }else if(eventTargetIsTempo){
-            dropTargets = document.querySelectorAll(".note, .chord, .rest, .mRest")
+            dropTargets = this.rootSVG.querySelectorAll(".note, .chord, .rest, .mRest")
             dropFlag = "dropTempo"
         }
         else{
@@ -248,16 +257,18 @@ class SidebarHandler implements Handler{
         var tempDist = Math.pow(10, 10)
         dropTargets.forEach(dt => {
             var blbbox = dt.getBoundingClientRect()
-            var ptdt = coordinates.getDOMMatrixCoordinates(blbbox, root)
+            var ptdt = coordinates.getDOMMatrixCoordinates(blbbox, this.rootSVG)
             var bbx  = ptdt.left
             var bby  = ptdt.top
             var dist = Math.sqrt(Math.abs(bbx - posx)**2 + Math.abs(bby - posy)**2)
             if(dist < tempDist){
                 dropTargets.forEach(_dt => {
                     _dt.classList.remove(dropFlag)
+                    this.getElementInInteractOverlay(_dt.id)?.classList.remove(dropFlag)
                 })
                 tempDist = dist
                 dt.classList.add(dropFlag)
+                this.getElementInInteractOverlay(dt.id)?.classList.add(dropFlag)
             }
         })
     }
@@ -272,14 +283,14 @@ class SidebarHandler implements Handler{
      */
     dropOnTarget(e: MouseEvent){
         e.preventDefault()
-        var selectedElement = document.querySelector(".dropClef, .dropKey, .dropTime, .dropTempo") 
+        var selectedElement = this.getElementInSVG(this.interactionOverlay.querySelector(".dropClef, .dropKey, .dropTime, .dropTempo")?.getAttribute("refId"))
         var t = e.target as Element
         var mei: Document
 
-        var isFirstClef = Array.from(document.querySelectorAll(".measure[n=\"1\"] .clef")).some(mc => mc?.id === selectedElement?.id)
-        var isFirstKey = Array.from(document.querySelectorAll(".measure[n=\"1\"] .keySig")).some(mc => mc?.id === selectedElement?.id)
-        var isFirstMeter = Array.from(document.querySelectorAll(".measure[n=\"1\"] .meterSig")).some(mc => mc?.id === selectedElement?.id)
-        
+        var isFirstClef = Array.from(this.rootSVG.querySelectorAll(".measure[n=\"1\"] .clef")).some(mc => mc?.id === selectedElement?.id)
+        var isFirstKey = Array.from(this.rootSVG.querySelectorAll(".measure[n=\"1\"] .keySig")).some(mc => mc?.id === selectedElement?.id)
+        var isFirstMeter = Array.from(this.rootSVG.querySelectorAll(".measure[n=\"1\"] .meterSig")).some(mc => mc?.id === selectedElement?.id)
+
         if(selectedElement?.classList.contains("dropClef")){
             if(isFirstClef){
                 mei = meiOperation.replaceClefinScoreDef(selectedElement, t.id, this.currentMEI)
@@ -294,7 +305,6 @@ class SidebarHandler implements Handler{
                 mei = meiOperation.insertKey(selectedElement, t.id, this.currentMEI)
             }
         }else if(selectedElement?.classList.contains("dropTime")){
-            console.log(selectedElement.toString(), isFirstMeter.toString(), isFirstClef.toString())
             if(isFirstMeter || isFirstClef){
                 mei = meiOperation.replaceMeterInScoreDef(selectedElement, this.currentMEI)
             }else{
@@ -307,13 +317,23 @@ class SidebarHandler implements Handler{
             return
         }
 
-
         this.loadDataCallback("", mei, false, c._TARGETDIVID_)
     }
 
     dropOnTargetFunction =(function dropOnBarline(e: MouseEvent){
         this.dropOnTarget(e)
     }).bind(this)
+
+
+    getElementInSVG(id: string): Element{
+        if(id === "") return
+        return this.rootSVG.querySelector("#"+id)
+    }
+
+    getElementInInteractOverlay(id: string): Element{
+        if(id === "") return
+        return this.interactionOverlay.querySelector("*[refId=\"" + id +"\"]")
+    }
 
 
     //////// GETTER / SETTER /////////////
@@ -331,7 +351,15 @@ class SidebarHandler implements Handler{
     setLoadDataCallback(loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>){
         this.loadDataCallback = loadDataCallback
         return this
-      }
+    }
+
+    setContainerId(containerId: string) {
+        this.containerId = containerId
+        this.rootSVG = cq.getRootSVG(containerId)
+        this.interactionOverlay = cq.getInteractOverlay(containerId)
+        this.container = document.getElementById(containerId)
+        return this
+    }
 
     
 }

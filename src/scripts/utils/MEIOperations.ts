@@ -788,8 +788,8 @@ function hideAccid(note: Element){
  * @returns 
  */
 export function transposeByStep(currentMEI : Document, direction: string): Document{
-  document.querySelectorAll(".note.marked").forEach(nm => {
-    var noteMEI = currentMEI .getElementById(nm.id)
+  document.querySelectorAll(".activeContainer #rootSVG .note.marked").forEach(nm => {
+    var noteMEI = currentMEI.getElementById(nm.id)
     var pname = noteMEI.getAttribute("pname")
     var oct = parseInt(noteMEI.getAttribute("oct"))
     var accid = noteMEI.getAttribute("accid") || noteMEI.getAttribute("accid.ges")
@@ -830,8 +830,8 @@ export function transposeByStep(currentMEI : Document, direction: string): Docum
  * @returns changed mei; null, if input has no valid values
  */
 export function changeMeter(currentMEI : Document): Document {
-    var timeCount = document.getElementById("timeCount")
-    var timeUnit = document.getElementById("timeUnit")
+    var timeCount = document.querySelector(".activeElement #timeCount")
+    var timeUnit = document.querySelector(".activeElement #timeUnit")
 
     //@ts-ignore
     var timeCountValue = timeCount.value //getAttribute("value")
@@ -1477,7 +1477,7 @@ export function paste(ids: Array<string>, refId: string, currentMEI : Document):
   })
 
   //Element gets replaced in all other modes except keymode/textmode
-  if(!document.body.classList.contains("textmode") && currentMEI .getElementById(refId)?.tagName !== "LAYER"){
+  if(!document.querySelector(".activeContainer").classList.contains("textmode") && currentMEI.getElementById(refId)?.tagName !== "LAYER"){
     removeFromMEI([currentMEI .getElementById(refId)], currentMEI )
   }
 
@@ -1492,7 +1492,7 @@ export function paste(ids: Array<string>, refId: string, currentMEI : Document):
  * @returns 
  */
 export function replaceClefinScoreDef(target: Element, newClef: string, currentMEI: Document): Document{
-  var staffN = document.getElementById(target.id).closest(".staff").getAttribute("n")
+  var staffN = document.querySelector(".activeContainer #rootSVG #" + target.id).closest(".staff").getAttribute("n")
   var staffDefClef = currentMEI.querySelector("staffDef[n=\"" + staffN + "\"] > clef")
   staffDefClef.setAttribute("shape", newClef.charAt(0))
   staffDefClef.setAttribute("line", clefToLine.get(newClef.charAt(0)))
@@ -1523,6 +1523,18 @@ export function insertClef(target: Element, newClef: string, currentMEI: Documen
   return currentMEI
 }
 
+function findAttributeRecursive(element: Element, attributeName: string, currentValue: string = null): string{
+  var value = currentValue || element.getAttribute(attributeName)
+  if(value === null){
+    Array.from(element.children).forEach(c => {
+        if(value !== null) return
+        value = findAttributeRecursive(c, attributeName, value)
+    })
+  }
+  console.log(element, value)
+  return value
+}
+
 /**
  * If Key is already defined in scoreDef, replace values
  * @param target 
@@ -1531,7 +1543,7 @@ export function insertClef(target: Element, newClef: string, currentMEI: Documen
  * @returns 
  */
 export function replaceKeyInScoreDef(target: Element, newSig: string, currentMEI: Document): Document {
-  var staffN = document.getElementById(target.id).closest(".staff").getAttribute("n")
+  var staffN = document.querySelector(".activeContainer #rootSVG #" + target.id).closest(".staff").getAttribute("n")
   var staffDefSig = currentMEI.querySelector("staffDef[n=\"" + staffN + "\"] > keySig")
   if(staffDefSig !== null){
     staffDefSig.setAttribute("sig", keyIdToSig.get(newSig))
@@ -1553,6 +1565,7 @@ export function replaceKeyInScoreDef(target: Element, newSig: string, currentMEI
  * @returns 
  */
 export function insertKey(target: Element, newSig: string, currentMEI: Document): Document {
+  console.log("insertKey", target, newSig)
   var targetStaff = target.closest(".measure").querySelector(".staff[n=\"" + target.getAttribute("n") + "\"]") || target.closest(".staff")
   var staffN = targetStaff.getAttribute("n")
   var parentMeasure = currentMEI.getElementById(targetStaff.id).closest("measure")
@@ -1570,11 +1583,11 @@ export function insertKey(target: Element, newSig: string, currentMEI: Document)
 }
 
 export function replaceMeterInScoreDef(target: Element, currentMEI: Document): Document {
-  var staffN = document.getElementById(target.id).closest(".staff").getAttribute("n")
+  var staffN = document.querySelector(".activeContainer #rootSVG #" + target.id).closest(".staff").getAttribute("n")
   var staffDefMeter = currentMEI.querySelector("staffDef[n=\"" + staffN + "\"] > meterSig")
 
-  var count = (document.getElementById("timeCount") as HTMLSelectElement).value
-  var unit = (document.getElementById("timeUnit") as HTMLSelectElement).value
+  var count = (document.querySelector(".activeContainer #timeCount") as HTMLSelectElement).value
+  var unit = (document.querySelector(".activeContainer #timeUnit") as HTMLSelectElement).value
   staffDefMeter.setAttribute("count", count)
   staffDefMeter.setAttribute("unit", unit)
   cleanUp(currentMEI)
@@ -1592,8 +1605,8 @@ export function insertMeter(target: Element, currentMEI: Document): Document {
   })
   
   
-  var count = (document.querySelector("#selectTime #timeCount") as HTMLSelectElement).value
-  var unit = (document.querySelector("#selectTime #timeUnit") as HTMLSelectElement).value
+  var count = (document.querySelector(".activeContainer #selectTime #timeCount") as HTMLSelectElement).value
+  var unit = (document.querySelector(".activeContainer #selectTime #timeUnit") as HTMLSelectElement).value
 
   // change for all layers in given measure
   targetLayers.forEach(tl => {
@@ -1616,8 +1629,8 @@ export function insertTempo(target: Element, currentMEI: Document): Document{
     return hasSameTimeStamp || hasSameStartId
   })
 
-  var mmUnit = (document.querySelector("#selectTempo #timeCount") as HTMLSelectElement).value
-  var mm = (document.querySelector("#selectTempo #timeUnit") as HTMLSelectElement).value
+  var mmUnit = (document.querySelector(".activeContainer #selectTempo #timeCount") as HTMLSelectElement).value
+  var mm = (document.querySelector(".activeContainer #selectTempo #timeUnit") as HTMLSelectElement).value
 
   measure.appendChild(new MeiTemplate().createTempo(mm, mmUnit, getElementTimestampById(target.id, currentMEI).toString(), target.id))
   sameTempos.forEach(st => st.remove())    

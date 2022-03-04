@@ -6,6 +6,8 @@ import * as Soundfont from 'soundfont-player'
 import { constants as c } from './constants'
 import ScoreGraph from './datastructures/ScoreGraph';
 import * as coordinates from "./utils/coordinates"
+import * as cq from "./utils/convenienceQueries"
+import { emitKeypressEvents } from 'readline';
 
 const currentlyPlayingFlag = "currentlyPlaying"
 const followerRectID = "followerRect"
@@ -26,8 +28,11 @@ class MusicPlayer{
     private currentNote: Element
     private noteEvent: Event
     private canvasMP: SVGSVGElement;
-    private root: HTMLElement;
     private rootBBox: any;
+    private containerId: string
+    private interactionOverlay: Element
+    private rootSVG: Element
+    private container: Element
 
     private restartTime: number
     private markedNote: Element
@@ -41,7 +46,8 @@ class MusicPlayer{
     private playStartEvent: Event;
     private playEndEvent: Event;
 
-    constructor(){
+    constructor(containerId: string){
+        this.setContainerId(containerId)
         this.noteEvent = new Event("currentNote")
         this.playStartEvent = new Event("playStart")
         this.playEndEvent = new Event("playEnd")
@@ -59,8 +65,8 @@ class MusicPlayer{
      * Add Canvas in which all MusicPlayer SVGs are contained
      */
     addCanvas(){
-        this.root = document.getElementById(c._ROOTSVGID_)
-        this.rootBBox = this.root.getBoundingClientRect()
+        //this.root = this.interactionOverlay //document.getElementById(c._ROOTSVGID_)
+        this.rootBBox = this.interactionOverlay.getBoundingClientRect()
         var rootWidth = this.rootBBox.width.toString()
         var rootHeigth = this.rootBBox.height.toString()
 
@@ -71,7 +77,7 @@ class MusicPlayer{
             this.canvasMP.setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))
         }      
 
-        this.root.insertBefore(this.canvasMP, this.root.firstChild)
+        this.interactionOverlay.insertBefore(this.canvasMP, this.interactionOverlay.firstChild)
     }
 
     /**
@@ -102,11 +108,10 @@ class MusicPlayer{
                     that.drawFollowerRect()
                 }
 
-                var instr = that.instruments[track - 2]
-                if(instr !== undefined){
+                if(that.instruments != undefined){
+                    var instr = that.instruments[track - 2]
                     instr.play(event.noteName, that.context.currentTime, {gain:event.velocity/100, duration: duration}); 
-                }   
-                                   
+                }                  
             } 
         })
 
@@ -123,6 +128,7 @@ class MusicPlayer{
        
         this.player.loadArrayBuffer(stringToBuffer(this.midi))
         this.mapDurations()
+
         if(this.instruments == undefined){ // instruments only have to be updated, when new instrument (= track) is added
             this.context = new ac()
             this.instruments = new Array(this.player.getEvents().length - 1)
@@ -137,7 +143,7 @@ class MusicPlayer{
     stopInstruments(){
         document.dispatchEvent(this.playEndEvent)
         this.player.stop()
-        this.instruments.forEach(instr => instr.stop(this.context.currentTime))
+        this.instruments?.forEach(instr => instr.stop(this.context.currentTime))
         this.player = undefined
         this.stopTimeouts()
         if(this.restartTime === 0){
@@ -152,7 +158,7 @@ class MusicPlayer{
     }
 
     rewind(){
-        if(typeof this.player !== "undefined"){
+        if(this.player != undefined){
             this.restartTime = 0
             this.stopInstruments()
         }
@@ -178,6 +184,7 @@ class MusicPlayer{
     }
 
     playMidi(){
+        if(!cq.hasActiveElement(this.containerId)) return
         if(this.player.isPlaying()){
             this.stopInstruments()
             
@@ -196,7 +203,7 @@ class MusicPlayer{
 
     ///// LISTENERS ////
     setListeners(){
-        if(typeof this.midiTimes === "undefined"){
+        if(this.midiTimes == undefined){
             return 
         }
 
@@ -213,10 +220,9 @@ class MusicPlayer{
     }
 
     removeListeners(){
-        if(typeof this.midiTimes === "undefined"){
+        if(this.midiTimes == undefined){
             return 
         }
-
         var it = this.midiTimes.values()
         var result = it.next()
         while(!result.done){
@@ -246,11 +252,13 @@ class MusicPlayer{
     }
 
     playHandler = (function playHandler(evt: KeyboardEvent){
+        if(!this.hasContainerFocus()) return
         this.playFunction(evt)
+        
     }).bind(this)
 
     playFunction(evt: KeyboardEvent){
-
+        if(!this.hasContainerFocus()) return
         if(evt.code === "Space"){
             evt.preventDefault()
             if(evt.shiftKey || document.getElementById("followerRect") !== null){
@@ -259,6 +267,7 @@ class MusicPlayer{
                 this.stopInstruments()
             }
         }
+    
     }
 
     setCurrentNoteHandler = (function setCurrentNoteHandler(e: Event){
@@ -269,6 +278,7 @@ class MusicPlayer{
      *  Set last clicked element to restartpoint
      */
     startPointHandler = (function startPointHandler(e: MouseEvent){
+        if(!this.hasContainerFocus()) return
         var playingNote = e.target as Element
         playingNote = playingNote.closest(".note") || playingNote.closest(".rest") || playingNote.closest(".mRest")
         if(playingNote !== null){
@@ -448,8 +458,8 @@ class MusicPlayer{
      */
     drawFollowerRect(){
 
-        var canvas =  document.getElementById("canvasMusicPlayer")
-        var canvasBBox = canvas.getBoundingClientRect();
+        // var canvas =  document.getElementById(this.containerId).querySelector("#canvasMusicPlayer") //document.getElementById("canvasMusicPlayer")
+        // var canvasBBox = canvas.getBoundingClientRect();
 
         var followerRect: Element
         if(document.getElementById(followerRectID) !== null){
@@ -459,10 +469,10 @@ class MusicPlayer{
             this.canvasMP.appendChild(followerRect)
         }
         var margin = 5
-        var ptCurrentNote = coordinates.getDOMMatrixCoordinates(this.currentNote, canvas)
+        var ptCurrentNote = coordinates.getDOMMatrixCoordinates(this.currentNote, this.canvasMP)
 
         var parentMeasureRect = this.currentNote.closest(".measure").getBoundingClientRect()
-        var ptParentMeasure = coordinates.getDOMMatrixCoordinates(parentMeasureRect, canvas)
+        var ptParentMeasure = coordinates.getDOMMatrixCoordinates(parentMeasureRect, this.canvasMP)
 
         var upperBound = (ptParentMeasure.top - margin) 
         var lowerBound = (ptParentMeasure.bottom + margin) 
@@ -474,6 +484,10 @@ class MusicPlayer{
         followerRect.setAttribute("x", leftBound.toString())
         followerRect.setAttribute("width", (rightBound - leftBound).toString())
         followerRect.setAttribute("height", (lowerBound - upperBound).toString())
+    }
+
+    hasContainerFocus(){
+        return document.getElementById(this.containerId).classList.contains("activeContainer")
     }
 
 
@@ -528,7 +542,7 @@ class MusicPlayer{
         return this
     }
 
-    setNoteTimes(midiTimes: Map<number, Array<any>>){
+    setMidiTimes(midiTimes: Map<number, Array<any>>){
         this.midiTimes = midiTimes
         return this
     }
@@ -544,6 +558,14 @@ class MusicPlayer{
                 clearTimeout(to)
             })
         }
+    }
+
+    setContainerId(containerId: string){
+        this.containerId = containerId
+        this.interactionOverlay = cq.getInteractOverlay(containerId)
+        this.rootSVG = cq.getRootSVG(containerId)
+        this.container = document.getElementById(containerId)
+        return this
     }
 
     resetInstruments(){
@@ -569,6 +591,7 @@ class MusicPlayer{
     update(){
         this.resetListeners()
         this.initPlayer()
+        return this
     }
 }
 

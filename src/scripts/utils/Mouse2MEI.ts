@@ -4,6 +4,8 @@ import { uuidv4 } from './random';
 import {idxNoteMapGClef, idxNoteMapFClef, idxNotePhantomMapBelowG, idxNotePhantomMapAboveG, idxNotePhantomMapBelowF, idxNotePhantomMapAboveF,idxNotePhantomMapBelowC, idxNotePhantomMapAboveC, keysigToNotes, idxNoteMapCClef } from './mappings';
 import MeasureMatrix from '../datastructures/MeasureMatrix'
 import * as meiOperation from "../utils/MEIOperations"
+import * as coordinates from "./coordinates"
+import * as cq from "./convenienceQueries"
 
 
 //@ts-ignore
@@ -21,6 +23,10 @@ export class Mouse2MEI{
     private lastMeasureMouseEnter: Element = null;
     private lastLayerMouseEnter: Element = null;
     private measureMatrix: MeasureMatrix;
+    private containerId: string
+    private rootSVG: Element
+    private interactionOverlay: Element
+    private container: Element
     
     public newNote: NewNote;
     private noteNewDur: string = "4"
@@ -31,91 +37,102 @@ export class Mouse2MEI{
     private phantomLines: Array<number>
     private lineDist: number
 
+    updateOverlayCallback: () => void
+
     constructor(){
         this.noteBBoxes = new Array();
         this.staffLineBBoxes = new Array();
 
         this.measureMatrix = new MeasureMatrix();
-        this.setMouseEnterElementListeners();
+        //this.setMouseEnterElementListeners();
         //this.findBBoxes();
     }
 
-    /*
-    removeListeners(){
-        var g: HTMLCollectionOf<SVGGElement> = $(c._ROOTSVGID_WITH_IDSELECTOR_) as HTMLCollectionOf<SVGGElement>;
-            Array.from(g).forEach(element => {
-                element
 
-    }*/
-
-   setMouseEnterElementListeners(): void{     
-       var that = this;
-       var mouseEventName = "mouseover"
+   setMouseEnterElementListeners(){     
+        var that = this;
+        var mouseEventName = "mouseover"
         var enteredFlag = "lastEntered"
+        var activeContainerFlag = "activeContainer"
 
-        document.querySelectorAll(".system").forEach(sy => {
+        this.container.addEventListener("mouseenter", function(e){
+            Array.from(document.getElementsByClassName("vse-container")).forEach(ac => {
+                if(ac === that.container){
+                    if(!that.container.classList.contains(activeContainerFlag)){
+                        that.container.classList.add(activeContainerFlag)
+                    }
+                }else{
+                    ac.classList.remove(activeContainerFlag)
+                }
+            })
+        })
+
+        this.interactionOverlay.querySelectorAll(".system").forEach(sy => {
             sy.addEventListener(mouseEventName, function(evt){
                 evt.preventDefault()
                 var target = evt.target as HTMLElement
                 that.lastSystemMouseEnter = target.closest(".system")
                 if(!that.lastSystemMouseEnter.classList.contains(enteredFlag)){
-                    document.querySelectorAll(".system").forEach(s => {
+                    cq.getInteractOverlay(that.containerId).querySelectorAll(".system").forEach(s => {
                         s.classList.remove(enteredFlag)
                     })
                     that.lastSystemMouseEnter.classList.add(enteredFlag)
                 }
             })
-        });
+        })
 
-        document.querySelectorAll(".staff").forEach(staff => {
+        this.interactionOverlay.querySelectorAll(".staff").forEach(staff => {
             staff.addEventListener(mouseEventName, function(evt){
                 evt.preventDefault()
                 var target = evt.target as HTMLElement
                 that.lastStaffMouseEnter = target.closest(".staff")
                 if(!that.lastStaffMouseEnter.classList.contains(enteredFlag)){
-                    document.querySelectorAll(".staff").forEach(s => {
+                    cq.getInteractOverlay(that.containerId).querySelectorAll(".staff").forEach(s => {
                         s.classList.remove(enteredFlag)
+                        that.getElementInRootSVG(s.getAttribute("refId")).classList.remove(enteredFlag)
                     })
                     that.lastStaffMouseEnter.classList.add(enteredFlag)
+                    that.getElementInRootSVG(that.lastStaffMouseEnter.getAttribute("refId")).classList.add(enteredFlag)
                 }
             })
         });
 
-        document.querySelectorAll(".measure").forEach(measure => {
+        this.interactionOverlay.querySelectorAll(".measure").forEach(measure => {
             measure.addEventListener(mouseEventName, function(evt){
                 evt.preventDefault()
                 var target = evt.target as HTMLElement
                 that.lastMeasureMouseEnter = target.closest(".measure")
                 if(!that.lastMeasureMouseEnter.classList.contains(enteredFlag)){
-                    document.querySelectorAll(".measure").forEach(m => {
+                    cq.getInteractOverlay(that.containerId).querySelectorAll(".measure").forEach(m => {
                         m.classList.remove(enteredFlag)
                     })
                     that.lastMeasureMouseEnter.classList.add(enteredFlag)
+                    //that.rootSVG.querySelector("#"+that.lastMeasureMouseEnter.id).classList.add(enteredFlag)
                 }
             })
         });
 
-        document.querySelectorAll(".layer").forEach(layer => {
+        this.interactionOverlay.querySelectorAll(".layer").forEach(layer => {
             layer.addEventListener(mouseEventName, function(evt){
                 evt.preventDefault()
                 var target = evt.target as HTMLElement
                 that.lastLayerMouseEnter = target.closest(".layer")
                 if(!that.lastLayerMouseEnter.classList.contains(enteredFlag)){
-                    document.querySelectorAll(".layer").forEach(l => {
+                    cq.getInteractOverlay(that.containerId).querySelectorAll(".layer").forEach(l => {
                         l.classList.remove(enteredFlag)
                     })
                     that.lastLayerMouseEnter.classList.add(enteredFlag)
                 }
             })
         });
-
+        return this
     }
 
     setMouseEnterElements(refElement: Element): void{
-        this.lastSystemMouseEnter = refElement.closest(".system")
-        this.lastMeasureMouseEnter = refElement.closest(".measure") || refElement.querySelector(".measure")
-        this.lastStaffMouseEnter = refElement.closest(".staff") || refElement.querySelector(".staff")
-        this.lastLayerMouseEnter = refElement.closest(".layer") || refElement.querySelector(".layer")
+        this.lastSystemMouseEnter = this.getElementInInteractOverlay(refElement.closest(".system")?.id)
+        this.lastMeasureMouseEnter = this.getElementInInteractOverlay(refElement.closest(".measure")?.id) || this.getElementInInteractOverlay(refElement.querySelector(".measure")?.id)
+        this.lastStaffMouseEnter = this.getElementInInteractOverlay(refElement.closest(".staff")?.id) || this.getElementInInteractOverlay(refElement.querySelector(".staff")?.id)
+        this.lastLayerMouseEnter = this.getElementInInteractOverlay(refElement.closest(".layer")?.id) || this.getElementInInteractOverlay(refElement.querySelector(".layer")?.id)
         
         this.update()
     }
@@ -143,9 +160,8 @@ export class Mouse2MEI{
     }
 
     findBBoxes(){
-        var notes = document.querySelectorAll(".note, .rest, .mRest") ;
-        var root = document.getElementById(c._ROOTSVGID_)
-        var rootBBox = root.getBoundingClientRect()
+        var notes = this.rootSVG.querySelectorAll(".note, .rest, .mRest, .notehead") ;
+        var root = this.rootSVG
         Array.from(notes).forEach(element => {
             var pt = new DOMPoint(element.getBoundingClientRect().x, element.getBoundingClientRect().y)
             var svg = root as unknown as SVGGraphicsElement 
@@ -167,9 +183,9 @@ export class Mouse2MEI{
 
         // this.measureMatrix.populateFromSVG(document.querySelector(c._ROOTSVGID_WITH_IDSELECTOR_));
         this.measureMatrix.populateFromMEI(this.currentMEI)
-        var staves = document.querySelectorAll(c._STAFF_WITH_CLASSSELECTOR_)
+        var staves = cq.getRootSVG(this.containerId).querySelectorAll(c._STAFF_WITH_CLASSSELECTOR_)
         Array.from(staves).forEach(element => {
-            let g = document.querySelectorAll("#" + element.id + " > path")
+            let g = cq.getRootSVG(this.containerId).querySelectorAll("#" + element.id + " > path")
             let staff = element;
             let idxStaff = parseInt(element.getAttribute("n")) - 1
             let closestMeasure = element.closest(".measure");
@@ -256,24 +272,25 @@ export class Mouse2MEI{
         let diffNote: number = null;
         let leftRightPos: string;
 
-        let allIDs: Array<string> = Array.from(document.querySelectorAll(".staff")).map(s => s.id)
+        let allIDs: Array<string> = Array.from(this.interactionOverlay.querySelectorAll(".staff")).map(s => s.getAttribute("refId"))
         if(this.lastStaffMouseEnter === null){return}
-        let staffIdx = allIDs.indexOf(this.lastStaffMouseEnter?.id)
+        let staffIdx = allIDs.indexOf(this.lastStaffMouseEnter?.getAttribute("refId"))
         let upperStaffBound = staffIdx * 5 + 0;
         let lowerStaffBound = staffIdx * 5 + 4;
 
         let aboveSystem: boolean =  (y < this.staffLineBBoxes[upperStaffBound]?.y) ? true : false;
         let belowSystem: boolean = (y > this.staffLineBBoxes[lowerStaffBound]?.y) ? true: false;
         let isInSystem: boolean = !aboveSystem && !belowSystem;
+        //console.log(allIDs, staffIdx, this.lastStaffMouseEnter, aboveSystem, belowSystem, isInSystem)
 
-        this.lastStaffMouseEnter.querySelectorAll(".layer").forEach(l => {
+        this.getElementInRootSVG(this.lastStaffMouseEnter?.getAttribute("refId"))?.querySelectorAll(".layer").forEach(l => {
             if(l.hasChildNodes()){
                 staffIsEmpty = false
             }
         })
 
         var currentStaffClef: string
-        for(const [key, value] of this.lastStaffMouseEnter.querySelector(".staffLine").classList.entries()){
+        for(const [key, value] of this.getElementInRootSVG(this.lastStaffMouseEnter?.getAttribute("refId"))?.querySelector(".staffLine").classList.entries()){
             if(value.indexOf("Clef") !== -1){
                 currentStaffClef = value
                 break;
@@ -284,14 +301,14 @@ export class Mouse2MEI{
         if(!staffIsEmpty){
             let nbb = []
             this.noteBBoxes.forEach(bb => {
-                if(bb.parentStaff.id === this.lastStaffMouseEnter.id){
+                if(bb.parentStaff.id === this.lastStaffMouseEnter?.getAttribute("refId")){
                     nbb.push(bb)
                 }
             });
             nbb.forEach(bb => {
                 let zerocrossing = x - bb.x 
                 let tempDiff = Math.sqrt(Math.abs(x - bb.x)**2 + Math.abs(y-bb.y)**2)
-                if(diffNote === null || Math.abs(tempDiff) < Math.abs(diffNote)){
+                if((diffNote === null || Math.abs(tempDiff) < Math.abs(diffNote))){
                     diffNote = tempDiff;
                     currentNearestNote = bb;
                     isLeftOfNote = zerocrossing <= 0 ? true : false;
@@ -367,7 +384,7 @@ export class Mouse2MEI{
                 this.newNoteY = currentNearestY + lineDist/2
             }
 
-            if(typeof map.get(nextPitchIdx) === "undefined"){return} // cursor is outside of score
+            if(map.get(nextPitchIdx) == undefined){return} // cursor is outside of score
             
             pname = map.get(nextPitchIdx).charAt(0)
             oct = map.get(nextPitchIdx).charAt(1)
@@ -377,7 +394,7 @@ export class Mouse2MEI{
             this.phantomLines = undefined
             if(options.staffLineId == undefined){
                 let sbb = []
-                this.staffLineBBoxes.forEach(bb => {if(bb.id === this.lastStaffMouseEnter.id) sbb.push(bb)});
+                this.staffLineBBoxes.forEach(bb => {if(bb.id === this.lastStaffMouseEnter?.getAttribute("refId")) sbb.push(bb)});
                 sbb.forEach(bb => {
                     let tempDiff = y - bb.y
                     if(diffStaff === null || Math.abs(tempDiff) < Math.abs(diffStaff)){
@@ -407,13 +424,15 @@ export class Mouse2MEI{
                 else if(currentNearestStaffLine.classList.contains("ClefC")){map = idxNoteMapCClef}
                 else{throw new Error("No Note to Clef Mapping found")}
                 
+                if(map.get(nextPitchIdx) == undefined){return}
+
                 pname = map.get(nextPitchIdx).charAt(0)
                 oct = map.get(nextPitchIdx).charAt(1)
                 
             }else{
                 let pitch: string[]
                 try{
-                    pitch = document.getElementById(options.staffLineId).getAttribute("class").split(" ")
+                    pitch = cq.getInteractOverlay(this.containerId).querySelector("#" + options.staffLineId).getAttribute("class").split(" ")
                 }catch{
                     return
                 }
@@ -426,22 +445,25 @@ export class Mouse2MEI{
                 pname = p[0].charAt(0)
                 oct = p[0].charAt(1)
                 this.newNoteY = this.staffLineBBoxes.filter(function(bb){
-                    return bb.classList === document.getElementById(options.staffLineId).classList
+                    return bb.classList === cq.getInteractOverlay(this.containerId).querySelector("#" + options.staffLineId).classList
                 })[0].y // assert that length is 1 (all classlists are unique for )
             }
         }
 
         //get relevant staffinfo
         //var closestStaff = this.currentMEI.getElementById(currentNearestNote.id).closest("staff")
-        var closestStaff = this.currentMEI.getElementById(this.lastStaffMouseEnter.id)
+        var closestStaff = this.currentMEI.getElementById(this.lastStaffMouseEnter?.getAttribute("refId"))
         var closestMeasure = closestStaff.closest("measure")
         var closestStaffIdx = parseInt(closestStaff.getAttribute("n")) - 1
         var closestMeasureIdx = parseInt(closestMeasure.getAttribute("n")) - 1
         var nearestNoteId = (currentNearestNote !== null) ? currentNearestNote.id : null
+        if(nearestNoteId !== null){ // ensure note id to be in new note
+            nearestNoteId = this.rootSVG.querySelector("#"+nearestNoteId).classList.contains("notehead") ? this.rootSVG.querySelector("#"+nearestNoteId).closest(".note").id : nearestNoteId
+        }
 
         var keysig = this.measureMatrix.get(closestMeasureIdx, closestStaffIdx).keysig
         var accid
-        if(typeof keysig !== "undefined"){
+        if(keysig != undefined){
             accid = keysigToNotes.get(keysig)
             accid = accid.filter((s:string) => {return s === pname})
             if(accid.length === 1){
@@ -459,9 +481,9 @@ export class Mouse2MEI{
             accid: accid,
             nearestNoteId: nearestNoteId,
             relPosX: leftRightPos,
-            staffId: this.lastStaffMouseEnter.id,
+            staffId: this.lastStaffMouseEnter?.getAttribute("refId"),
             chordElement: options.targetChord,
-            rest: document.getElementById("pauseNote").classList.contains("selected")
+            rest: this.container.querySelector("#pauseNote").classList.contains("selected")
         }
         
         this.newNote = newNote
@@ -480,20 +502,19 @@ export class Mouse2MEI{
         var notes: NoteBBox[] = this.getNoteBBoxes()
         var nextNote: NoteBBox
         var tempDist: number = Math.pow(10, 10)
-        var rootBBox = document.getElementById(c._ROOTSVGID_).getBoundingClientRect()
         notes.forEach(n => {
             var x: number
             var y: number
-            if(document.getElementById(n.id).closest(".chord") && navigator.userAgent.toLowerCase().indexOf("firefox") > -1){ // special rule for firefox browsers
-                x = document.getElementById(n.id).closest(".chord").getBoundingClientRect().x
-                y = document.getElementById(n.id).closest(".chord").getBoundingClientRect().y
+            if(this.getElementInRootSVG(n.id)?.closest(".chord") && navigator.userAgent.toLowerCase().indexOf("firefox") > -1){ // special rule for firefox browsers
+                x = this.getElementInRootSVG(n.id)?.closest(".chord").getBoundingClientRect().x
+                y = this.getElementInRootSVG(n.id)?.closest(".chord").getBoundingClientRect().y
             }else{
                 x = n.x
                 y = n.y
             }
 
             //filter for left and right elements
-            if(!document.getElementById(n.id).classList.contains("mRest")){ //mRest are excluded from this rule
+            if(!this.rootSVG.querySelector("#"+n.id).classList.contains("mRest")){ //mRest are excluded from this rule
                 if(orientation.left === false){
                     if(x < posX) return //exclude left elements
                 }else if(orientation.right === false){
@@ -502,7 +523,7 @@ export class Mouse2MEI{
             }
             
             var dist = Math.abs(x - posX)
-            var staffCondition = n.parentStaff === this.lastStaffMouseEnter
+            var staffCondition = n.parentStaff === this.getElementInRootSVG(this.lastStaffMouseEnter?.getAttribute("refId"))
             if(checkStaff === false){
                 staffCondition = true
                 dist = Math.sqrt(Math.abs(x - posX)**2 + Math.abs(y - posY)**2)
@@ -515,7 +536,6 @@ export class Mouse2MEI{
         return nextNote
     }
 
-    
 
     ///// GETTER/ SETTER ///////
 
@@ -554,7 +574,7 @@ export class Mouse2MEI{
      */
     setMarkedNoteDurations(dur: number | string): Boolean{
         var retVal = false
-        var markedElements =  document.querySelectorAll(".note.marked, .rest.marked")
+        var markedElements =  this.rootSVG.querySelectorAll(".note.marked, .rest.marked")
         markedElements.forEach(m => {
             var currMeiClone = this.currentMEI.cloneNode(true) as Document
             var meiElement = this.currentMEI.getElementById(m.id)
@@ -598,7 +618,7 @@ export class Mouse2MEI{
      */
     setMarkedNoteDots(dots: number | string): Boolean{
         var retVal = false
-        var markedElements =  document.querySelectorAll(".note.marked, .rest.marked")
+        var markedElements =  this.rootSVG.querySelectorAll(".note.marked, .rest.marked")
         markedElements.forEach(m => {
             var currMeiClone = this.currentMEI.cloneNode(true) as Document
             var meiElement = this.currentMEI.getElementById(m.id)
@@ -634,6 +654,20 @@ export class Mouse2MEI{
         return retVal
     }
 
+    getElementInRootSVG(id: string): Element{
+        if(id !== "" && id!== null){
+            return this.rootSVG.querySelector("#"+id)
+        }
+        return 
+    }
+
+    getElementInInteractOverlay(id: string): Element{
+        if(id !== "" && id !== null){
+            return this.interactionOverlay.querySelector("#"+id)
+        }
+        return 
+    }
+
     setDotsNewNote(dots: number | string){
         this.noteNewDots = dots.toString();
     }
@@ -643,6 +677,14 @@ export class Mouse2MEI{
         if(this.noteBBoxes?.length === 0){
             this.findBBoxes()
         }
+        return this
+    }
+
+    setContainerId(id: string){
+        this.containerId = id
+        this.interactionOverlay = cq.getInteractOverlay(id)
+        this.rootSVG = cq.getRootSVG(id)
+        this.container = document.getElementById(id)
         return this
     }
 
@@ -669,7 +711,14 @@ export class Mouse2MEI{
     update(){
         this.noteBBoxes.length = 0;
         this.staffLineBBoxes.length = 0;
-        this.setMouseEnterElementListeners();
         this.findBBoxes();
+        this.updateOverlayCallback()
+        this.setMouseEnterElementListeners();
+        return this
+    }
+
+    setUpdateOverlayCallback(updateOverlayCallback: () => void){
+        this.updateOverlayCallback = updateOverlayCallback
+        return this
     }
 }

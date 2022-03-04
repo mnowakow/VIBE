@@ -1,6 +1,7 @@
 import { NoteBBox } from "../utils/Types";
 import { constants as c } from "../constants"
 import { Mouse2MEI } from "../utils/Mouse2MEI";
+import * as cq from "../utils/convenienceQueries"
 
 class Cursor{
     private cursorRect: SVGRectElement;
@@ -17,9 +18,15 @@ class Cursor{
     private maxOpacity: number = 0
     private isBol: Boolean
 
-    constructor(){
-        if(document.getElementById("cursor") !== null){
-            document.getElementById("cursor").remove()
+    private containerId: string
+    private interactionOverlay: Element
+    private container: Element
+    private rootSVG: Element
+
+    constructor(containerId: string){
+        this.setContainerId(containerId)
+        if(this.interactionOverlay.querySelector("#cursor") !== null){
+            this.interactionOverlay.querySelector("#cursor").remove()
         }
         // this.cursor = document.createElementNS("http://www.w3.org/2000/svg", "svg");
         // var root = document.getElementById(c._ROOTSVGID_)
@@ -55,30 +62,34 @@ class Cursor{
 
 
     setClickListener(){
-        document.getElementById(c._ROOTSVGID_).addEventListener('click', this.clickHandler)
+        this.setContainerId(this.containerId)
+        this.interactionOverlay.addEventListener('click', this.clickHandler)
     }
 
     removeClickListener(){
-        document.getElementById(c._ROOTSVGID_).removeEventListener('click', this.clickHandler)
+        this.setContainerId(this.containerId)
+        this.interactionOverlay.removeEventListener('click', this.clickHandler)
     }
 
     clickHandler = (function clickHandler(evt: MouseEvent){
         //evt.stopPropagation();
-
-        var selectRect = document.querySelector("#keyModeSelectRect")
+        console.log("I got CLICKED!")
+        var selectRect = this.container.querySelector("#keyModeSelectRect")
         if(selectRect !== null){
             selectRect.remove()
-            document.querySelectorAll(".marked").forEach(m => {
+            this.rootSVG.querySelectorAll(".marked").forEach(m => {
                 m.classList.remove("marked")
+                this.interactionOverlay.querySelector("#" + m.id).classList.remove("marked")
             })
         }
 
         var pt = new DOMPoint(evt.clientX, evt.clientY)
-        var rootMatrix = (document.getElementById("rootSVG") as unknown as SVGGraphicsElement).getScreenCTM().inverse()
+        var rootMatrix = (this.rootSVG as unknown as SVGGraphicsElement).getScreenCTM().inverse()
         var ptX = pt.matrixTransform(rootMatrix).x
         var ptY =  pt.matrixTransform(rootMatrix).y
         var element = this.findScoreTarget(ptX, ptY)
         this.definePosById(element?.id)
+        console.log("FIND SCORE TARGET", element)
         
     }).bind(this)
 
@@ -86,8 +97,10 @@ class Cursor{
         this.posx = x
         this.posy = y 
         var nbb = this.m2m.findScoreTarget(this.posx, this.posy, true, {left: true, right: false}) // only consider left Elements of click position
-        var element = document.getElementById(nbb?.id)
-        if(element === null) return
+        if(nbb != undefined && nbb !== null){
+            var element = this.rootSVG.querySelector("#" + nbb.id)
+        }
+        if(element === null && element == undefined) return
         if(element.classList.contains("note") && element.closest(".chord") !== null){
             element = element.closest(".chord")
         }
@@ -102,19 +115,19 @@ class Cursor{
      */
     definePosById(id: string){
         // debugging 
-        console.log("NextElement: ", document.getElementById(id))
-        document.querySelectorAll("*[fill=green]").forEach(fg => {
-            fg.removeAttribute("fill")
-        })
-        document.getElementById(id)?.setAttribute("fill", "green")
+        this.setContainerId(this.containerId)
+        // this.rootSVG.querySelectorAll("*[fill=green]").forEach(fg => {
+        //     fg.removeAttribute("fill")
+        // })
+       this.rootSVG.querySelector("#" + id)?.setAttribute("fill", "green")
         //
 
         if(id == undefined) return
 
         this.flashStop()
-        this.cursor = document.getElementById("manipulatorCanvas") as unknown as SVGSVGElement
+        this.cursor = this.interactionOverlay.querySelector("#manipulatorCanvas") as unknown as SVGSVGElement
         this.cursor.insertBefore(this.cursorRect, this.cursor.firstChild)
-        var element = document.getElementById(id)
+        var element = this.rootSVG.querySelector("#"+id)
         element = element?.classList.contains("layer") ? element.closest(".staff") : element //special rule for layer (== beginning of measure)
 
         var elementBBox: DOMRect
@@ -142,7 +155,7 @@ class Cursor{
             this.nextElement = element
             this.isBol = false
         }else{
-            currLayer = document.querySelector(".layer[n=\"" + (parseInt(id[id.length-1]) + 1).toString() + "\"]")
+            currLayer = this.rootSVG.querySelector(".layer[n=\"" + (parseInt(id[id.length-1]) + 1).toString() + "\"]")
             currLayerY = currLayer.getBoundingClientRect().y
             elementBBox = this.nextElement.getBoundingClientRect()
             element = this.nextElement as HTMLElement
@@ -169,7 +182,7 @@ class Cursor{
         var ptHeight = ptRB.y - ptLT.y
 
         var drawChordRect: Boolean
-        if(document.getElementById("chordButton").classList.contains("selected")){
+        if(this.container.querySelector("#chordButton").classList.contains("selected")){
             drawChordRect = true
         }else{
             drawChordRect = false
@@ -198,8 +211,6 @@ class Cursor{
         this.cursorRect.setAttribute("y", this.posy.toString())
         this.cursorRect.setAttribute("refId", element.classList.contains("staff") ? currLayer.id : element.id)
 
-        //document.querySelector(c._ROOTSVGID_WITH_IDSELECTOR_).insertBefore(this.cursorRect, document.querySelector(c._ROOTSVGID_WITH_IDSELECTOR_).firstChild);
-        //document.querySelector(c._ROOTSVGID_WITH_IDSELECTOR_).insertBefore(this.cursor, document.querySelector(c._ROOTSVGID_WITH_IDSELECTOR_).firstChild);
         this.flashStart();
     }
 
@@ -220,6 +231,14 @@ class Cursor{
 
     setM2M(m2m: Mouse2MEI){
         this.m2m = m2m
+    }
+
+    setContainerId(id: string){
+        this.containerId = id
+        this.container = document.getElementById(id)
+        this.interactionOverlay = cq.getInteractOverlay(id)
+        this.rootSVG = cq.getRootSVG(id)
+        return this
     }
 }
 

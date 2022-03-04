@@ -3,7 +3,7 @@ export type Attributes = { pname?: string; oct?: number; shape?: string; dur?: s
 /** An editing action sent to verovio as described [here](https://github.com/DDMAL/Neon/wiki/Toolkit-Actions). */
 export type EditorAction = {
   action: string;
-  param: object | EditorAction[];
+  param: {elementId: string, x?: number, y?: number} | EditorAction[];
 };
 
 /** A message sent to the verovio web worker. */

@@ -6,6 +6,9 @@ import Annotations from "../gui/Annotations";
 import { NewNote } from "../utils/Types";
 import Cursor from "../gui/Cursor";
 import PhantomElementHandler from "./PhantomElementHandler";
+import * as cq from "../utils/convenienceQueries"
+import { threadId } from "worker_threads";
+import { runInThisContext } from "vm";
 
 
 class ClickModeHandler implements Handler{
@@ -17,44 +20,59 @@ class ClickModeHandler implements Handler{
     insertCallback: (newNote: NewNote, replace: Boolean) => Promise<any>;
     deleteCallback: (notes: Array<Element>) => Promise<any>;
 
+    private containerId: string
+    private rootSVG: Element
+    private interactionOverlay: Element
+    private container: Element
+
     setListeners(){
         // Listenere for whole SVG (maybe just layer?)
-        var svg = document.querySelectorAll(c._ROOTSVGID_WITH_IDSELECTOR_)
-        Array.from(svg).forEach(element => {
-            if (!["manipulator"].some(cn => element.classList.contains(cn))){
-                element.addEventListener('click', this.clickHandler)
-                element.addEventListener("mousemove", this.mouseOverChordHandler)
-            }
-        });
-
-
+        // var svg = document.querySelectorAll(c._ROOTSVGID_WITH_IDSELECTOR_)
+        // Array.from(svg).forEach(element => {
+        //     if (!["manipulator"].some(cn => element.classList.contains(cn))){
+        //         element.addEventListener('click', this.clickHandler)
+        //         element.addEventListener("mousemove", this.mouseOverChordHandler)
+        //     }
+        // });
+        
+        this.interactionOverlay.addEventListener('click', this.clickHandler)
+        this.interactionOverlay.addEventListener("mousemove", this.mouseOverChordHandler)
+        
         // Listener just for staves
-        var staves = document.querySelectorAll(".staffLine")
+        var staves = this.interactionOverlay.querySelectorAll(".staffLine")
         Array.from(staves).forEach(element => {
             element.addEventListener('click', this.clickHandler)
         })
     }
 
     removeListeners(){
-        var svg = document.querySelectorAll(c._ROOTSVGID_WITH_IDSELECTOR_)
-        Array.from(svg).forEach(element => {
-            element.removeEventListener('click', this.clickHandler)
-            element.removeEventListener("mousemove", this.mouseOverChordHandler)
-            if(typeof this.annotations !== "undefined"){
+        // var svg = document.querySelectorAll(c._ROOTSVGID_WITH_IDSELECTOR_)
+        // Array.from(svg).forEach(element => {
+        //     element.removeEventListener('click', this.clickHandler)
+        //     element.removeEventListener("mousemove", this.mouseOverChordHandler)
+        //     if(typeof this.annotations !== "undefined"){
+        //     var highLightElements: NodeListOf<Element> = this.annotations.getAnnotationCanvas().querySelectorAll(".highlightChord")
+        //     Array.from(highLightElements).forEach(el => {
+        //         el.remove()
+        //     })
+        //     }
+        // });
+
+        this.interactionOverlay.removeEventListener('click', this.clickHandler)
+        this.interactionOverlay.removeEventListener("mousemove", this.mouseOverChordHandler)
+        if(this.annotations != undefined){
             var highLightElements: NodeListOf<Element> = this.annotations.getAnnotationCanvas().querySelectorAll(".highlightChord")
             Array.from(highLightElements).forEach(el => {
                 el.remove()
             })
-            }
-        });
+        }
 
-        document.querySelectorAll(".highlighted").forEach((c: Element) => {
+        this.container.querySelectorAll(".highlighted").forEach((c: Element) => {
             c.classList.remove("highlighted")
         })
 
-
         // Listener just for staves
-        var staves = document.querySelectorAll(".staffLine")
+        var staves = this.interactionOverlay.querySelectorAll(".staffLine")
         Array.from(staves).forEach(element => {
             element.removeEventListener('click', this.clickHandler)          
         })
@@ -73,7 +91,7 @@ class ClickModeHandler implements Handler{
         if(this.musicPlayer.getIsPlaying() === true){return} // getIsPlaying could also be undefined
         
         var pt = new DOMPoint(evt.clientX, evt.clientY)
-        var rootSVG = document.getElementById("rootSVG") as unknown as SVGGraphicsElement
+        var rootSVG = this.rootSVG as unknown as SVGGraphicsElement
         var pospt = pt.matrixTransform(rootSVG.getScreenCTM().inverse()) 
         
         var posx = pospt.x
@@ -84,7 +102,7 @@ class ClickModeHandler implements Handler{
         if(target.classList.contains("staffLine")){
             options["staffLineId"] = target.id
         }
-        if(document.getElementById("phantomNote")?.classList.contains("onChord")){
+        if(this.interactionOverlay.querySelector("#phantomNote")?.classList.contains("onChord")){
             options["targetChord"] = this.findScoreTarget(posx, posy)
         }
 
@@ -111,7 +129,7 @@ class ClickModeHandler implements Handler{
         }
 
         if(!pitchExists){
-            var replace = (document.getElementById("insertToggle") as HTMLInputElement).checked && newNote.chordElement == undefined
+            var replace = (this.container.querySelector("#insertToggle") as HTMLInputElement).checked && newNote.chordElement == undefined
             this.insertCallback(this.m2m.getNewNote(), replace).then(() => {
                 this.musicPlayer.generateTone(this.m2m.getNewNote())
             }).catch(() => {
@@ -122,9 +140,7 @@ class ClickModeHandler implements Handler{
 
 
     mouseOverChordHandler = (function mouseOverHandler (evt: MouseEvent): void{
-        if(!this.phantomElementHandler.getIsTrackingMouse()){return}
-        var root = document.getElementById(c._ROOTSVGID_)
-        var rootBBox = root.getBoundingClientRect()    
+        if(!this.phantomElementHandler.getIsTrackingMouse()){return}   
         var posx = evt.offsetX
         var posy = evt.offsetY
 
@@ -133,7 +149,7 @@ class ClickModeHandler implements Handler{
         if(this.prevElementToHighlight == undefined || this.currentElementToHighlight !== elementToHighlight){
             
             // in css: elements get highlight color according to layer
-            document.querySelectorAll(".highlighted").forEach(h => {
+            this.container.querySelectorAll(".highlighted").forEach(h => {
                 h.classList.remove("highlighted")
             })
             if(!elementToHighlight.classList.contains("chord")){
@@ -150,12 +166,12 @@ class ClickModeHandler implements Handler{
             }
 
             //snap note to closest Chord
-            var phantom = document.getElementById("phantomNote")
+            var phantom = this.interactionOverlay.querySelector("#phantomNote")
             var cx = parseFloat(phantom.getAttribute("cx"))
 
             var ptLeft = new DOMPoint(elementToHighlight.getBoundingClientRect().left, 0)
             var ptRight = new DOMPoint(elementToHighlight.getBoundingClientRect().right, 0)
-            var rootSVG = root as unknown as SVGGraphicsElement
+            var rootSVG = this.rootSVG as unknown as SVGGraphicsElement
             var left = ptLeft.matrixTransform(rootSVG.getScreenCTM().inverse()).x
             var right = ptRight.matrixTransform(rootSVG.getScreenCTM().inverse()).x
 
@@ -232,7 +248,7 @@ class ClickModeHandler implements Handler{
     findScoreTarget(posx: number, posy: number): Element{
         var nextNote = this.m2m.findScoreTarget(posx, posy)
         if(nextNote != undefined){
-            var el = document.getElementById(nextNote.id).closest(".chord") || document.getElementById(nextNote.id)
+            var el = this.rootSVG.querySelector("#"+nextNote.id).closest(".chord") || this.rootSVG.querySelector("#"+nextNote.id)
             return el
         }
         return
@@ -248,6 +264,14 @@ class ClickModeHandler implements Handler{
 
     setMusicPlayer(musicPlayer: MusicPlayer){
         this.musicPlayer = musicPlayer
+        return this
+    }
+
+    setContainerId(id: string){
+        this.containerId = id
+        this.rootSVG = cq.getRootSVG(id)
+        this.interactionOverlay = cq.getInteractOverlay(id)
+        this.container = document.getElementById(id)
         return this
     }
 
@@ -269,6 +293,7 @@ class ClickModeHandler implements Handler{
 
     setPhantomCursor(peh: PhantomElementHandler){
         this.phantomElementHandler = peh
+        
         return this
     }
 

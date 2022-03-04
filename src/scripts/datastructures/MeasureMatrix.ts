@@ -36,9 +36,9 @@ class MeasureMatrix{
     populateFromSVG(svg: SVGGElement){
         this.matrix =  new Array<Array<Staff>>();
         this.cols = svg.querySelectorAll(".measure").length;
-        this.rows = svg.querySelector(".measure").querySelectorAll(c._STAFF_WITH_CLASSSELECTOR_).length;
+        this.rows = svg.querySelector(".measure").querySelectorAll(".staff").length;
 
-        var measures = document.querySelectorAll(".measure")
+        var measures = svg.querySelectorAll(".measure")
         for(var i = 0; i < this.cols; i++){
             let col = new Array<Staff>();
             let measure = measures[i]

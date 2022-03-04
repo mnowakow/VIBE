@@ -3,6 +3,7 @@ import { line } from 'd3';
 import { threadId } from 'worker_threads';
 import {constants as c} from '../constants'
 import { Mouse2MEI } from '../utils/Mouse2MEI';
+import * as cq from "../utils/convenienceQueries"
 
 const svgNS = "http://www.w3.org/2000/svg";
 
@@ -11,10 +12,15 @@ class PhantomElement{
     noteR: number
     phantomCanvas: SVGSVGElement;
     noteElement: Element
+    containerId: String
+    rootSVG: Element
+    interactionOverlay: Element
+    container: Element
 
-    constructor(elementName: string, options = null, canvas = undefined){
+    constructor(elementName: string, containerId: string, options = null, canvas = undefined){
         elementName = elementName.toLowerCase();
-        this.phantomCanvas = canvas || document.getElementById("phantomCanvas")
+        this.setContainerId(containerId)
+        this.phantomCanvas = canvas || this.interactionOverlay.querySelector("#phantomCanvas")
         switch(elementName){
         case "note":
             this.makeNewPhantomNote();
@@ -30,7 +36,7 @@ class PhantomElement{
 
     makeNewPhantomNote(){
         this.removePhantomNote()
-        if(document.body.classList.contains("clickmode") && document.getElementById("phantomNote") === null){
+        if(this.container.classList.contains("clickmode") && this.interactionOverlay.querySelector("#phantomNote") === null){
             var circle = document.createElementNS(svgNS, "circle")
             this.phantomCanvas.insertBefore(circle, this.phantomCanvas.firstChild);
             circle.setAttribute("id", "phantomNote");
@@ -48,7 +54,7 @@ class PhantomElement{
             return
         }
 
-        if(document.body.classList.contains("clickmode")){
+        if(this.container.classList.contains("clickmode")){
             new Promise((resolve): void => {
                 var line = document.createElementNS(svgNS, "line")
                 this.phantomCanvas.insertBefore(line, this.phantomCanvas.firstChild);
@@ -69,8 +75,8 @@ class PhantomElement{
     }
 
     removePhantomNote(){
-        if(document.getElementById("phantomNote") !== null){
-            document.getElementById("phantomNote").remove()
+        if(this.container.querySelector("#phantomNote") !== null){
+            this.container.querySelector("#phantomNote").remove()
         }
     }
 
@@ -80,6 +86,14 @@ class PhantomElement{
 
     setPhantomCanvas(canvas: SVGSVGElement){
         this.phantomCanvas = canvas
+        return this
+    }
+
+    setContainerId(id: string){
+        this.containerId = id
+        this.interactionOverlay = cq.getInteractOverlay(id)
+        this.rootSVG = cq.getRootSVG(id)
+        this.container = document.getElementById(id)
         return this
     }
 

@@ -17,7 +17,11 @@ import WindowHandler from "./handlers/WindowHandler"
 import SidebarHandler from './handlers/SideBarHandler';
 import LabelHandler from './handlers/LabelHandler';
 import ModHandler from './handlers/ModHandler';
-import { rejects } from 'assert';
+import * as cq from "./utils/convenienceQueries"
+import * as coordinates from "./utils/coordinates"
+import { resolve } from 'path';
+import { idText } from 'typescript';
+import { REFUSED } from 'dns';
 
 
 /**
@@ -64,13 +68,17 @@ class Core {
   private scoreGraph: ScoreGraph;
   private svgFiller: SVGFiller;
   private lastInsertedNoteId: string
-  private scoreContainerScale: number
+  private containerId: string
+  private container: Element
+  private interactionOverlay: Element
   private meiChangedCallback: (mei: string) => void;
 
   /**
    * Constructor for NeonCore
    */
-  constructor () {
+  constructor (containerId: string) {
+    this.containerId = containerId
+    this.container = document.getElementById(containerId)
     this.verovioWrapper = new VerovioWrapper();
     this.undoMEIStacks = Array<string>();
     this.redoMEIStacks = new Array<string>();
@@ -78,12 +86,9 @@ class Core {
     //this.undoAnnotationStacks.push(new Array<Element>())
     this.redoAnnotationStacks = new Array<Array<Element>>();
     //this.redoAnnotationStacks.push(new Array<Element>())
-    this.musicplayer = new MusicPlayer()
     this.verivioMeasureWrappers = new Map();
-
     this.windowHandler = new WindowHandler()
     this.svgFiller = new SVGFiller()
-    this.scoreContainerScale = 1
 
     window.addEventListener("error", (function(e){
         console.error("Emergency Undo", e)
@@ -100,12 +105,12 @@ class Core {
    */
   loadData (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string): Promise<string> {
   
-    if(document.getElementById(c._ROOTSVGID_) !== null){
+    if(cq.getRootSVG(this.containerId) !== null){
       this.svgFiller.cacheClasses()
-      document.getElementById(c._ROOTSVGID_).remove()
+      cq.getRootSVG(this.containerId).remove()
      }
     var waitingFlag = "waiting"
-      if(document.getElementById(c._ROOTSVGID_) !== null){
+      if(cq.getRootSVG(this.containerId) !== null){
        document.body.classList.add(waitingFlag)
       }
     return new Promise((resolve, reject): void => {
@@ -152,11 +157,13 @@ class Core {
       svg = response.mei;
       svg = svg.replace("<svg", "<svg id=\"" + c._ROOTSVGID_ + "\"");
       try{
-        document.getElementById(targetDivID).innerHTML = svg;
+        cq.getBySelector(this.containerId, "#", targetDivID, "#", ">").innerHTML = svg
       }catch(ignore){
         console.log("Fehler bei einfügen von SVG")
       }
-    
+      this.svgFiller.distributeIds(this.container.querySelector("#rootSVG .definition-scale"))
+      this.createSVGOverlay()
+      
       document.body.classList.remove(waitingFlag)
     
       this.getMEI("").then(mei => {
@@ -164,9 +171,12 @@ class Core {
         this.currentMEIDoc = this.getCurrentMEI(true) as Document
         console.log(this.currentMEIDoc)
         this.svgFiller
+          .setContainerId(this.containerId)
           .loadClasses()
           .fillSVG(this.currentMEIDoc)
-        this.musicplayer.setMEI(this.currentMEIDoc)
+        this.musicplayer = this.musicplayer || new MusicPlayer(this.containerId)
+        this.musicplayer
+          .setMEI(this.currentMEIDoc)
         this.undoMEIStacks.push(mei)
 
         //mark if note was inserted (enables direct manipulation)
@@ -174,8 +184,8 @@ class Core {
         //   m.classList.remove("marked")
         // })
 
-        if(this.lastInsertedNoteId != undefined && document.getElementById(targetDivID).classList.contains("clickmode")){
-          document.getElementById(this.lastInsertedNoteId)?.classList.add("marked")
+        if(this.lastInsertedNoteId != undefined && this.container.querySelector("#" + targetDivID).classList.contains("clickmode")){
+          this.container.querySelector("#" + this.lastInsertedNoteId)?.classList.add("marked")
         }
 
         if(this.meiChangedCallback != undefined){
@@ -187,10 +197,10 @@ class Core {
         this.getMidi().then(midi => {
           this.musicplayer.setMidi(midi)
           this.musicplayer.addCanvas()
-          this.getNoteTimes().then(md => {
-            this.musicplayer.setNoteTimes(md)
+          this.resolveMidiTimes().then(md => {
+            this.musicplayer.setMidiTimes(md)
             this.musicplayer.update()
-            this.scoreGraph = new ScoreGraph(this.currentMEIDoc, md)
+            this.scoreGraph = new ScoreGraph(this.currentMEIDoc, this.containerId, md)
             this.musicplayer.setScoreGraph(this.scoreGraph)
             this.initializeHandlers()
             resolve(svg);
@@ -212,16 +222,21 @@ class Core {
     if(this.m2m == undefined){
       this.m2m = new Mouse2MEI()
     }else{
-      this.m2m.update()
+    //   this.m2m.update()
     }
-    this.m2m.setCurrentMEI(this.currentMEIDoc)
-    this.insertModeHandler = typeof this.insertModeHandler === "undefined" ? new InsertModeHandler() : this.insertModeHandler
-    this.deleteHandler = typeof this.deleteHandler === "undefined" ? new DeleteHandler() : this.deleteHandler
-    this.noteDragHandler = new NoteDragHandler()
-    this.keyboardHandler = typeof this.keyboardHandler === "undefined" ? new GlobalKeyboardHandler() : this.keyboardHandler
-    this.sidebarHandler = typeof this.sidebarHandler === "undefined" ? new SidebarHandler() : this.sidebarHandler
-    this.labelHandler = this.labelHandler == undefined ? new LabelHandler() : this.labelHandler
-    this.modHandler = this.modHandler == undefined ? new ModHandler : this.modHandler
+    this.m2m
+      .setContainerId(this.containerId)
+      .setUpdateOverlayCallback(this.createSVGOverlay)
+      .setCurrentMEI(this.currentMEIDoc)
+      .update()
+      //.setMouseEnterElementListeners()
+    this.insertModeHandler = this.insertModeHandler || new InsertModeHandler(this.containerId)
+    this.deleteHandler = this.deleteHandler|| new DeleteHandler(this.containerId)
+    this.noteDragHandler = new NoteDragHandler(this.containerId)
+    this.keyboardHandler = this.keyboardHandler || new GlobalKeyboardHandler(this.containerId)
+    this.sidebarHandler = this.sidebarHandler || new SidebarHandler()
+    this.labelHandler = this.labelHandler || new LabelHandler(this.containerId)
+    this.modHandler = this.modHandler || new ModHandler(this.containerId)
 
     this.dispatchFunctions()
   }
@@ -231,10 +246,12 @@ class Core {
    */
   dispatchFunctions(){
     this.labelHandler
+      .setContainerId(this.containerId)
       .setCurrentMEI(this.currentMEIDoc)
       .reset()
 
     this.insertModeHandler
+      .setContainerId(this.containerId)
       .setM2M(this.m2m)
       .setMusicPlayer(this.musicplayer)
       .setDeleteHandler(this.deleteHandler)
@@ -250,10 +267,12 @@ class Core {
       .resetCanvas()
 
     this.deleteHandler
+      .setContainerId(this.containerId)
       .setDeleteCallback(this.delete)
       .update()
 
     this.noteDragHandler
+      .setContainerId(this.containerId)
       .setCurrentMEI(this.currentMEIDoc)
       .setDeleteHandler(this.deleteHandler)
       .setEditCallback(this.edit)
@@ -262,6 +281,7 @@ class Core {
       .setM2M(this.m2m)
 
     this.keyboardHandler
+      .setContainerId(this.containerId)
       .setUndoCallback(this.undo)
       .setRedoCallback(this.redo)
       .setCurrentMei(this.currentMEIDoc)
@@ -272,6 +292,7 @@ class Core {
       .resetListeners()
     
     this.windowHandler
+      .setContainerId(this.containerId)
       .setM2M(this.m2m)
       .setCurrentMEI(this.currentMEIDoc)
       .setLoadDataCallback(this.loadDataFunction)
@@ -280,6 +301,7 @@ class Core {
       .resetListeners()
 
     this.sidebarHandler
+      .setContainerId(this.containerId)
       .setCurrentMei(this.currentMEIDoc)
       .setM2M(this.m2m)
       .setLoadDataCallback(this.loadDataFunction)
@@ -288,6 +310,7 @@ class Core {
       .resetListeners()
 
     this.modHandler
+      .setContainerId(this.containerId)
       .resetListeners()
       .setCurrentMEI(this.currentMEIDoc)
       .setLoadDataCallback(this.loadDataFunction)
@@ -316,6 +339,7 @@ class Core {
    * 
    */
   insert = (function insert (newNote: NewNote, replace: Boolean = false): Promise<boolean> {    
+    console.log(newNote)
     this.lastInsertedNoteId = newNote.id
 
     return new Promise((resolve, reject): void => {
@@ -342,18 +366,18 @@ class Core {
    */
    undo = (function undo (pageURI: string  = ""): Promise<boolean> {
     return new Promise((resolve): void => {
-        if(document.getElementsByClassName("annotMode").length > 0){
+        if(this.container.classList.contains("annotMode")){
           this.undoAnnotationStacks.pop()
           const annotstate = this.undoAnnotationStacks.pop()
           if(annotstate != undefined){
-            var annotCanvas = document.getElementById("annotationCanvas")
-            var annotList = document.getElementById("annotList")
+            var annotCanvas = this.container.querySelector("#annotationCanvas")
+            var annotList = this.container.querySelector("#annotList")
             this.redoAnnotationStacks.push([annotCanvas, annotList])
             this.undoAnnotationStacks.push([annotCanvas, annotList])
             annotCanvas.replaceWith(annotstate[0])
             annotList.replaceWith(annotstate[1])
             this.keyboardHandler.resetListeners()
-            document.dispatchEvent(new Event("annotationCanvasChanged"))
+            this.container.dispatchEvent(new Event("annotationCanvasChanged"))
           }
           resolve(true)
           return
@@ -376,11 +400,11 @@ class Core {
    */
   redo = (function redo (pageURI: string = ""): Promise<boolean> {
     return new Promise((resolve): void => {
-      if(document.getElementsByClassName("annotMode").length > 0){
+      if(this.container.classList.contains("annotMode")){
         const annotstate = this.redoAnnotationStacks.pop()
         if(annotstate != undefined){
-          var annotCanvas = document.getElementById("annotationCanvas")
-          var annotList = document.getElementById("annotList")
+          var annotCanvas = this.container.querySelector("#annotationCanvas")
+          var annotList = this.container.querySelector("#annotList")
           this.undoAnnotationStacks.push([annotCanvas, annotList])
           annotCanvas.replaceWith(annotstate[0])
           annotList.replaceWith(annotstate[1])
@@ -408,31 +432,39 @@ class Core {
    */
   edit = (function edit(action: EditorAction): Promise<boolean> {
     return new Promise((resolve): void => {
-      var message: VerovioMessage = {
-        action: "edit",
-        editorAction: action
-      }
-      
-      
-      var response: VerovioResponse
-      response = this.verovioWrapper.setMessage(message)
-
-
-      // MEI ist already updated after edit (setMessage)
-      this.getMEI("").then(mei =>{
-        this.loadData("", mei, false, c._TARGETDIVID_).then(() => {
-          
-          message = {
-            action: "getElementAttr",
-            //@ts-ignore
-            elementId: action.param.elementId
-          }
-          response = this.verovioWrapper.setMessage(message);          
-          resolve(response.result);
+      action.param = action.param as {elementId, x, y}
+      if(action.param.x != undefined && action.param.y != undefined){
+        var message: VerovioMessage = {
+          action: "edit",
+          editorAction: action
+        }
+        
+        var response: VerovioResponse
+        response = this.verovioWrapper.setMessage(message)
+        // MEI ist already updated after edit (setMessage)
+        this.getMEI("").then(mei =>{
+          this.loadData("", mei, false, c._TARGETDIVID_).then(() => {
+            
+            message = {
+              action: "getElementAttr",
+              //@ts-ignore
+              elementId: action.param.elementId
+            }
+            response = this.verovioWrapper.setMessage(message);          
+            resolve(response.result);
+          })
         })
-      
-      })
-    });
+      }else{
+        var nn = this.m2m.getNewNote()
+        var editNote = this.currentMEIDoc.getElementById(nn.nearestNoteId)
+        editNote.setAttribute("oct", nn.oct)
+        editNote.setAttribute("pname", nn.pname)
+        this.loadData("", meiConverter.restoreXmlIdTags(this.currentMEIDoc), false, c._TARGETDIVID_).then(() => {     
+          resolve(true);
+        
+        })
+      }
+    })
   }).bind(this)
 
   /**
@@ -482,20 +514,12 @@ class Core {
    * Get all times for each note 
    * @returns 
    */
-  getNoteTimes(): Promise<Map<number, Array<Element>>>{
+  resolveMidiTimes(): Promise<Map<number, Array<Element>>>{
     	return new Promise((resolve): void =>{
         var noteTimes = new Map<number, Array<Element>>();
         
-        var xpathResult = document.evaluate(
-          "//*[@class='note' or starts-with(@class, 'note ') "
-          + "or @class='rest' or starts-with(@class, 'rest ')]", 
-          document.getElementById(c._ROOTSVGID_),
-          null,
-          XPathResult.ORDERED_NODE_ITERATOR_TYPE,
-          null
-        )
-        var node = null
-        while(node = xpathResult.iterateNext()){
+        var result = Array.from(cq.getRootSVG(this.containerId).querySelectorAll(".note, .rest"))
+        result.forEach(node => {
           try{
             var message: VerovioMessage = {
               action: "getTimeForElement",
@@ -509,13 +533,115 @@ class Core {
             }
             var arr = noteTimes.get(response.time)
             //arr.push(node.id)
-            arr.push(document.getElementById(node.id))
+            arr.push( cq.getRootSVG(this.containerId).querySelector("#"+node.id))
           }catch{
             console.log("CATCH ", node)
           }
-        }
+        })
         resolve(noteTimes)
       })
+  }
+
+  /**
+   * Create an overlay of all interative elements over the the score svg.
+   */
+  createSVGOverlay(){
+    return new Promise((resolve): void => {
+      document.getElementById(this.containerId).focus()
+      var refSVG =  document.getElementById(this.containerId).querySelector("#rootSVG") as unknown as SVGSVGElement
+      var svgBoxes = Array.from(document.getElementById(this.containerId)
+        .querySelectorAll(".definition-scale :is(g,path)"))
+        .filter(el => {
+          var condition = !["system", "measure", "staffLine", "layer", "ledgerLines"].some(cn => el.classList.contains(cn))
+          return condition
+        })
+      this.interactionOverlay = document.getElementById(this.containerId).querySelector("#interactionOverlay")
+      if(this.interactionOverlay === null){
+        var overlay = document.createElementNS(c._SVGNS_, "svg")
+        overlay.setAttribute("id", "interactionOverlay")
+        this.interactionOverlay = overlay
+      }
+
+      var root = cq.getRootSVG(this.containerId)
+      var rootBBox = root.getBoundingClientRect()
+      var rootWidth = rootBBox.width.toString()
+      var rootHeigth = rootBBox.height.toString()
+
+      document.getElementById(this.containerId).querySelector("#interactionOverlay #scoreRects")?.remove()
+      var scoreRects = document.createElementNS(c._SVGNS_, "svg") 
+      scoreRects.setAttribute("id", "scoreRects")
+      if(this.interactionOverlay.getAttribute("viewBox") === null){
+        this.interactionOverlay.setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))
+      }
+      Array.from(refSVG.attributes).forEach(a => {
+        if(!["id", "width", "height"].includes(a.name)){
+          this.interactionOverlay.setAttribute(a.name, a.value)
+        }
+      })
+      this.interactionOverlay.appendChild(scoreRects)
+      refSVG.insertAdjacentElement("beforebegin", this.interactionOverlay)
+      svgBoxes.forEach(sr => {
+        if(!["g", "path"].includes(sr.tagName.toLowerCase())){
+          sr.remove()
+        }else{
+          var bbox = sr.getBoundingClientRect()
+          var rect = document.createElementNS(c._SVGNS_, "rect")
+          var g = document.createElementNS(c._SVGNS_, "g")
+          var refId: string = sr.id !== "" ? sr.id : sr.getAttribute("refId")
+          if(refId !== "" && refId !== null){
+            g.setAttribute("refId", refId)
+          }
+          sr.classList.forEach(c => g.classList.add(c))
+          var cc = coordinates.getDOMMatrixCoordinates(bbox, this.interactionOverlay)
+          rect.setAttribute("x", cc.left.toString())
+          rect.setAttribute("y", cc.top.toString())
+          var w: number
+          if(cc.width === 0) w = 2
+          rect.setAttribute("width", w?.toString() || cc.width.toString())
+          var h: number
+          if(cc.height === 0) h = 2
+          rect.setAttribute("height", h?.toString() || cc.height.toString())
+          g.appendChild(rect)
+          scoreRects.appendChild(g)
+        }
+
+      })
+      resolve(true)
+    })
+  }
+
+  private replaceWithRect(el: Element){
+    if(!["g", "path", "svg"].includes(el.tagName.toLowerCase())){
+      el.remove()
+      return
+    }
+
+    if(el.childElementCount > 0){
+      Array.from(el.children).forEach(ec => {
+        this.replaceWithRect(ec)
+      })
+    }
+
+    if("svg" !== el.tagName.toLowerCase()){
+      var childCopy = new Array<Element>()
+      Array.from(el.children).forEach(ec => childCopy.push(ec.cloneNode(true) as Element))
+      var bbox = el.getBoundingClientRect()
+      var rect = document.createElementNS(c._SVGNS_, "rect")
+      rect.setAttribute("refId", el.id)
+      el.classList.forEach(c => rect.classList.add(c))
+      var cc = coordinates.getDOMMatrixCoordinates(bbox, this.interactionOverlay)
+      rect.setAttribute("x", cc.left.toString())
+      rect.setAttribute("y", cc.top.toString())
+      var w: number
+      if(cc.width === 0) w = 2
+      rect.setAttribute("width", w?.toString() || cc.width.toString())
+      var h: number
+      if(cc.height === 0) h = 2
+      rect.setAttribute("height", h?.toString() || cc.height.toString())
+      childCopy.forEach(cc => rect.appendChild(childCopy.shift()))
+      el.insertAdjacentElement("beforebegin", rect)
+      el.remove()
+    }
   }
 
   getElementAttr = (function getElementAttr(id: string): Attributes{
@@ -563,7 +689,6 @@ class Core {
   setMEIChangedCallback(meiChangedCallback: (mei: string) => void) {
     this.meiChangedCallback = meiChangedCallback
   }
-  
 }
 
 export { Core as default };

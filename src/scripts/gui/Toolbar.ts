@@ -5,6 +5,8 @@ import interact from 'interactjs'
 import { constants as c } from '../constants'
 import * as meioperations from "../utils/MEIOperations"
 import { time } from 'console'
+import * as cq from "../utils/convenienceQueries"
+import { timingSafeEqual } from 'crypto'
 
 
 const buttonStyleDarkOutline = "btn btn-outline-dark btn-md"
@@ -26,16 +28,22 @@ class Toolbar{
     private insertSelectGroup: HTMLElement
     private options: customType.InstanceOptions
 
+    private containerId: string
+    private container: Element
+    private interactionOverlay: Element
+    private rootSVG: Element
+
     //private task: Evaluation
 
-    constructor(options: customType.InstanceOptions = null){
+    constructor(options: customType.InstanceOptions = null, containerId){
+        this.containerId = containerId
         if(options !== null){
             this.options = options
         }
     }
 
     createToolbars(){
-        this.sideBarGroup = document.getElementById("sideBarGroup")
+        this.sideBarGroup = cq.getContainer(this.containerId).querySelector("#sideBarGroup")
         var toggleBtn = dc.makeNewButton("", "toggleSidebar", buttonStyleDarkOutline + " closedSidebar")
         this.sideBarGroup.append(toggleBtn)
         this.createSideBar()
@@ -48,7 +56,7 @@ class Toolbar{
 
     private createSideBar(){
         this.createModList()
-        document.querySelectorAll("#sidebarList a, #timeDiv, #tempoDiv").forEach(sa => {
+        cq.getContainer(this.containerId).querySelectorAll("#sidebarList a, #timeDiv, #tempoDiv").forEach(sa => {
             sa.setAttribute("draggable", "true")
         })
         this.createAnnotList()
@@ -56,7 +64,7 @@ class Toolbar{
     }
 
     private createModList(){
-        this.sidebar = document.getElementById("sidebarContainer")
+        this.sidebar = cq.getContainer(this.containerId).querySelector("#sidebarContainer")
 
         var accordeon = dc.makeNewDiv("sidebarList", "accordion")
         this.sidebar.appendChild(accordeon)
@@ -211,24 +219,24 @@ class Toolbar{
     }
 
     private createAnnotList(){
-        document.getElementById("annotList")?.remove()
+        cq.getContainer(this.containerId).querySelector("#annotList")?.remove()
         var annotList = document.createElement("div")
         annotList.setAttribute("id", "annotList")
         annotList.classList.add("list-group")
-
-        document.querySelectorAll("#annotationCanvas > g")?.forEach(c => {
+        var that = this
+        cq.getContainer(this.containerId).querySelectorAll("#annotationCanvas > g")?.forEach(c => {
             var text = c.querySelector(".annotDiv").textContent || c.querySelector(".annotDiv").getAttribute("data-text")
             var a = dc.makeNewAElement(text, "", "list-group-item list-group-item-action list-group-item-primary", "#")
             a.setAttribute("refId", c.id)
             a.setAttribute("contenteditable", "true")
             a.addEventListener("click", function(){
-                document.querySelectorAll(".selected").forEach(s => s.classList.remove("selected"))
-                document.getElementById(c.id).focus()
-                document.getElementById(c.id).querySelector(".annotLinkedText, .annotStaticText")?.classList.add("selected")
+                Array.from(cq.getContainer(that.containerId).querySelectorAll(".selected")).forEach(s => s.classList.remove("selected"));
+                (<HTMLElement> cq.getContainer(that.containerId).querySelector("#" + c.id)).focus()
+                cq.getContainer(that.containerId).querySelector("#" + c.id).querySelector(".annotLinkedText, .annotStaticText")?.classList.add("selected")
             })
             a.addEventListener("blur", function(e: KeyboardEvent){
                 var t = e.target as HTMLElement
-                document.getElementById(t.getAttribute("refid")).querySelector(".annotDiv").textContent = t.textContent
+                cq.getContainer(that.containerId).querySelector("#" + t.getAttribute("refid")).querySelector(".annotDiv").textContent = t.textContent
             })
             a.addEventListener("keydown", function(e: KeyboardEvent){
                 var t = e.target as HTMLElement
@@ -245,8 +253,10 @@ class Toolbar{
         this.sidebar.appendChild(annotList)
     }
 
-    createAnnotListFunction = (function(){
-        this.createAnnotList()}
+    createAnnotListFunction = (function(e){
+        var t = e.target as Element
+        if(t.closest(".vse-container").id !== this.containerId) return
+        this.createAnnotList(e)}
     ).bind(this)
 
     private createButtonsMainToolbar(){
@@ -259,11 +269,11 @@ class Toolbar{
         handlerDropdown.append(dc.makeNewAElement("Annotations", "activateAnnot", "dropdown-item", "#"))
         //handlerDropdown.append(dc.makeNewAElement("Harmony Mode", "activateHarm", "dropdown-item", "#"))
 
-        this.handlerGroup = document.getElementById("handlerGroup")
+        this.handlerGroup = cq.getContainer(this.containerId).querySelector("#handlerGroup")
         this.handlerGroup.append(dc.makeNewButton("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;", "insertMode", buttonStyleDarkOutline + " empty", "dropdown"))
         this.handlerGroup.append(handlerDropdown)
 
-        this.noteButtonGroup = document.getElementById("noteGroup")
+        this.noteButtonGroup = cq.getContainer(this.containerId).querySelector("#noteGroup")
         this.noteButtonGroup.append(dc.makeNewButton("", "fullNote", buttonStyleDarkOutline))
         this.noteButtonGroup.append(dc.makeNewButton("", "halfNote", buttonStyleDarkOutline))
         this.noteButtonGroup.append(dc.makeNewButton("", "quarterNote", buttonStyleDarkOutline))
@@ -271,11 +281,11 @@ class Toolbar{
         this.noteButtonGroup.append(dc.makeNewButton("", "sixteenthNote", buttonStyleDarkOutline))
         this.noteButtonGroup.append(dc.makeNewButton("", "thirtysecondNote", buttonStyleDarkOutline))
 
-        this.dotButtonGroup = document.getElementById("dotGroup")
+        this.dotButtonGroup = cq.getContainer(this.containerId).querySelector("#dotGroup")
         this.dotButtonGroup.append(dc.makeNewButton("", "oneDot", buttonStyleDarkOutline))
         this.dotButtonGroup.append(dc.makeNewButton("", "twoDot", buttonStyleDarkOutline))
 
-        this.modButtonGroup = document.getElementById("modGroup")
+        this.modButtonGroup = cq.getContainer(this.containerId).querySelector("#modGroup")
         this.modButtonGroup.appendChild(dc.makeNewButton("", "pauseNote", buttonStyleDarkOutline))
         this.modButtonGroup.appendChild(dc.makeNewButton("", "tieNotes", buttonStyleDarkOutline))
         this.modButtonGroup.appendChild(dc.makeNewButton("", "organizeBeams", buttonStyleDarkOutline))
@@ -368,7 +378,7 @@ class Toolbar{
     createMainToolbar(){
         this.createButtonsMainToolbar();
 
-        var btnToolbar = document.getElementById("btnToolbar")
+        var btnToolbar = cq.getContainer(this.containerId).querySelector("#btnToolbar")
         btnToolbar.appendChild(this.sideBarGroup)
         btnToolbar.parentElement.insertBefore(this.sidebar, btnToolbar.parentElement.firstChild) // important for ~ selector
         btnToolbar.appendChild(this.handlerGroup)
@@ -381,7 +391,7 @@ class Toolbar{
         this.createButtonsKeyMode()
         this.createInsertSelect()
         this.createButtonsAnnotationMode()
-        this.customToolbar = document.getElementById("customToolbar")
+        this.customToolbar = cq.getContainer(this.containerId).querySelector("#customToolbar")
     }
 
     removeAllCustomGroups(){
@@ -396,33 +406,33 @@ class Toolbar{
         //     new Button(b)
         // })
 
-        Array.from(document.querySelectorAll(".dropdown-toggle")).forEach(dd => {
+        Array.from(cq.getContainer(this.containerId).querySelectorAll(".dropdown-toggle")).forEach(dd => {
             new Dropdown(dd)
         })
 
-        Array.from(document.querySelectorAll(".collapsed")).forEach(c => {
+        Array.from(cq.getContainer(this.containerId).querySelectorAll(".collapsed")).forEach(c => {
             new Collapse(c)
         })
     }
 
     setListeners(){
         
-        document.querySelectorAll("#handlerGroup *").forEach(el => {
+        cq.getContainer(this.containerId).querySelectorAll("#handlerGroup *").forEach(el => {
             el.addEventListener("click", this.closeHandlerMouse)
         })
 
         // achtung: nie preventDefault in einem Document anwenden
         document.addEventListener("keydown", this.closeHandlerKey)
 
-        document.getElementsByClassName("vse-container")[0]?.addEventListener("click", this.closeHandlerMouse)
+        //document.getElementsByClassName("vse-container")[0]?.addEventListener("click", this.closeHandlerMouse)
         
-        document.querySelectorAll(".btn-group button").forEach(el => {
+        cq.getContainer(this.containerId).querySelectorAll(".btn-group button").forEach(el => {
             el.addEventListener("click", this.exclusiveSelectHandler)
         })
 
-        document.getElementById("toggleSidebar").addEventListener("click", this.sidebarHandler)
+        cq.getContainer(this.containerId).querySelector("#toggleSidebar").addEventListener("click", this.sidebarHandler)
 
-        document.querySelectorAll("#insertDropdown a").forEach(a => {
+        cq.getContainer(this.containerId).querySelectorAll("#insertDropdown a").forEach(a => {
             a.addEventListener("click", this.customToolbarHandler)
         })
 
@@ -431,7 +441,7 @@ class Toolbar{
         // })
 
         // Why do I have to control this manually???
-        document.querySelectorAll(".accordion-button").forEach(ac => {
+        cq.getContainer(this.containerId).querySelectorAll(".accordion-button").forEach(ac => {
             ac.addEventListener("hidden.bs.collapse", () => {
                 ac.classList.add("show")
             })
@@ -442,9 +452,9 @@ class Toolbar{
 
         }) 
 
-        document.addEventListener("annotChanged", this.createAnnotListFunction)
+        cq.getContainer(this.containerId).addEventListener("annotChanged", this.createAnnotListFunction, true)
 
-        interact("#annotList")
+        interact("#" + this.containerId + " #annotList")
             .resizable({
                 // resize from all edges and corners
                 edges: { left: false, right: false, bottom: false, top: true },
@@ -455,21 +465,21 @@ class Toolbar{
     }
 
     removeListeners(){
-        document.querySelectorAll("#handlerGroup *").forEach(el => {
+        cq.getContainer(this.containerId).querySelectorAll("#handlerGroup *").forEach(el => {
             el.removeEventListener("click", this.closeHandlerMouse)
         })
 
         document.removeEventListener("keydown", this.closeHandlerKey)
 
-        document.getElementsByClassName("vse-container")[0].removeEventListener("click", this.closeHandlerMouse)
+        //document.getElementsByClassName("vse-container")[0].removeEventListener("click", this.closeHandlerMouse)
 
-        document.querySelectorAll(".btn-group button").forEach(el => {
+        cq.getContainer(this.containerId).querySelectorAll(".btn-group button").forEach(el => {
             el.removeEventListener("click", this.exclusiveSelectHandler)
         })
 
-        document.getElementById("toggleSidebar").removeEventListener("click", this.sidebarHandler)
+        cq.getContainer(this.containerId).querySelector("#toggleSidebar").removeEventListener("click", this.sidebarHandler)
 
-        document.querySelectorAll("#insertDropdown a").forEach(a => {
+        cq.getContainer(this.containerId).querySelectorAll("#insertDropdown a").forEach(a => {
             a.removeEventListener("click", this.customToolbarHandler)
         })
 
@@ -477,22 +487,23 @@ class Toolbar{
         //     el.removeEventListener("click", this.sidebarHandler)
         // })
 
-        document.removeEventListener("annotChanged", this.createAnnotListFunction)
+        cq.getContainer(this.containerId).removeEventListener("annotChanged", this.createAnnotListFunction)
         interact("#annotList").unset()
     }
 
     closeHandlerMouse = (function closeHandlerMouse(evt: MouseEvent): void {
         evt.preventDefault()
-        Array.from(document.querySelectorAll(".dropdown-toggle")).forEach(dd => {
+        Array.from(cq.getContainer(this.containerId).querySelectorAll(".dropdown-toggle")).forEach(dd => {
             //this.closeDropdown(dd)
         })
     }).bind(this)
 
     // Macht momentan nix
     closeHandlerKey = (function closeHandlerMouse(evt: KeyboardEvent): void {
+        if(!cq.hasActiveElement(this.containerId)) return
         if(evt.key === "Escape"){
             //evt.preventDefault()
-            Array.from(document.querySelectorAll(".dropdown-toggle")).forEach(dd => {
+            Array.from(cq.getContainer(this.containerId).querySelectorAll(".dropdown-toggle")).forEach(dd => {
                 //this.closeDropdown(dd)
             })
         }
@@ -548,10 +559,10 @@ class Toolbar{
     sidebarHandler = (function sidebarHandler (evt: MouseEvent): void{
         //toggle
         var sidebarWidthRatio = "30%"
-        var btnToolbar = document.getElementById("btnToolbar")
+        var btnToolbar = cq.getContainer(this.containerId).querySelector("#btnToolbar")
         if(this.sidebar.classList.contains("closedSidebar")){
             //document.getElementById("sidebarContainer").style.width = sidebarWidthRatio
-            Array.from(document.querySelectorAll(".closedSidebar")).forEach(el => {
+            Array.from(cq.getContainer(this.containerId).querySelectorAll(".closedSidebar")).forEach(el => {
                 el.classList.remove("closedSidebar")
                 el.classList.add("openSidebar")
             })
@@ -559,7 +570,7 @@ class Toolbar{
 
         }else{
             //document.getElementById("sidebarContainer").style.width = "0"
-            Array.from(document.querySelectorAll(".openSidebar")).forEach(el => {
+            Array.from(cq.getContainer(this.containerId).querySelectorAll(".openSidebar")).forEach(el => {
                 el.classList.add("closedSidebar")
                 el.classList.remove("openSidebar")
             })
@@ -588,7 +599,7 @@ class Toolbar{
                 this.harmHandler()
                 break;
         }
-        if(target.textContent === document.getElementById("insertMode").textContent){
+        if(target.textContent === cq.getContainer(this.containerId).querySelector("#insertMode").textContent){
             this.removeAllCustomGroups()
         }
     }).bind(this)

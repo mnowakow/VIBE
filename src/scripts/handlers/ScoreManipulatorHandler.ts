@@ -5,6 +5,8 @@ import Handler from "./Handler";
 import {constants as c } from '../constants'
 import * as meiOperation from '../utils/MEIOperations'
 import * as meiConverter from '../utils/MEIConverter'
+import * as cq from "../utils/convenienceQueries"
+import { threadId } from "worker_threads";
 
 const manipSelector = ".manipulator"
 
@@ -15,6 +17,8 @@ class ScoreManipulatorHandler implements Handler{
     m2m?: Mouse2MEI;
     musicPlayer?: MusicPlayer;
     currentMEI?: string | Document;
+    private containerId: string
+    private interactionOverlay: Element
 
     private sm: ScoreManipulator;
     loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>;
@@ -27,7 +31,7 @@ class ScoreManipulatorHandler implements Handler{
     }
 
     addCanvas(){
-        var rootBBox = document.getElementById(c._ROOTSVGID_).getBoundingClientRect()
+        var rootBBox = cq.getRootSVG(this.containerId).getBoundingClientRect()
         var rootWidth = rootBBox.width.toString()
         var rootHeigth = rootBBox.height.toString()
 
@@ -36,7 +40,8 @@ class ScoreManipulatorHandler implements Handler{
         this.manipulatorCanvas.classList.add("canvas")
         this.manipulatorCanvas.setAttribute("preserveAspectRatio", "xMinYMin meet")
         this.manipulatorCanvas.setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))
-        document.getElementById(c._ROOTSVGID_).append(this.manipulatorCanvas)
+        this.manipulatorCanvas.insertAdjacentElement("beforebegin", this.interactionOverlay.querySelector("#scoreRects"))
+        this.interactionOverlay.append(this.manipulatorCanvas)
     }
 
     drawElements(){
@@ -49,7 +54,7 @@ class ScoreManipulatorHandler implements Handler{
 
     removeElements(){
         //this.removeListeners()
-        document.querySelectorAll(manipSelector).forEach(m => {
+       this.interactionOverlay.querySelectorAll(manipSelector).forEach(m => {
             m.remove()
         })
     }
@@ -57,32 +62,28 @@ class ScoreManipulatorHandler implements Handler{
     setListeners() {
         var that = this
         this.removeListeners()
-        document.getElementById("measureAdder").addEventListener("click", this.addMeasure)
-        document.getElementById("measureRemover").addEventListener("click", this.removeMeasure)
-        document.querySelectorAll(".addStaff").forEach(as => {
-            as.addEventListener("click", that.addStaff)
+        this.interactionOverlay.querySelector("#measureAdder").addEventListener("click", this.addMeasure, true)
+        this.interactionOverlay.querySelector("#measureRemover").addEventListener("click", this.removeMeasure, true)
+        this.interactionOverlay.querySelectorAll(".addStaff").forEach(as => {
+            as.addEventListener("click", that.addStaff, true)
         })
 
-        document.querySelectorAll(".removeStaff").forEach(as => {
-            as.addEventListener("click", that.removeStaff)
+       this.interactionOverlay.querySelectorAll(".removeStaff").forEach(as => {
+            as.addEventListener("click", that.removeStaff, true)
         })
-        //document.getElementById("toggleSidebar").addEventListener("click", this.removeFunction)
-        //document.getElementById("toggleSidebar").addEventListener("click", this.drawFunction)
     }
 
-    removeListeners() {
+    removeListeners(){
         var that = this
-        document.getElementById("measureAdder")?.removeEventListener("click", this.addMeasure)
-        document.getElementById("measureRemover")?.removeEventListener("click", this.removeMeasure)
-        document.querySelectorAll(".addStaff").forEach(as => {
+        this.interactionOverlay.querySelector("#measureAdder")?.removeEventListener("click", this.addMeasure)
+        this.interactionOverlay.querySelector("#measureRemover")?.removeEventListener("click", this.removeMeasure)
+        this.interactionOverlay.querySelectorAll(".addStaff").forEach(as => {
             as.removeEventListener("click", that.addStaff)
         })
 
-        document.querySelectorAll(".removeStaff").forEach(as => {
+        this.interactionOverlay.querySelectorAll(".removeStaff").forEach(as => {
             as.removeEventListener("click", that.removeStaff)
         })
-        //document.getElementById("toggleSidebar")?.removeEventListener("click", this.removeFunction)
-        //document.getElementById("toggleSidebar")?.removeEventListener("click", this.drawFunction)
     }
 
     addMeasure = (function handler(e: MouseEvent){
@@ -154,7 +155,14 @@ class ScoreManipulatorHandler implements Handler{
     setLoadDataCallback(loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>){
         this.loadDataCallback = loadDataCallback
         return this
-      }
+    }
+
+    setContainerId(containerId: string) {
+        this.containerId = containerId
+        this.interactionOverlay = cq.getInteractOverlay(containerId)
+        this.sm.setContainerId(this.containerId)
+        return this
+    }
 }
 
 export default ScoreManipulatorHandler

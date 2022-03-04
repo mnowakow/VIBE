@@ -2,6 +2,7 @@ import { stackOffsetNone } from 'd3';
 import { parse } from 'path';
 import {constants as c} from '../constants';
 import * as meiOperation from '../utils/MEIOperations'
+import * as cq from "../utils/convenienceQueries"
 
 const manipFlag = "manipulator"
 
@@ -14,6 +15,10 @@ class ScoreManipulator{
     private mei: Document
     private staffManipulatorX: number
     private staffManipilatorY: number
+    private containerId: string
+    private container: Element
+    private rootSVG: SVGSVGElement
+    private interactionOverlay: Element
 
     constructor(){
         
@@ -21,12 +26,11 @@ class ScoreManipulator{
 
     drawButton(id: string = null, classNames: string = null, sign: string, posX: number, posY: number, size: number, targetParent: Element, refId: string, tooltip = null){
         
-
         size = targetParent.getBoundingClientRect().height * 0.01
         var newSVG = document.createElementNS(c._SVGNS_, "svg")
         //newSVG.setAttribute("viewBox", [posX.toString(), posY.toString(), size.toString(), size.toString()].join(" "))
         if(id !== null) newSVG.setAttribute("id", id)
-        if(document.getElementById(newSVG.id)){return}
+        if(Array.from(this.interactionOverlay.querySelectorAll("maniplationCanvas *")).some(el => el.id === id)){return}
         
         newSVG.classList.add(manipFlag)
         newSVG.setAttribute("x", posX.toString())
@@ -79,16 +83,15 @@ class ScoreManipulator{
         }
 
         newSVG.setAttribute("refId", refId)
-        document.getElementById("manipulatorCanvas")?.appendChild(newSVG)
+        this.interactionOverlay.querySelector("#manipulatorCanvas")?.appendChild(newSVG)
     }
 
     drawMeasureAdder(){
-        this.lastBline = Array.from(document.querySelectorAll(".barLine")).reverse()[0] as HTMLElement
+        this.lastBline = Array.from(this.rootSVG.querySelectorAll(".barLine")).reverse()[0] as HTMLElement
         var lastBlineRect = this.lastBline.getBoundingClientRect()
-        var root = document.getElementById(c._ROOTSVGID_) as HTMLElement
-        var rootBBox = root.getBoundingClientRect()
+        var rootBBox = this.rootSVG.getBoundingClientRect()
 
-        var rootMatrix = (root as unknown as SVGGraphicsElement).getScreenCTM().inverse()
+        var rootMatrix = (this.rootSVG as unknown as SVGGraphicsElement).getScreenCTM().inverse()
 
         var ptRootLT = new DOMPoint(rootBBox.left, rootBBox.top)
         ptRootLT = ptRootLT.matrixTransform(rootMatrix)
@@ -115,12 +118,11 @@ class ScoreManipulator{
     }
 
     drawMeasureRemover(){
-        this.lastBline = Array.from(document.querySelectorAll(".barLine")).reverse()[0] as HTMLElement
+        this.lastBline = Array.from(this.container.querySelectorAll(".barLine")).reverse()[0] as HTMLElement
         var lastBlineRect = this.lastBline.getBoundingClientRect()
-        var root = document.getElementById(c._ROOTSVGID_)
-        var rootBBox = root.getBoundingClientRect()
+        var rootBBox = this.rootSVG.getBoundingClientRect()
 
-        var rootMatrix = (root as unknown as SVGGraphicsElement).getScreenCTM().inverse()
+        var rootMatrix = (this.rootSVG as unknown as SVGGraphicsElement).getScreenCTM().inverse()
 
         var ptRootLT = new DOMPoint(rootBBox.left, rootBBox.top)
         ptRootLT = ptRootLT.matrixTransform(rootMatrix)
@@ -150,10 +152,9 @@ class ScoreManipulator{
     }
 
     drawStaffManipulators(){
-        document.querySelector(".measure").querySelectorAll(".staff").forEach(s => {
+        this.rootSVG.querySelector(".measure").querySelectorAll(".staff").forEach(s => {
             //var clefBBox = s.querySelector(".clef").getBoundingClientRect()
-            var rootSVG = document.getElementById(c._ROOTSVGID_)
-            var rootBBox = rootSVG.getBoundingClientRect()
+            var rootBBox = this.rootSVG.getBoundingClientRect()
 
             var refStaffCoords = this.getStaffManipulatorCoords(s)
             var refStaffX = refStaffCoords.x
@@ -166,21 +167,21 @@ class ScoreManipulator{
             var topY = refStaffYTop - rootBBox.height*0.01 - rootBBox.y //- staffBBox.y
 
             var containerSize = ((refStaffWidth) * 0.1)
-            this.drawButton(null, "addStaff above", "+", posX, topY, containerSize, rootSVG, s.id, "Add Staff Above")
+            this.drawButton(null, "addStaff above", "+", posX, topY, containerSize, this.rootSVG, s.id, "Add Staff Above")
             if(parseInt(s.getAttribute("n")) > 1){
                 posX = refStaffX + rootBBox.height*0.01 - rootBBox.x 
-                this.drawButton(null, "removeStaff above", "-", posX, topY, containerSize, rootSVG, s.id, "Remove Staff Above")
+                this.drawButton(null, "removeStaff above", "-", posX, topY, containerSize, this.rootSVG, s.id, "Remove Staff Above")
             }
 
             posX = refStaffX - rootBBox.x //- staffBBox.x
             var bottomY = refStaffYBottom + 2 - rootBBox.y  //- staffBBox.y
 
             var containerSize = (refStaffHeight * 0.1)
-            this.drawButton(null, "addStaff below", "+", posX, bottomY, containerSize, rootSVG, s.id, "Add Staff Below")
+            this.drawButton(null, "addStaff below", "+", posX, bottomY, containerSize, this.rootSVG, s.id, "Add Staff Below")
             var staffCount =  s.parentElement.querySelectorAll(".staff")
             if(parseInt(s.getAttribute("n")) !== staffCount.length){
                 posX = refStaffX + rootBBox.height*0.01 - rootBBox.x 
-                this.drawButton(null, "removeStaff below", "-", posX, bottomY, containerSize, rootSVG, s.id, "Remove Staff Below")
+                this.drawButton(null, "removeStaff below", "-", posX, bottomY, containerSize, this.rootSVG, s.id, "Remove Staff Below")
             }
         })
     }
@@ -216,6 +217,14 @@ class ScoreManipulator{
 
     setMEI(mei: Document){
         this.mei = mei
+        return this
+    }
+
+    setContainerId(id: string){
+        this.containerId = id
+        this.container = document.getElementById(id)
+        this.interactionOverlay = cq.getInteractOverlay(this.containerId)
+        this.rootSVG = cq.getRootSVG(this.containerId) as unknown as SVGSVGElement
         return this
     }
 }

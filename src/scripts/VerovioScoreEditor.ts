@@ -28,40 +28,69 @@ class VerovioScoreEditor{
      * @param options options from Class implementing H5P functionality
      */
     constructor(container: HTMLElement = null, options: customType.InstanceOptions, meiCallback?: (mei: string) => void){
+        if(container?.id === null){
+            throw new Error("The editor's container must have an id")
+        }
         if(container === null){
             container = document.body
+            container.id = "editorInBody"
         }
         container?.classList?.add("vse-container")
         this.container = container
         this.options = options
         this.meiChangedCallback = meiCallback
+        this.loadScripts()
+        this.setMutationObserver()
     }
 
-    init(): Promise<void>{
-        return new Promise((resolve): void =>{
-            var script = document.createElement('script');
+    /**
+     * Load verovio script. 
+     * Makes sure that only one script instance is in the DOM.
+     * 
+     */
+    loadScripts(){
+        var src = "https://www.verovio.org/javascript/" + c._VEROVIO_VERSION_ + "/verovio-toolkit.js"
+        var scriptId = "verovioScript"
+        var script = document.querySelector("#" + scriptId) as HTMLScriptElement || document.createElement('script');
+        script.src = src
+        if(script.id === ""){
+            script.id = scriptId
+        }
+        if(script.getAttribute("loaded") === null){
+            script.setAttribute("loaded", "false")
+        }
+
+        if(script.getAttribute("loaded") === "true"){
+            this.initGUI()
+        }
+        
+        if(document.getElementById(scriptId) === null){
             var prior = document.getElementsByTagName('script')[0];
             script.async = false;
-        
-            var that = this
-            //@ts-ignore
+            prior.parentNode.insertBefore(script, prior);
             script.onload = function() {
-
-                that.initGUI().then(() => {
-                    if(that.meiChangedCallback != undefined){
-                        that.setMEIChangedCallback(that.meiChangedCallback)
-                    }
-                    resolve()
-                })
+                script.setAttribute("loaded", "true")
             };
-        
-            script.src = "https://www.verovio.org/javascript/" + c._VEROVIO_VERSION_ + "/verovio-toolkit.js";
-            //script.src = "https://www.verovio.org/javascript/latest/verovio-toolkit.js";
-            if(document.querySelector("script[src=\"" + script.src + "\"]") === null){
-                prior.parentNode.insertBefore(script, prior);
-            }else{
-                resolve() // do not script multiple times
-            }
+        }
+    }
+
+    /**
+     * Observes if the script is already loaded. Fires initGUI() when Attribute "loaded" changes to "true"
+     */
+    setMutationObserver(){
+        var that = this
+        var observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === "attributes") {
+                    var t = mutation.target as HTMLElement
+                    if(mutation.attributeName === "loaded" && t.getAttribute(mutation.attributeName) === "true"){
+                        that.initGUI()
+                    }
+                }
+            });
+        });
+        observer.observe(document.getElementById("verovioScript"), {
+            attributes: true
         })
     }
 
@@ -107,12 +136,12 @@ class VerovioScoreEditor{
             // this.container.append(statusBar)
             // test
 
-            var tb = new Toolbar(this.options)
+            var tb = new Toolbar(this.options, this.container.id)
             tb.createToolbars()
 
 
             //attach mei first time
-            this.coreInstance = new Core();
+            this.coreInstance = new Core(this.container.id);
             this.container.append(dc.makeNewDiv(c._TARGETDIVID_, ""))
             if(this.options?.meiURL != undefined){
                 this.coreInstance.loadData('', this.options.meiURL, true, c._TARGETDIVID_).then((mei) => {

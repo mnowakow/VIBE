@@ -2,10 +2,14 @@
  * Class to fill SVG of Score in HTML with information from underlying mei
  */
 
+import { uuidv4 } from "./random"
+
 class SVGFiller{
 
     private classListMap: Map<string, Array<string>>
     private allowedMeiClasses = ["marked"]
+    private containerId: string
+    private container: Element
 
     constructor(){}
 
@@ -24,19 +28,22 @@ class SVGFiller{
      * @param mei Document from MEI 
      */
     fillSystemCounts(mei: Document){
+        var that = this
         var elements = Array.from(mei.querySelectorAll("measure, staff, layer"))
         elements.forEach(e => {
-            var svgElement = document.getElementById(e.id)
-            if(svgElement === null || e.getAttribute("n") === null ){
-                return
+            if(e.id !== ""){
+                var svgElement = that.container.querySelector("#" + e.id)
+                if(svgElement === null || e.getAttribute("n") === null ){
+                    return
+                }
+                svgElement.setAttribute("n", e.getAttribute("n"))
             }
-            svgElement.setAttribute("n", e.getAttribute("n"))
         })
         return this
     }
 
     cacheClasses(){
-        var svg = document.getElementById("rootSVG")
+        var svg = document.querySelector("#"+this.containerId + " #rootSVG")
         if(svg === null){
             return this
         }
@@ -77,7 +84,6 @@ class SVGFiller{
                 el.removeAttribute("class")
             }
         })
-        console.log(this.classListMap)
         return this
     }
 
@@ -91,7 +97,7 @@ class SVGFiller{
         }
 
         for(const [key, value] of this.classListMap.entries()){
-            var el = document.getElementById(key)
+            var el = this.container.querySelector("#" + key)
             if(el !== null){
                 //el.removeAttribute("class")
                 value.forEach(v => {
@@ -107,7 +113,7 @@ class SVGFiller{
      * @returns 
      */
     clearTspan(){
-        var gelements = document.querySelectorAll("g .harm")
+        var gelements = this.container.querySelectorAll("g .harm")
         gelements.forEach(g => {
             var textEl = g.querySelector("text")
             var textTspan = g.querySelectorAll("tspan")
@@ -130,12 +136,37 @@ class SVGFiller{
     }
 
     countBarlines(){
-        document.querySelectorAll(".barLine").forEach(bl => {
+       this.container.querySelectorAll(".barLine").forEach(bl => {
             bl.querySelectorAll("path").forEach((p, idx) => {
                 p.setAttribute("n", (idx+1).toString())
             })
         })
     }
+
+    distributeIds(element: Element, propagation = false){
+        if(propagation){
+            var id = element.id !== "" ? element.id : element.getAttribute("refId")
+            Array.from(element.children).forEach(c => {
+                var selfId = c.id !== "" ? c.id : c.getAttribute("refId")
+                if(selfId === null && id !== null){
+                    c.setAttribute("refId", id)
+                }
+                this.distributeIds(c, true)
+            })
+        }else{
+            Array.from(element.querySelectorAll("*")).forEach(el => {
+                if(el.id === ""){
+                    el.setAttribute("id", uuidv4())
+                }
+            })
+        }
+    }
+
+    setContainerId(containerId: string) {
+        this.containerId = containerId
+        this.container = document.getElementById(containerId)
+        return this
+      }
 }
 
 export default SVGFiller

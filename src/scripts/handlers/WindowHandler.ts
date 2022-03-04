@@ -5,24 +5,29 @@ import ScoreManipulatorHandler from "./ScoreManipulatorHandler";
 import { constants as c } from "../constants"
 import Annotations from "../gui/Annotations";
 import InsertModeHandler from "./InsertModeHandler";
+import * as cq from "../utils/convenienceQueries"
 
 
 class WindowHandler implements Handler{
+
     m2m?: Mouse2MEI;
     musicPlayer?: MusicPlayer;
     currentMEI?: string | Document;
     annotations: Annotations;
     loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>;
     insertModeHandler: InsertModeHandler;
+    containerId: string;
+    rootSVG: Element
+    interactionOverlay: Element
 
     setListeners(){
         window.addEventListener("scroll", this.update)
         window.addEventListener("resize", this.update)
         window.addEventListener("deviceorientation", this.update)
-        document.getElementById("sidebarContainer").addEventListener("transitionend", this.update)
-        document.getElementById(c._ROOTSVGID_).addEventListener("scroll", this.update)
-        document.getElementById(c._ROOTSVGID_).addEventListener("resize", this.update)
-        document.getElementById(c._ROOTSVGID_).addEventListener("deviceorientation", this.update)
+        document.querySelector("#"+ this.containerId + " #sidebarContainer").addEventListener("transitionend", this.update)
+        this.rootSVG.addEventListener("scroll", this.update)
+        this.rootSVG.addEventListener("resize", this.update)
+        this.rootSVG.addEventListener("deviceorientation", this.update)
 
         document.addEventListener("fullscreenchange", this.update)
 
@@ -33,11 +38,11 @@ class WindowHandler implements Handler{
         window.removeEventListener("scroll", this.update)
         window.removeEventListener("resize", this.update)
         window.removeEventListener("deviceorientation", this.update)
-        document.getElementById("sidebarContainer").removeEventListener("transitionend", this.update)
-
-        document.getElementById(c._ROOTSVGID_).removeEventListener("scroll", this.update)
-        document.getElementById(c._ROOTSVGID_).removeEventListener("resize", this.update)
-        document.getElementById(c._ROOTSVGID_).removeEventListener("deviceorientation", this.update)
+        document.querySelector("#"+ this.containerId + " #sidebarContainer").removeEventListener("transitionend", this.update)
+        
+        this.rootSVG.removeEventListener("scroll", this.update)
+        this.rootSVG.removeEventListener("resize", this.update)
+        this.rootSVG.removeEventListener("deviceorientation", this.update)
 
         document.removeEventListener("fullscreenchange", this.update)
 
@@ -83,6 +88,13 @@ class WindowHandler implements Handler{
 
     setCurrentMEI(mei: Document){
         this.currentMEI = mei
+        return this
+    }
+
+    setContainerId(containerId: string) {
+        this.containerId = containerId
+        this.interactionOverlay = cq.getInteractOverlay(this.containerId)
+        this.rootSVG = cq.getRootSVG(this.containerId)
         return this
     }
 

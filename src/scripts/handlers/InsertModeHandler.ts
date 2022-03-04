@@ -16,14 +16,13 @@ import PhantomElementHandler from './PhantomElementHandler';
 import { restoreXmlIdTags } from '../utils/MEIConverter';
 import ScoreManipulatorHandler from './ScoreManipulatorHandler';
 import { cleanUp } from '../utils/MEIOperations';
-import { isFunction } from 'tone';
-import { truncate } from 'fs';
-import { textChangeRangeIsUnchanged } from 'typescript';
+import * as cq from "../utils/convenienceQueries"
 
 /**
  * Class that handles insert mode, events, and actions.
  */
 class InsertModeHandler implements Handler{
+  containerId: string;
   type: string;
   selector: string;
   m2m: Mouse2MEI;
@@ -46,6 +45,9 @@ class InsertModeHandler implements Handler{
   phantomNoteHandler: PhantomElementHandler;
   private annotations: Annotations;
   smHandler: ScoreManipulatorHandler
+  rootSVG: Element
+  interactionOverlay: Element
+  container: Element
 
   private currentElementToHighlight: Element
 
@@ -54,9 +56,9 @@ class InsertModeHandler implements Handler{
   private loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>;
   
 
-  constructor () {
+  constructor (containerId) {
     this.isGlobal = true
-    this.annotations = new Annotations()
+    this.annotations = new Annotations(containerId)
   }
 
   activateClickMode(clicked: Boolean = false){
@@ -66,17 +68,18 @@ class InsertModeHandler implements Handler{
     if(clicked){
       if(this.unselectMenuItem("clickInsert")){return}
     }
-    document.body.classList.add("clickmode")
+    this.container.classList.add("clickmode")
     this.keyMode = false;
     this.clickInsertMode = true;
     this.annotationMode = false;
     this.harmonyMode = false;
 
-    this.phantomNoteHandler = new PhantomElementHandler
+    this.phantomNoteHandler = new PhantomElementHandler(this.containerId)
     this.setPhantomNote()
 
     this.clickModeHandler = this.clickModeHandler == undefined ? new ClickModeHandler() : this.clickModeHandler
     this.clickModeHandler
+      .setContainerId(this.containerId)
       .setInsertCallback(this.insertCallback)
       .setDeleteCallback(this.deleteCallback)
       .setAnnotations(this.annotations)
@@ -97,17 +100,17 @@ class InsertModeHandler implements Handler{
     if(clicked){
       if(this.unselectMenuItem("keyMode")){return}
     }
-    document.body.classList.add("textmode")
+    this.container.classList.add("textmode")
     this.keyMode = true;
     this.clickInsertMode = false;
     this.annotationMode = false;
     this.harmonyMode = false;
 
     var cursor = null
-    if(typeof this.keyModeHandler !== "undefined"){
+    if(this.keyModeHandler != undefined){
       cursor = this.keyModeHandler.cursor
     }
-    this.keyModeHandler = typeof this.keyModeHandler === "undefined" ? new KeyModeHandler() : this.keyModeHandler
+    this.keyModeHandler = this.keyModeHandler || new KeyModeHandler(this.containerId)
     var currNodeId: string
     if(this.keyModeHandler.scoreGraph?.getCurrentNode() != undefined){
       currNodeId = this.keyModeHandler.scoreGraph.getCurrentNode().getId()
@@ -132,7 +135,7 @@ class InsertModeHandler implements Handler{
   activateSelectionMode(){
     //this.insertDeactivate()
     
-    this.selectionHandler = new SelectionHandler()
+    this.selectionHandler = new SelectionHandler(this.containerId)
     this.selectionHandler.setM2M(this.m2m)
     
     //this.selectionHandler.setHarmonyHandler(this.harmonyHandler)
@@ -147,11 +150,12 @@ class InsertModeHandler implements Handler{
       if(this.unselectMenuItem("activateAnnot")){return}
     }
     if(this.annotations == undefined){
-      this.annotations = new Annotations()
+      this.annotations = new Annotations(this.containerId)
     }else{
       this.annotations.update()
     }
     this.annotations
+      .setContainerId(this.containerId)
       .setM2M(this.m2m)
       .setMusicPlayer(this.musicPlayer)
       .setToFront()
@@ -170,7 +174,7 @@ class InsertModeHandler implements Handler{
       }
     }catch{
       try{
-        var harmonyButton =  document.getElementById("harmonyAnnotButton")
+        var harmonyButton =  this.container.querySelector("#harmonyAnnotButton")
         if(!harmonyButton.classList.contains("selected")){
           harmonyButton.classList.add("selected")
         }
@@ -179,19 +183,20 @@ class InsertModeHandler implements Handler{
         return
       }
     }
-    if(typeof this.labelHandler === "undefined"){
-      this.labelHandler = new LabelHandler()
+    if(this.labelHandler == undefined){
+      this.labelHandler = new LabelHandler(this.containerId)
     }
     //Activate/ Deactivate Global functions according to selected harmonymode
-    if(document.querySelector("#activateHarm.selected, #harmonyAnnotButton.selected") !== null){
+    if(this.container.querySelector("#activateHarm.selected, #harmonyAnnotButton.selected") !== null){
       this.insertDeactivate()
-      document.body.classList.add("harmonyMode")
+      this.container.classList.add("harmonyMode")
       this.isGlobal = false
     }else{
       this.isGlobal = true
     }
 
     this.labelHandler
+      .setContainerId(this.containerId)
       .setGlobal(this.isGlobal)
       .setListeners()
       .setM2M(this.m2m)
@@ -213,10 +218,10 @@ class InsertModeHandler implements Handler{
   }).bind(this)
 
   insertDeactivate(){
-    document.body.classList.remove("textmode")
-    document.body.classList.remove("clickmode")
-    document.body.classList.remove("annotMode")
-    document.body.classList.remove("harmonyMode")
+    this.container.classList.remove("textmode")
+    this.container.classList.remove("clickmode")
+    this.container.classList.remove("annotMode")
+    this.container.classList.remove("harmonyMode")
 
     this.keyMode = false;
     this.clickInsertMode = false;
@@ -266,6 +271,7 @@ class InsertModeHandler implements Handler{
       this.smHandler = new ScoreManipulatorHandler()
     }
     this.smHandler
+      .setContainerId(this.containerId)
       .setMEI(this.m2m.getCurrentMei())
       .setMusicPlayer(this.musicPlayer)
       .setLoadDataCallback(this.loadDataCallback)
@@ -274,7 +280,7 @@ class InsertModeHandler implements Handler{
 
   setListeners(){
     var that = this
-    Array.from(document.querySelectorAll(".dropdown-item")).forEach(n => {
+    Array.from(this.container.querySelectorAll(".dropdown-item")).forEach(n => {
       n.addEventListener("click", function(e){
           e.preventDefault()
           switch(this.id){
@@ -297,7 +303,7 @@ class InsertModeHandler implements Handler{
       })
     })
 
-    document.addEventListener("annotationButtonClicked", function(e: MouseEvent){
+    this.container.addEventListener("annotationButtonClicked", function(e: MouseEvent){
       var t = e.target as HTMLElement
       if(t.id === "harmonyAnnotButton"){
         that.activateHarmonyMode(true)
@@ -306,7 +312,7 @@ class InsertModeHandler implements Handler{
       }
     }, true)
 
-    Array.from(document.querySelectorAll("#noteGroup > *")).forEach(b => {
+    Array.from(this.container.querySelectorAll("#noteGroup > *")).forEach(b => {
       b.addEventListener("click", function(e){
         let dur = 0
         switch(this.id){
@@ -338,7 +344,7 @@ class InsertModeHandler implements Handler{
       })
     })
 
-    Array.from(document.querySelectorAll("#dotGroup > *")).forEach(b => {
+    Array.from(this.container.querySelectorAll("#dotGroup > *")).forEach(b => {
       b.addEventListener("click", function(e){
         let dots = 0
         if(this.classList.contains("selected")){
@@ -379,8 +385,8 @@ class InsertModeHandler implements Handler{
   }
 
   unselectMenuItem(key: string): Boolean{
-    var menuitem = document.getElementById(key)
-    var modeButton = document.getElementById("insertMode")
+    var menuitem = this.container.querySelector("#"+key)
+    var modeButton = this.container.querySelector("#insertMode")
     if(menuitem.classList.contains("selected")){
       menuitem.classList.remove("selected")
       modeButton.innerHTML = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
@@ -388,7 +394,7 @@ class InsertModeHandler implements Handler{
       this.insertDeactivate()
       return true
     }else{
-      document.querySelectorAll("#insertDropdown > a").forEach(a => {
+      this.container.querySelectorAll("#insertDropdown > a").forEach(a => {
         if(a.id !== key){
           a.classList.remove("selected")
         }
@@ -459,9 +465,16 @@ class InsertModeHandler implements Handler{
     return this
   }
 
+  setContainerId(containerId: string) {
+    this.containerId = containerId
+    this.interactionOverlay = cq.getInteractOverlay(containerId)
+    this.rootSVG = cq.getRootSVG(containerId)
+    this.container = document.getElementById(containerId)
+    return this
+}
+
   resetCanvas(){
     if(this.annotations != undefined){
-      //document.getElementById(c._ROOTSVGID_).append(this.annotations.getAnnotationCanvas())
       this.annotations.addCanvas()
     }
     return this

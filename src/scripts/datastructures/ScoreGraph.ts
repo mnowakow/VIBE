@@ -1,6 +1,7 @@
 import { noteToB } from "../utils/mappings"
 import ScoreNode from "./ScoreNode"
 import { constants as c } from "../constants"
+import * as cq from "../utils/convenienceQueries"
 
 const meiNodeSelector = "note, rest, mRest, chord, layer"
 const documentNodeSelector = ".clef, .meterSig, .keySig, .note, .rest, .mRest, .chord, .layer"
@@ -11,13 +12,21 @@ class ScoreGraph {
     private graph: Map<string, ScoreNode>
     private currentNode: ScoreNode
     private midiTimes: Map<number, Array<Element>>
+    private containerId: string
+    private container: Element
+    private interactionOverlay: Element
+    private rootSVG: Element
 
-    constructor(xmlDoc: Document, miditimes: Map<number, Array<Element>>) {
+    constructor(xmlDoc: Document, containerId: string, miditimes: Map<number, Array<Element>>) {
+        this.containerId = containerId
+        this.container = document.getElementById(containerId)
+        this.rootSVG = cq.getRootSVG(containerId)
+        this.interactionOverlay = cq.getInteractOverlay(containerId)
         this.populate(xmlDoc, miditimes)
     }
 
     altPop(xmlDoc: Document) {
-        var documentNodes = Array.from(document.querySelectorAll(documentNodeSelector))
+        var documentNodes = Array.from(cq.getRootSVG(this.containerId).querySelectorAll(documentNodeSelector))
         var documentNodes = documentNodes.filter(dn => {
             if (!dn.classList.contains("note")) {
                 return dn
@@ -30,7 +39,7 @@ class ScoreGraph {
         })
 
         var nodeCoodrs = new Map<Element, { x: number, y: number }>()
-        var root = document.getElementById(c._ROOTSVGID_)
+        var root = cq.getRootSVG(this.containerId)
         var rootBBox = root.getBoundingClientRect()
         documentNodes.forEach(dn => {
             var dnx = dn.getBoundingClientRect().x - rootBBox.x - root.scrollLeft - window.pageXOffset
@@ -65,7 +74,7 @@ class ScoreGraph {
             }
             this.graph.set(e.id, new ScoreNode(e.id))
         })
-        document.querySelectorAll(documentNodeSelector).forEach(e => {
+        cq.getRootSVG(this.containerId).querySelectorAll(documentNodeSelector).forEach(e => {
             if ((e.classList.contains("note") && e.closest(".chord") !== null)) {
                 return
             }
@@ -93,7 +102,7 @@ class ScoreGraph {
                 layerArray = Array.from(xmlDoc.querySelectorAll("staff[n=\"" + (s + 1).toString() + "\"] > layer[n=\"" + (i + 1).toString() + "\"]"))
                 var elements = new Array<Element>()
                 layerArray.forEach(l => {
-                    let staff = document.getElementById(l.id).closest(".measure").querySelector(".staff[n='" + l.closest("staff").getAttribute("n") + "']")
+                    let staff = cq.getRootSVG(this.containerId).querySelector("#" + l.id).closest(".measure").querySelector(".staff[n='" + l.closest("staff").getAttribute("n") + "']")
                     var documentNodes = Array.from(staff.querySelectorAll(documentNodeSelector2))
                     var documentNodes = documentNodes.filter(dn => {
                         if (!dn.classList.contains("note")) {
@@ -130,7 +139,7 @@ class ScoreGraph {
         }
 
         //Assign up/down nodes
-        if (typeof this.midiTimes !== "undefined") {
+        if (this.midiTimes == undefined) {
             // miditimes contain svg Elements (not mei Elements!!!)
             // first: direct up/down references
             for (const [key, value] of this.midiTimes.entries()) {
@@ -163,7 +172,7 @@ class ScoreGraph {
         }
 
         //DEAL WITH MRESTS
-        var staves =  document.querySelectorAll(".staff")
+        var staves =  cq.getRootSVG(this.containerId).querySelectorAll(".staff")
         for(var i = 0; i < staves.length-1; i++){
             var staffElements = staves[i].querySelectorAll(documentNodeSelector)
             var emptyElements = staves[i+1].querySelectorAll(".clef, .meterSig, .keySig, .mRest, .layer")
@@ -317,6 +326,10 @@ class ScoreGraph {
 
     setCurrentNodeById(id: string) {
         this.currentNode = this.graph.get(id)
+    }
+
+    setContainerId(containerId: string){
+        this.containerId = containerId
     }
 
     nextUp() {

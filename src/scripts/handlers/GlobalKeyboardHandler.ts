@@ -5,6 +5,7 @@ import { constants as c} from "../constants"
 import MusicPlayer from "../MusicPlayer";
 import ScoreGraph from "../datastructures/ScoreGraph";
 import LabelHandler from "./LabelHandler";
+import * as cq from "../utils/convenienceQueries"
 
 
 const marked = "marked"
@@ -21,9 +22,14 @@ class GlobalKeyboardHandler implements Handler{
     scoreGraph: ScoreGraph
     copiedIds: Array<string>
 
+    containerId: string
+    container: Element
+
     harmonyHandlerCallback: (e: KeyboardEvent) => void
 
-    constructor(){
+    constructor(containerId: string){
+        this.containerId = containerId
+        this.container = document.getElementById(containerId)
         this.setListeners();
     }
 
@@ -38,51 +44,56 @@ class GlobalKeyboardHandler implements Handler{
     }
 
     keydownHandler = (function keydownHandler(e: KeyboardEvent){
-        if(e.key == undefined){
-            return
-        }
-        if(e.ctrlKey || e.metaKey){
-            if(e.key === "z"){ this.undoHandler(e)}
-            if(e.key === "y"){ this.redoHandler(e)}
-            if(e.key === "a"){ this.selectAllHandler(e)}
-            if(e.key === "c"){ this.copyHandler(e)}
-            if(e.key === "v"){ this.pasteHandler(e)}
-            // if(e.key === "k" && Array.from(document.querySelectorAll(".note, .chord, .rest, .mrest")).some(el => el.classList.contains(marked))){
-            //      this.handleHarmony(e)
-            // }
-        }else if(e.key.includes("Arrow")){
-            //document.removeEventListener("keydown", this.keydownHandler)
-            this.transposeHandler(e)
-        }else if(e.key === "Escape"){
-            this.resetHandler(e)
+        if(this.hasContainerFocus()){
+            if(e.key == undefined){
+                return
+            }
+            if(e.ctrlKey || e.metaKey){
+                if(e.key === "z"){ this.undoHandler(e)}
+                if(e.key === "y"){ this.redoHandler(e)}
+                if(e.key === "a"){ this.selectAllHandler(e)}
+                if(e.key === "c"){ this.copyHandler(e)}
+                if(e.key === "v"){ this.pasteHandler(e)}
+                // if(e.key === "k" && Array.from(document.querySelectorAll(".note, .chord, .rest, .mrest")).some(el => el.classList.contains(marked))){
+                //      this.handleHarmony(e)
+                // }
+            }else if(e.key.includes("Arrow")){
+                //document.removeEventListener("keydown", this.keydownHandler)
+                this.transposeHandler(e)
+            }else if(e.key === "Escape"){
+                this.resetHandler(e)
+            }
         }
     }).bind(this)
 
     prolongHandler = (function prolongHandler(e: KeyboardEvent){
-        if(e.code === "Semicolon"){ // Deutsch: Ä
-            this.reduceDur()
-        }else if(e.code === "Quote"){ // Deutsch: Ö
-            this.prolongDur()
+        if(this.hasContainerFocus()){
+            if(e.code === "Semicolon"){ // Deutsch: Ä
+                this.reduceDur()
+            }else if(e.code === "Quote"){ // Deutsch: Ö
+                this.prolongDur()
+            }
         }
     }).bind(this)
 
     undoHandler(e: KeyboardEvent): void{
+        if(!this.hasContainerFocus()) return
         e.stopImmediatePropagation()
-        console.log("Pushed undo")
         this.undoCallback()
         //document.removeEventListener("keydown", this.keydownHandler)
     }
 
     redoHandler(e: KeyboardEvent): void{
+        if(!this.hasContainerFocus())return
         e.stopImmediatePropagation()
-        console.log("Pushed redo")
         this.redoCallback()
-        //document.removeEventListener("keydown", this.keydownHandler)       
+        //document.removeEventListener("keydown", this.keydownHandler)     
     }
 
     selectAllHandler(e: KeyboardEvent){
+        if(!this.hasContainerFocus()) return
         e.preventDefault()
-        document.querySelectorAll(".note").forEach(note => {
+        cq.getRootSVG(this.containerId).querySelectorAll(".note").forEach(note => {
             let stem = note.querySelector(".stem") as HTMLElement
             note.classList.add(marked)
             if(stem !== null){
@@ -100,6 +111,7 @@ class GlobalKeyboardHandler implements Handler{
      * @param e 
      */
     copyHandler(e: KeyboardEvent){
+        if(!this.hasContainerFocus()) return
         e.preventDefault()
         this.copiedIds = new Array()
         document.querySelectorAll(".marked").forEach(m => {
@@ -113,9 +125,10 @@ class GlobalKeyboardHandler implements Handler{
      * @param e 
      */
     pasteHandler(e: KeyboardEvent){
+        //if(!this.hasContainerFocus()) return
         //e.preventDefault()
         console.log("pasteHandler")
-        var pastePosition = document.querySelector(".chord.marked, .note.marked, .rest.marked, .mRest.marked")?.id || document.querySelector("#cursor")?.getAttribute("refId")
+        var pastePosition = this.container.querySelector(".chord.marked, .note.marked, .rest.marked, .mRest.marked")?.id || this.container.querySelector("#cursor")?.getAttribute("refId")
         if(this.copiedIds != undefined && pastePosition != undefined){
             var lastId = meiOperation.paste(this.copiedIds, pastePosition, this.currentMEI)
             var mei = meiConverter.restoreXmlIdTags(this.currentMEI)
@@ -128,14 +141,16 @@ class GlobalKeyboardHandler implements Handler{
     }
 
     resetHandler(e: KeyboardEvent){
+        if(!this.hasContainerFocus()) return
         e.preventDefault()
-        document.querySelectorAll(".marked").forEach(el => {
+        this.container.querySelectorAll(".marked").forEach(el => {
             el.classList.remove(marked)
         })
         this.musicPlayer.rewind()
     }
 
     transposeHandler(e: KeyboardEvent){
+        if(!this.hasContainerFocus()) return
         //e.preventDefault()
         if(document.querySelectorAll(".note.marked").length === 0){return}
 
@@ -157,6 +172,7 @@ class GlobalKeyboardHandler implements Handler{
     }
 
     handleHarmony(e: KeyboardEvent){
+        if(!this.hasContainerFocus()) return
         this.harmonyHandlerCallback(e)
     }
 
@@ -183,6 +199,10 @@ class GlobalKeyboardHandler implements Handler{
         this.removeListeners()
         this.setListeners()
         return this
+    }
+
+    hasContainerFocus(){
+        return this.container.classList.contains("activeContainer")
     }
 
     /////// GETTER/ SETTER ///////
@@ -219,7 +239,12 @@ class GlobalKeyboardHandler implements Handler{
     setLoadDataCallback(loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>){
         this.loadDataCallback = loadDataCallback
         return this
-      }
+    }
+
+    setContainerId(containerId: string) {
+        this.containerId = containerId
+        return this
+    }
 }
 
 export default GlobalKeyboardHandler

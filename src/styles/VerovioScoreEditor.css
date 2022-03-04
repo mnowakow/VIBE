@@ -1,9 +1,9 @@
 @import '~bootstrap/dist/css/bootstrap.min.css';
 
-
 .dropdown button{
     height: 100%;
 }
+
 .vse-container{    
     position: absolute;
     width: 100%;
@@ -17,11 +17,11 @@ body.waiting * {
     cursor:wait !important;
 }
 
-body.textmode  * {
+.textmode  * {
     cursor: text;
 }
 
-body.clickmode  * {
+.clickmode  * {
     cursor: crosshair
 }
 
@@ -30,6 +30,22 @@ body.clickmode  * {
     width: 100%;
     height: auto;
     position: absolute;
+
+}
+
+#interactionOverlay{
+    position: absolute;
+    top: 0px;
+    width: 100%;
+    z-index: 100;
+}
+
+#scoreRects *{
+    stroke-width: 1px;
+    stroke: black;
+    fill: gray;
+    fill-opacity: 0;
+    stroke-opacity: 0;
 }
 
 text{
@@ -384,7 +400,6 @@ text{
     fill: red
 }
 
-
 /* LABELS */
 
 .labelDiv{
@@ -437,6 +452,10 @@ text{
 
 
 /*Score Manipulator*/
+
+#manipulatorCanvas{
+    z-index: 101;
+}
 
 .signElement{
     stroke: black;
