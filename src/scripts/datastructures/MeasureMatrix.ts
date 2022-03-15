@@ -132,6 +132,7 @@ class MeasureMatrix{
                 let clefs = prevStaves[j].querySelectorAll("clef")
                 let keysigs = staves[j].querySelectorAll("keySig")
                 let meterSigs = staves[j].querySelectorAll("meterSig")
+
                 let clefIdx: number
                 if(clefs.length > 0){
                         if(i === 0){
@@ -171,13 +172,14 @@ class MeasureMatrix{
                 }else if(i>0) {
                    staff.meterSig = this.matrix[i-1][j].meterSig;
                 }else{
-                    if(staffDef.querySelector("meterSig") === null){
-                        staff.meterSig = null
-                    }else{
+                    if(staffDef.querySelector("meterSig") !== null){
                         staff.meterSig = {unit: staffDef.querySelector("meterSig").getAttribute("unit"), count: staffDef.querySelector("meterSig").getAttribute("count")}
+                    }else if(staffDef.getAttribute("meter.unit") !== null){
+                        staff.meterSig = {unit: staffDef.getAttribute("meter.unit"), count: staffDef.getAttribute("meter.count")}
+                    }else{
+                        staff.meterSig = null
                     }
                 }
-
                 col.push(staff)
             }
             this.matrix.push(col)
