@@ -84,7 +84,11 @@ class VerovioScoreEditor{
                 if (mutation.type === "attributes") {
                     var t = mutation.target as HTMLElement
                     if(mutation.attributeName === "loaded" && t.getAttribute(mutation.attributeName) === "true"){
-                        that.initGUI()
+                        that.initGUI().then(() => {
+                            if(that.meiChangedCallback != undefined){ 
+                                that.setMEIChangedCallback(that.meiChangedCallback)
+                            }
+                        })
                     }
                 }
             });
@@ -111,7 +115,7 @@ class VerovioScoreEditor{
             //parentElement for Dotbuttons
             this.container.append(dc.makeNewDiv("dotGroup", btnGrpClass, {role: "group"}))
 
-            //parentElement for Modification Buttons
+            //parentElement for local modifier Buttons
             this.container.append(dc.makeNewDiv("modGroup", btnGrpClass, {role: "group"}))
 
             //sidebarList

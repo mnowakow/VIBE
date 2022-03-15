@@ -119,7 +119,7 @@ class Toolbar{
         var clefSelectItem = dc.makeNewAccordionItem("sidebarList", "selectClef", "selectClefHeader", "selectClefBtn", "Clef",  buttonStyleDark, "selectClefDiv")
         var clefList = dc.makeNewDiv("clefList", "list-group flex-fill")
         clefSelectItem.querySelector("#selectClefDiv").appendChild(clefList)
-        clefList.appendChild(dc.makeNewAElement("sopran", "GClef", "list-group-item list-group-item-action", "#"))
+        clefList.appendChild(dc.makeNewAElement("treble", "GClef", "list-group-item list-group-item-action", "#"))
         clefList.appendChild(dc.makeNewAElement("alt", "CClef", "list-group-item list-group-item-action", "#"))
         clefList.appendChild(dc.makeNewAElement("bass", "FClef", "list-group-item list-group-item-action", "#"))
         return clefSelectItem

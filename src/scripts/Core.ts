@@ -22,6 +22,7 @@ import * as coordinates from "./utils/coordinates"
 import { resolve } from 'path';
 import { idText } from 'typescript';
 import { REFUSED } from 'dns';
+import { async } from 'regenerator-runtime';
 
 
 /**
@@ -77,6 +78,7 @@ class Core {
    * Constructor for NeonCore
    */
   constructor (containerId: string) {
+
     this.containerId = containerId
     this.container = document.getElementById(containerId)
     this.verovioWrapper = new VerovioWrapper();
@@ -162,7 +164,7 @@ class Core {
         console.log("Fehler bei einfügen von SVG")
       }
       this.svgFiller.distributeIds(this.container.querySelector("#rootSVG .definition-scale"))
-      this.createSVGOverlay()
+      this.createSVGOverlay(false)
       
       document.body.classList.remove(waitingFlag)
     
@@ -545,16 +547,10 @@ class Core {
   /**
    * Create an overlay of all interative elements over the the score svg.
    */
-  createSVGOverlay(){
+  createSVGOverlay(loadBBoxes: boolean = true): Promise<boolean>{
     return new Promise((resolve): void => {
       document.getElementById(this.containerId).focus()
       var refSVG =  document.getElementById(this.containerId).querySelector("#rootSVG") as unknown as SVGSVGElement
-      var svgBoxes = Array.from(document.getElementById(this.containerId)
-        .querySelectorAll(".definition-scale :is(g,path)"))
-        .filter(el => {
-          var condition = !["system", "measure", "staffLine", "layer", "ledgerLines"].some(cn => el.classList.contains(cn))
-          return condition
-        })
       this.interactionOverlay = document.getElementById(this.containerId).querySelector("#interactionOverlay")
       if(this.interactionOverlay === null){
         var overlay = document.createElementNS(c._SVGNS_, "svg")
@@ -580,32 +576,47 @@ class Core {
       })
       this.interactionOverlay.appendChild(scoreRects)
       refSVG.insertAdjacentElement("beforebegin", this.interactionOverlay)
-      svgBoxes.forEach(sr => {
-        if(!["g", "path"].includes(sr.tagName.toLowerCase())){
-          sr.remove()
-        }else{
-          var bbox = sr.getBoundingClientRect()
-          var rect = document.createElementNS(c._SVGNS_, "rect")
-          var g = document.createElementNS(c._SVGNS_, "g")
-          var refId: string = sr.id !== "" ? sr.id : sr.getAttribute("refId")
-          if(refId !== "" && refId !== null){
-            g.setAttribute("refId", refId)
+      if(loadBBoxes){
+        var svgBoxes = Array.from(document.getElementById(this.containerId)
+        .querySelectorAll(".definition-scale :is(g,path)"))
+        .filter(el => {
+          var condition = !["system", "measure", "staffLine", "layer", "ledgerLines"].some(cn => el.classList.contains(cn))
+          return condition
+        })
+        svgBoxes.forEach(sr => {
+          if(!["g", "path"].includes(sr.tagName.toLowerCase())){
+            sr.remove()
+          }else{
+            var that = this
+            async function computeCoords(){ // since order is not important, this block can be asynchronous
+              return new Promise((resolve): void => {
+                var rect = document.createElementNS(c._SVGNS_, "rect")
+                var g = document.createElementNS(c._SVGNS_, "g")
+                var refId: string = sr.id !== "" ? sr.id : sr.getAttribute("refId")
+                if(refId !== "" && refId !== null){
+                  g.setAttribute("refId", refId)
+                }
+                sr.classList.forEach(c => g.classList.add(c))
+                var bbox = sr.getBoundingClientRect()
+                var cc = coordinates.getDOMMatrixCoordinates(bbox, that.interactionOverlay)
+                rect.setAttribute("x", cc.left.toString())
+                rect.setAttribute("y", cc.top.toString())
+                var w: number
+                if(cc.width === 0) w = 2
+                rect.setAttribute("width", w?.toString() || cc.width.toString())
+                var h: number
+                if(cc.height === 0) h = 2
+                rect.setAttribute("height", h?.toString() || cc.height.toString())
+                g.appendChild(rect)
+                scoreRects.append(g)
+                resolve(true)
+              })
+            }
+            computeCoords()
           }
-          sr.classList.forEach(c => g.classList.add(c))
-          var cc = coordinates.getDOMMatrixCoordinates(bbox, this.interactionOverlay)
-          rect.setAttribute("x", cc.left.toString())
-          rect.setAttribute("y", cc.top.toString())
-          var w: number
-          if(cc.width === 0) w = 2
-          rect.setAttribute("width", w?.toString() || cc.width.toString())
-          var h: number
-          if(cc.height === 0) h = 2
-          rect.setAttribute("height", h?.toString() || cc.height.toString())
-          g.appendChild(rect)
-          scoreRects.appendChild(g)
-        }
 
-      })
+        })
+      }
       resolve(true)
     })
   }

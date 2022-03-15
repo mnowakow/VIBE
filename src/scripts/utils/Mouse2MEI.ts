@@ -717,7 +717,7 @@ export class Mouse2MEI{
         return this
     }
 
-    setUpdateOverlayCallback(updateOverlayCallback: () => void){
+    setUpdateOverlayCallback(updateOverlayCallback: () => Promise<boolean>){
         this.updateOverlayCallback = updateOverlayCallback
         return this
     }

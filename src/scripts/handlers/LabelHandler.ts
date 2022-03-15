@@ -314,7 +314,7 @@ class LabelHandler implements Handler{
     }).bind(this)
 
     /**
-     * Close the modification Window and make the hidden Element visible again
+     * Close the modifier Window and make the hidden Element visible again
      */
     closeModifyWindow(){
         Array.from(this.labelCanvas.children).forEach(c => {
