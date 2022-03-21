@@ -169,8 +169,9 @@ class ClickModeHandler implements Handler{
             var phantom = this.interactionOverlay.querySelector("#phantomNote")
             var cx = parseFloat(phantom.getAttribute("cx"))
 
-            var ptLeft = new DOMPoint(elementToHighlight.getBoundingClientRect().left, 0)
-            var ptRight = new DOMPoint(elementToHighlight.getBoundingClientRect().right, 0)
+            var bboxElemenet = this.interactionOverlay.querySelector("[refId=" + elementToHighlight.id + "]")
+            var ptLeft = new DOMPoint(bboxElemenet.getBoundingClientRect().left, 0)
+            var ptRight = new DOMPoint(bboxElemenet.getBoundingClientRect().right, 0)
             var rootSVG = this.rootSVG as unknown as SVGGraphicsElement
             var left = ptLeft.matrixTransform(rootSVG.getScreenCTM().inverse()).x
             var right = ptRight.matrixTransform(rootSVG.getScreenCTM().inverse()).x
@@ -182,23 +183,25 @@ class ClickModeHandler implements Handler{
                 var phantomSnapX: number
                 var targetwidth: number
                 var snapCoord: number
-                if(navigator.userAgent.toLowerCase().indexOf("firefox") > -1){ // special rules for buggy firefox
-                    targetwidth = elementToHighlight.querySelector(".notehead").getBoundingClientRect().width
-                    snapTarget = elementToHighlight.classList.contains("chord") ?  elementToHighlight : elementToHighlight.querySelector(".note") || elementToHighlight
-                    snapTargetBBox = snapTarget.getBoundingClientRect()
-                    // phantomSnapX = snapTargetBBox.x - window.scrollX - rootBBox.x - root.scrollLeft
-                    snapCoord = snapTargetBBox.x
-                }else{
-                    snapTarget = elementToHighlight.querySelector(".notehead")|| elementToHighlight
+                // if(navigator.userAgent.toLowerCase().includes("firefox")){ // special rules for buggy firefox
+                //     if(elementToHighlight.querySelector(".notehead") === null) return
+                //     targetwidth = right - left//elementToHighlight.querySelector(".notehead")?.getBoundingClientRect().width
+                //     snapTarget = elementToHighlight.classList.contains("chord") ?  elementToHighlight : elementToHighlight.querySelector(".note") || elementToHighlight
+                //     console.log("snapTarget", snapTarget)
+                //     snapTargetBBox = snapTarget.getBoundingClientRect()
+                //     // phantomSnapX = snapTargetBBox.x - window.scrollX - rootBBox.x - root.scrollLeft
+                //     snapCoord = snapTargetBBox.x
+                // }else{
+                    snapTarget = bboxElemenet//elementToHighlight.querySelector(".notehead")|| elementToHighlight
                     snapTargetBBox = snapTarget.getBoundingClientRect()
                     // phantomSnapX = snapTargetBBox.x + snapTargetBBox.width/2 - window.scrollX - rootBBox.x - root.scrollLeft
                     snapCoord = snapTargetBBox.x + snapTargetBBox.width/2
-                }
+                //}
                 
                 let snappt= new DOMPoint(snapCoord, 0)
                 phantomSnapX = snappt.matrixTransform(rootSVG.getScreenCTM().inverse()).x
 
-                if(elementToHighlight.querySelector(".chord") != null){
+                if(elementToHighlight.querySelector(".chord") !== null){
                     console.log(phantomSnapX)
                 }
                 phantom.setAttribute("cx", phantomSnapX.toString())
@@ -249,6 +252,9 @@ class ClickModeHandler implements Handler{
         var nextNote = this.m2m.findScoreTarget(posx, posy)
         if(nextNote != undefined){
             var el = this.rootSVG.querySelector("#"+nextNote.id).closest(".chord") || this.rootSVG.querySelector("#"+nextNote.id)
+            if(el.classList.contains("notehead")){
+                el = el.parentElement
+            }
             return el
         }
         return

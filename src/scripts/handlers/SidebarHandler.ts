@@ -80,6 +80,7 @@ class SidebarHandler implements Handler{
         })
         this.container.querySelectorAll("#sidebarList a, #timeDiv").forEach(sa => {
             sa.removeEventListener("drag", this.findDropTargetFunction)
+            sa.removeEventListener("dragstart", this.findDropTargetFunction)
             sa.removeEventListener("dragend", this.dropOnTargetFunction)
         })
 
@@ -105,6 +106,8 @@ class SidebarHandler implements Handler{
         })
 
         this.container.querySelectorAll("#sidebarList a, #timeDiv, #tempoDiv").forEach(sa => {
+            sa.setAttribute("draggable", "true")
+            sa.addEventListener("dragstart", this.findDropTargetFunction)
             sa.addEventListener("drag", this.findDropTargetFunction)
             sa.addEventListener("dragend", this.dropOnTargetFunction)
         })
@@ -224,9 +227,11 @@ class SidebarHandler implements Handler{
     findDropTarget(e: MouseEvent){
         /** TODO: dropflags müssen auch in scoreRects eigegeben werden */
         e.preventDefault()
-        var pt = coordinates.transformToDOMMatrixCoordinates(e.pageX, e.pageY, this.rootSVG)
+        var pt = coordinates.transformToDOMMatrixCoordinates(e.clientX, e.clientY, this.interactionOverlay)
         var posx = pt.x
         var posy = pt.y
+
+        console.log(posx, posy, e.clientX, e.clientY)
 
         var eventTarget = e.target as Element
         var eventTargetParent = eventTarget.parentElement
@@ -256,8 +261,9 @@ class SidebarHandler implements Handler{
 
         var tempDist = Math.pow(10, 10)
         dropTargets.forEach(dt => {
-            var blbbox = dt.getBoundingClientRect()
-            var ptdt = coordinates.getDOMMatrixCoordinates(blbbox, this.rootSVG)
+            var interacationElement = this.interactionOverlay.querySelector("[refId=" + dt.id +"]")
+            var blbbox = interacationElement.getBoundingClientRect()
+            var ptdt = coordinates.getDOMMatrixCoordinates(blbbox, this.interactionOverlay)
             var bbx  = ptdt.left
             var bby  = ptdt.top
             var dist = Math.sqrt(Math.abs(bbx - posx)**2 + Math.abs(bby - posy)**2)
@@ -271,6 +277,7 @@ class SidebarHandler implements Handler{
                 this.getElementInInteractOverlay(dt.id)?.classList.add(dropFlag)
             }
         })
+        console.log(document.querySelectorAll("." + dropFlag))
     }
 
     findDropTargetFunction =(function findBarline(e: MouseEvent){

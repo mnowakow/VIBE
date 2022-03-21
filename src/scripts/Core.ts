@@ -19,10 +19,8 @@ import LabelHandler from './handlers/LabelHandler';
 import ModHandler from './handlers/ModHandler';
 import * as cq from "./utils/convenienceQueries"
 import * as coordinates from "./utils/coordinates"
-import { resolve } from 'path';
-import { idText } from 'typescript';
-import { REFUSED } from 'dns';
-import { async } from 'regenerator-runtime';
+import * as ffbb from "./utils/firefoxBBoxes"
+import { threadId } from 'worker_threads';
 
 
 /**
@@ -159,12 +157,23 @@ class Core {
       svg = response.mei;
       svg = svg.replace("<svg", "<svg id=\"" + c._ROOTSVGID_ + "\"");
       try{
-        cq.getBySelector(this.containerId, "#", targetDivID, "#", ">").innerHTML = svg
+        //cq.getBySelector(this.containerId, "#", targetDivID, "#", ">").innerHTML = svg
+        document.querySelector("#" + this.containerId + "> #svg_output").innerHTML = svg
       }catch(ignore){
         console.log("Fehler bei einfügen von SVG")
       }
       this.svgFiller.distributeIds(this.container.querySelector("#rootSVG .definition-scale"))
-      this.createSVGOverlay(false)
+      this.container.querySelector("#rootSVG").setAttribute("preserveAspectRatio", "xMidYMid meet")
+
+      var rootBBox = this.container.querySelector("#rootSVG").getBoundingClientRect()
+      var rootWidth = rootBBox.width.toString()
+      var rootHeigth = rootBBox.height.toString()
+
+      this.container.querySelector("#rootSVG").setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))
+      this.container. querySelector("#rootSVG").removeAttribute("height")
+      this.container. querySelector("#rootSVG").removeAttribute("width")
+     
+      this.createSVGOverlay(true)
       
       document.body.classList.remove(waitingFlag)
     
@@ -211,6 +220,10 @@ class Core {
       })
     });
   }
+
+  reloadDataFunction = (function reloadData(): Promise<boolean>{
+      return this.loadData("", this.currentMEIDoc, false, c._TARGETDIVID_)
+  }).bind(this)
 
   loadDataFunction = (function loadDataFunction(pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string){
     return this.loadData (pageURI, data, isUrl, targetDivID)
@@ -298,6 +311,7 @@ class Core {
       .setM2M(this.m2m)
       .setCurrentMEI(this.currentMEIDoc)
       .setLoadDataCallback(this.loadDataFunction)
+      .setSVGReloadCallback(this.reloadDataFunction)
       .setAnnotations(this.insertModeHandler.getAnnotations())
       .setInsertModeHandler(this.insertModeHandler)
       .resetListeners()
@@ -563,12 +577,15 @@ class Core {
       var rootWidth = rootBBox.width.toString()
       var rootHeigth = rootBBox.height.toString()
 
-      document.getElementById(this.containerId).querySelector("#interactionOverlay #scoreRects")?.remove()
-      var scoreRects = document.createElementNS(c._SVGNS_, "svg") 
-      scoreRects.setAttribute("id", "scoreRects")
       if(this.interactionOverlay.getAttribute("viewBox") === null){
         this.interactionOverlay.setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))
       }
+
+      document.getElementById(this.containerId).querySelector("#interactionOverlay #scoreRects")?.remove()
+      var scoreRects = document.createElementNS(c._SVGNS_, "svg") 
+      scoreRects.setAttribute("id", "scoreRects")
+      scoreRects.setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))
+
       Array.from(refSVG.attributes).forEach(a => {
         if(!["id", "width", "height"].includes(a.name)){
           this.interactionOverlay.setAttribute(a.name, a.value)
@@ -576,16 +593,31 @@ class Core {
       })
       this.interactionOverlay.appendChild(scoreRects)
       refSVG.insertAdjacentElement("beforebegin", this.interactionOverlay)
+
       if(loadBBoxes){
         var svgBoxes = Array.from(document.getElementById(this.containerId)
         .querySelectorAll(".definition-scale :is(g,path)"))
         .filter(el => {
-          var condition = !["system", "measure", "staffLine", "layer", "ledgerLines"].some(cn => el.classList.contains(cn))
+          var condition = !["system", "measure", "staffLine", "layer", "ledgerLines", "flag"].some(cn => el.classList.contains(cn))
           return condition
         })
-        svgBoxes.forEach(sr => {
+
+        var reorderedBoxes = new Array<Element>() // reorder so that dependent elements are already in array
+        svgBoxes.forEach(sb => {
+          if(sb.querySelector(":scope > use, :scope > rect, :scope > path") === null){
+            reorderedBoxes.push(sb)
+          }else{
+            reorderedBoxes.unshift(sb)
+          }
+        })
+
+        reorderedBoxes.forEach(sr => {
           if(!["g", "path"].includes(sr.tagName.toLowerCase())){
-            sr.remove()
+            //sr.remove()
+            return
+          }else if(Array.from(sr.classList).some(srcl => srcl.includes("page") || srcl.includes("system"))){
+            //sr.remove()
+            return
           }else{
             var that = this
             async function computeCoords(){ // since order is not important, this block can be asynchronous
@@ -609,12 +641,14 @@ class Core {
                 rect.setAttribute("height", h?.toString() || cc.height.toString())
                 g.appendChild(rect)
                 scoreRects.append(g)
+                if(navigator.userAgent.toLowerCase().includes("firefox")){
+                  ffbb.adjustBBox(g)
+                }
                 resolve(true)
               })
             }
             computeCoords()
           }
-
         })
       }
       resolve(true)

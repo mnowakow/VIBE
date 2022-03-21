@@ -6,6 +6,7 @@ import MeasureMatrix from '../datastructures/MeasureMatrix'
 import * as meiOperation from "../utils/MEIOperations"
 import * as coordinates from "./coordinates"
 import * as cq from "./convenienceQueries"
+import * as ffbb from "./firefoxBBoxes"
 
 
 //@ts-ignore
@@ -134,7 +135,7 @@ export class Mouse2MEI{
         this.lastStaffMouseEnter = this.getElementInInteractOverlay(refElement.closest(".staff")?.id) || this.getElementInInteractOverlay(refElement.querySelector(".staff")?.id)
         this.lastLayerMouseEnter = this.getElementInInteractOverlay(refElement.closest(".layer")?.id) || this.getElementInInteractOverlay(refElement.querySelector(".layer")?.id)
         
-        this.update()
+        //this.update()
     }
 
     getMouseEnterElementByName(name: string): Element{
@@ -163,9 +164,8 @@ export class Mouse2MEI{
         var notes = this.rootSVG.querySelectorAll(".note, .rest, .mRest, .notehead") ;
         var root = this.rootSVG
         Array.from(notes).forEach(element => {
-            var pt = new DOMPoint(element.getBoundingClientRect().x, element.getBoundingClientRect().y)
-            var svg = root as unknown as SVGGraphicsElement 
-            var relpt = pt.matrixTransform(svg.getScreenCTM().inverse());
+            var interactionElement = this.interactionOverlay.querySelector("[refId=" + element.id+ "]")
+            var relpt = coordinates.getDOMMatrixCoordinates(interactionElement, this.interactionOverlay)
 
             let bb: NoteBBox = {
                 id: element.id,
@@ -192,7 +192,9 @@ export class Mouse2MEI{
             let idxParentMeasure = parseInt(closestMeasure.getAttribute("n")) - 1
             let clefShape = this.measureMatrix.get(idxParentMeasure, idxStaff).clef;
             Array.from(g).forEach((staffLine, idx) => {
-                staffLine.id = uuidv4();
+                if(staffLine.id === ""){
+                    staffLine.id = uuidv4()
+                } 
                 staffLine.classList.add("staffLine");
                 staffLine.classList.add("Clef" + clefShape)       
                 var map = null;
@@ -212,9 +214,8 @@ export class Mouse2MEI{
                 }
                 staffLine.classList.add(map.get(idx*2))
                 staffLine.classList.add("Clef" + clefShape)
-                var pt = new DOMPoint(staffLine.getBoundingClientRect().x, staffLine.getBoundingClientRect().y)
-                var svg = root as unknown as SVGGraphicsElement 
-                var relpt = pt.matrixTransform(svg.getScreenCTM().inverse());
+                //var interactionElement = this.interactionOverlay.querySelector("[refId=" + staffLine.id +"]")
+                var relpt = coordinates.getDOMMatrixCoordinates(staffLine, this.rootSVG)
                 let bb: StaffLineBBox = {
                     id: staffLine.parentElement.id,
                     y: relpt.y, //staffLine.getBoundingClientRect().y + window.pageYOffset,
@@ -272,7 +273,7 @@ export class Mouse2MEI{
         let diffNote: number = null;
         let leftRightPos: string;
 
-        let allIDs: Array<string> = Array.from(this.interactionOverlay.querySelectorAll(".staff")).map(s => s.getAttribute("refId"))
+        let allIDs: Array<string> = Array.from(this.rootSVG.querySelectorAll(".staff")).map(s => s.getAttribute("id"))
         if(this.lastStaffMouseEnter === null){return}
         let staffIdx = allIDs.indexOf(this.lastStaffMouseEnter?.getAttribute("refId"))
         let upperStaffBound = staffIdx * 5 + 0;
@@ -281,7 +282,6 @@ export class Mouse2MEI{
         let aboveSystem: boolean =  (y < this.staffLineBBoxes[upperStaffBound]?.y) ? true : false;
         let belowSystem: boolean = (y > this.staffLineBBoxes[lowerStaffBound]?.y) ? true: false;
         let isInSystem: boolean = !aboveSystem && !belowSystem;
-        //console.log(allIDs, staffIdx, this.lastStaffMouseEnter, aboveSystem, belowSystem, isInSystem)
 
         this.getElementInRootSVG(this.lastStaffMouseEnter?.getAttribute("refId"))?.querySelectorAll(".layer").forEach(l => {
             if(l.hasChildNodes()){
@@ -470,6 +470,7 @@ export class Mouse2MEI{
                 accid = keysig.charAt(1)
             }
         }
+
         
         var newNote: NewNote = {
             id: uuidv4(),
@@ -485,7 +486,7 @@ export class Mouse2MEI{
             chordElement: options.targetChord,
             rest: this.container.querySelector("#pauseNote").classList.contains("selected")
         }
-        
+
         this.newNote = newNote
     }
 
@@ -506,8 +507,8 @@ export class Mouse2MEI{
             var x: number
             var y: number
             if(this.getElementInRootSVG(n.id)?.closest(".chord") && navigator.userAgent.toLowerCase().indexOf("firefox") > -1){ // special rule for firefox browsers
-                x = this.getElementInRootSVG(n.id)?.closest(".chord").getBoundingClientRect().x
-                y = this.getElementInRootSVG(n.id)?.closest(".chord").getBoundingClientRect().y
+                 x = this.getElementInRootSVG(n.id)?.closest(".chord").getBoundingClientRect().x
+                 y = this.getElementInRootSVG(n.id)?.closest(".chord").getBoundingClientRect().y
             }else{
                 x = n.x
                 y = n.y
@@ -711,8 +712,8 @@ export class Mouse2MEI{
     update(){
         this.noteBBoxes.length = 0;
         this.staffLineBBoxes.length = 0;
-        this.findBBoxes();
         this.updateOverlayCallback()
+        this.findBBoxes();
         this.setMouseEnterElementListeners();
         return this
     }
@@ -721,4 +722,5 @@ export class Mouse2MEI{
         this.updateOverlayCallback = updateOverlayCallback
         return this
     }
+
 }

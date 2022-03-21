@@ -6,6 +6,7 @@ import { constants as c } from "../constants"
 import Annotations from "../gui/Annotations";
 import InsertModeHandler from "./InsertModeHandler";
 import * as cq from "../utils/convenienceQueries"
+import * as meiConverter from "../utils/MEIConverter"
 
 
 class WindowHandler implements Handler{
@@ -20,11 +21,15 @@ class WindowHandler implements Handler{
     rootSVG: Element
     interactionOverlay: Element
 
+    svgReloadCallback: () => void
+
     setListeners(){
         window.addEventListener("scroll", this.update)
         window.addEventListener("resize", this.update)
+        window.addEventListener("resize", this.updateSVG)
         window.addEventListener("deviceorientation", this.update)
         document.querySelector("#"+ this.containerId + " #sidebarContainer").addEventListener("transitionend", this.update)
+        document.querySelector("#"+ this.containerId + " #sidebarContainer").addEventListener("transitionend", this.updateSVG)
         this.rootSVG.addEventListener("scroll", this.update)
         this.rootSVG.addEventListener("resize", this.update)
         this.rootSVG.addEventListener("deviceorientation", this.update)
@@ -37,9 +42,10 @@ class WindowHandler implements Handler{
     removeListeners() {
         window.removeEventListener("scroll", this.update)
         window.removeEventListener("resize", this.update)
+        window.removeEventListener("resize", this.updateSVG)
         window.removeEventListener("deviceorientation", this.update)
         document.querySelector("#"+ this.containerId + " #sidebarContainer").removeEventListener("transitionend", this.update)
-        
+        document.querySelector("#"+ this.containerId + " #sidebarContainer").removeEventListener("transitionend", this.updateSVG)
         this.rootSVG.removeEventListener("scroll", this.update)
         this.rootSVG.removeEventListener("resize", this.update)
         this.rootSVG.removeEventListener("deviceorientation", this.update)
@@ -62,6 +68,16 @@ class WindowHandler implements Handler{
             that.annotations?.update()
             that.insertModeHandler?.getPhantomNoteHandler()?.resetCanvas()
         }, 500)  
+    }).bind(this)
+
+    updateSVG = (function updateSVG(e: Event){
+        var t = e.target as HTMLElement
+        if((["apple", "firefox"].some(n => navigator.userAgent.toLowerCase().includes(n)) 
+        && t.id === "sidebarContainer" 
+        && (e as TransitionEvent).propertyName !== "width") || e.type === "resize"){
+            var mei = meiConverter.restoreXmlIdTags(this.currentMEI)
+            this.loadDataCallback("", mei, false, "svg_output")
+        }
     }).bind(this)
 
     scoreChangedHandler = (function scoreChangedHandler(e: Event){
@@ -106,7 +122,12 @@ class WindowHandler implements Handler{
     setLoadDataCallback(loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>){
         this.loadDataCallback = loadDataCallback
         return this
-      }
+    }
+
+    setSVGReloadCallback(svgReloadCallback: () => Promise<boolean>){
+        this.svgReloadCallback = svgReloadCallback
+        return this
+    }
 
     // setSMHandler(smHandler: ScoreManipulatorHandler){
     //     this.smHandler = smHandler
