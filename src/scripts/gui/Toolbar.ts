@@ -4,9 +4,7 @@ import {Dropdown, Collapse } from 'bootstrap'
 import interact from 'interactjs'
 import { constants as c } from '../constants'
 import * as meioperations from "../utils/MEIOperations"
-import { time } from 'console'
 import * as cq from "../utils/convenienceQueries"
-import { timingSafeEqual } from 'crypto'
 
 
 const buttonStyleDarkOutline = "btn btn-outline-dark btn-md"

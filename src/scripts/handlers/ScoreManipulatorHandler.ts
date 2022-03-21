@@ -6,7 +6,6 @@ import {constants as c } from '../constants'
 import * as meiOperation from '../utils/MEIOperations'
 import * as meiConverter from '../utils/MEIConverter'
 import * as cq from "../utils/convenienceQueries"
-import { threadId } from "worker_threads";
 
 const manipSelector = ".manipulator"
 

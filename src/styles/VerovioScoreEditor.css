@@ -43,8 +43,8 @@ body.waiting * {
     stroke-width: 1px;
     stroke: black;
     fill: gray;
-    fill-opacity: 0.1;
-    stroke-opacity: 1;
+    fill-opacity: 0;
+    stroke-opacity: 0;
 }
 
 text{

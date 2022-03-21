@@ -1,6 +1,5 @@
 import * as d3 from 'd3';
 import { line } from 'd3';
-import { threadId } from 'worker_threads';
 import {constants as c} from '../constants'
 import { Mouse2MEI } from '../utils/Mouse2MEI';
 import * as cq from "../utils/convenienceQueries"

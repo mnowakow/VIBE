@@ -1,5 +1,3 @@
-import { stackOffsetNone } from 'd3';
-import { parse } from 'path';
 import {constants as c} from '../constants';
 import * as meiOperation from '../utils/MEIOperations'
 import * as cq from "../utils/convenienceQueries"

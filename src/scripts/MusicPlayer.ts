@@ -7,7 +7,6 @@ import { constants as c } from './constants'
 import ScoreGraph from './datastructures/ScoreGraph';
 import * as coordinates from "./utils/coordinates"
 import * as cq from "./utils/convenienceQueries"
-import { emitKeypressEvents } from 'readline';
 
 const currentlyPlayingFlag = "currentlyPlaying"
 const followerRectID = "followerRect"

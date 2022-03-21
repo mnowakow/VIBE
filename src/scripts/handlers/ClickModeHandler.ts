@@ -7,8 +7,6 @@ import { NewNote } from "../utils/Types";
 import Cursor from "../gui/Cursor";
 import PhantomElementHandler from "./PhantomElementHandler";
 import * as cq from "../utils/convenienceQueries"
-import { threadId } from "worker_threads";
-import { runInThisContext } from "vm";
 
 
 class ClickModeHandler implements Handler{

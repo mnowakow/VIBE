@@ -6,3 +6,4 @@ src/deprecated
 .DS_Store
 h5p.code-workspace
 package-lock.json
+*.bak

@@ -1,4 +1,3 @@
-import { parse } from "path"
 import * as coordinates from "./coordinates"
 const allowedClasses = ["chord", "note", "notehead", "staff", "rest", "mRest", "clef", "meterSig", "keySig", "stem"]
 

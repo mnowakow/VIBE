@@ -20,7 +20,6 @@ import ModHandler from './handlers/ModHandler';
 import * as cq from "./utils/convenienceQueries"
 import * as coordinates from "./utils/coordinates"
 import * as ffbb from "./utils/firefoxBBoxes"
-import { threadId } from 'worker_threads';
 
 
 /**

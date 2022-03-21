@@ -11,7 +11,7 @@ class Cursor{
     private height: number
     private noteBBoxes: Array<NoteBBox>;
     private measureBBox: NoteBBox;
-    private interval: NodeJS.Timeout;
+    private interval: number;
     private m2m: Mouse2MEI
 
     private nextElement: Element
@@ -51,7 +51,7 @@ class Cursor{
             this.cursorRect.style.opacity = this.maxOpacity.toString();
             cursorOn = true;
           }
-        }, speed);
+        }, speed) as unknown as number;
     }
 
     flashStop(){

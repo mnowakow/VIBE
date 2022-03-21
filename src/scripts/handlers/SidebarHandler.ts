@@ -80,7 +80,6 @@ class SidebarHandler implements Handler{
         })
         this.container.querySelectorAll("#sidebarList a, #timeDiv").forEach(sa => {
             sa.removeEventListener("drag", this.findDropTargetFunction)
-            sa.removeEventListener("dragstart", this.findDropTargetFunction)
             sa.removeEventListener("dragend", this.dropOnTargetFunction)
         })
 
@@ -106,8 +105,6 @@ class SidebarHandler implements Handler{
         })
 
         this.container.querySelectorAll("#sidebarList a, #timeDiv, #tempoDiv").forEach(sa => {
-            sa.setAttribute("draggable", "true")
-            sa.addEventListener("dragstart", this.findDropTargetFunction)
             sa.addEventListener("drag", this.findDropTargetFunction)
             sa.addEventListener("dragend", this.dropOnTargetFunction)
         })

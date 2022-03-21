@@ -1,7 +1,6 @@
 import { uuidv4 } from "../utils/random"
 import { constants as c } from "../constants"
 import Label from './Label'
-import { moveMessagePortToContext } from "worker_threads"
 
 class TempoLabel implements Label{
 
