@@ -61,7 +61,11 @@ class VerovioScoreEditor{
         }
 
         if(script.getAttribute("loaded") === "true"){
-            this.initGUI()
+            this.initGUI().then(() => {
+                if(this.meiChangedCallback != undefined){ 
+                    this.setMEIChangedCallback(this.meiChangedCallback)
+                }
+            })
         }
         
         if(document.getElementById(scriptId) === null){

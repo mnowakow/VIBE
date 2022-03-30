@@ -165,6 +165,7 @@ export class Mouse2MEI{
         var root = this.rootSVG
         Array.from(notes).forEach(element => {
             var interactionElement = this.interactionOverlay.querySelector("[refId=" + element.id+ "]")
+            if(interactionElement === null) return
             var relpt = coordinates.getDOMMatrixCoordinates(interactionElement, this.interactionOverlay)
 
             let bb: NoteBBox = {

@@ -595,12 +595,11 @@ class Core {
 
       if(loadBBoxes){
         var svgBoxes = Array.from(document.getElementById(this.containerId)
-        .querySelectorAll(".definition-scale :is(g,path)"))
+        .querySelectorAll(".definition-scale :is(g,path)"))//".definition-scale path, .definition-scale .bounding-box"))
         .filter(el => {
-          var condition = !["system", "measure", "staffLine", "layer", "ledgerLines", "flag"].some(cn => el.classList.contains(cn))
+          var condition = !["system", "measure", "layer", "ledgerLines", "flag"].some(cn => el.classList.contains(cn))
           return condition
         })
-
         var reorderedBoxes = new Array<Element>() // reorder so that dependent elements are already in array
         svgBoxes.forEach(sb => {
           if(sb.querySelector(":scope > use, :scope > rect, :scope > path") === null){
@@ -611,6 +610,7 @@ class Core {
         })
 
         reorderedBoxes.forEach(sr => {
+          console.log(sr.tagName, sr)
           if(!["g", "path"].includes(sr.tagName.toLowerCase())){
             //sr.remove()
             return
@@ -621,13 +621,27 @@ class Core {
             var that = this
             async function computeCoords(){ // since order is not important, this block can be asynchronous
               return new Promise((resolve): void => {
+                if(!sr.id.includes("bbox-") && sr.tagName.toLowerCase() === "g") return
+                var parentsr: Element
+                if(sr.tagName.toLowerCase() === "g"){
+                  Array.from(sr.classList).forEach(c => {
+                    var prefix = "bb"
+                    if(c === "bounding-box") return
+                    if(c.indexOf(prefix) === 0) return
+                    sr.classList.add(prefix + c)
+                    sr.classList.remove(c)
+                  })
+                  parentsr = sr.parentElement
+                }else{
+                  parentsr = sr
+                }
                 var rect = document.createElementNS(c._SVGNS_, "rect")
                 var g = document.createElementNS(c._SVGNS_, "g")
-                var refId: string = sr.id !== "" ? sr.id : sr.getAttribute("refId")
+                var refId: string = parentsr.id !== "" ? parentsr.id : parentsr.getAttribute("refId")
                 if(refId !== "" && refId !== null){
                   g.setAttribute("refId", refId)
                 }
-                sr.classList.forEach(c => g.classList.add(c))
+               parentsr.classList.forEach(c => g.classList.add(c))
                 var bbox = sr.getBoundingClientRect()
                 var cc = coordinates.getDOMMatrixCoordinates(bbox, that.interactionOverlay)
                 rect.setAttribute("x", cc.left.toString())
@@ -641,7 +655,7 @@ class Core {
                 g.appendChild(rect)
                 scoreRects.append(g)
                 if(navigator.userAgent.toLowerCase().includes("firefox")){
-                  ffbb.adjustBBox(g)
+                  //ffbb.adjustBBox(g)
                 }
                 resolve(true)
               })
