@@ -655,7 +655,7 @@ class Core {
                 g.appendChild(rect)
                 scoreRects.append(g)
                 if(navigator.userAgent.toLowerCase().includes("firefox")){
-                  //ffbb.adjustBBox(g)
+                  ffbb.adjustBBox(g)
                 }
                 resolve(true)
               })
