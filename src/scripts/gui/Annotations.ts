@@ -45,10 +45,10 @@ class Annotations implements Handler{
             this.annotationCanvas = document.createElementNS(c._SVGNS_, "svg")
             this.annotationCanvas.setAttribute("id", "annotationCanvas")
             this.annotationCanvas.classList.add("canvas")
-            this.annotationCanvas.setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))
             this.annotationCanvas.classList.add("back")
+            this.annotationCanvas.setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))
         }
-
+        
         if(this.annotationCanvas.classList.contains("front")){
             this.interactionOverlay.insertBefore(this.annotationCanvas, this.interactionOverlay.lastChild.nextSibling)
         }else{
@@ -93,6 +93,8 @@ class Annotations implements Handler{
             .setUpdateCallback(this.resetTextListeners.bind(this))
             .setM2M(this.m2m)
             .setAnnotations(this.annotations)
+            .update()
+            .resetListeners()
 
         this.interactionOverlay.addEventListener("dblclick", this.createAnnotationHandler)
         var that = this
@@ -262,8 +264,8 @@ class Annotations implements Handler{
 
         var rectPadding = 5
 
-        text.setAttribute("x", "0")
-        text.setAttribute("y", "0")
+        // text.setAttribute("x", "0")
+        // text.setAttribute("y", "0")
 
         textForeignObject.setAttribute("x", (posx + rectPadding).toString())
         textForeignObject.setAttribute("y", posy.toString())

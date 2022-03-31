@@ -142,5 +142,13 @@ export default class VerovioWrapper {
       return this.vrvToolkit.renderToMIDI();
     }
 
+    /**
+     * Get Toolkit instance to use any method of verovio outside of score editor.
+     * For a documentation of all available methods go to: https://book.verovio.org/toolkit-reference/toolkit-methods.html
+     * @returns toolkit instance
+     */
+    getToolkit(){
+      return this.vrvToolkit
+    }
     
 }

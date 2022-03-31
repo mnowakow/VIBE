@@ -23,26 +23,11 @@ import * as ffbb from "./utils/firefoxBBoxes"
 
 
 /**
- * A cache is used to keep track of what has happened
- * across multiple pages in a manuscript without having
- * to make many calls to the PouchhDb database.
- */
-interface CacheEntry {
-  dirty: boolean;
-  mei: string;
-  svg: SVGSVGElement;
-}
-
-//@ts-ignore
-//const $ = H5P.jQuery;
-
-/**
  * The core component the Editor. This manages the database,
  * the verovio toolkit, the cache, and undo/redo stacks.
  */
 class Core {
   private verovioWrapper: VerovioWrapper;
-  private verivioMeasureWrappers: Map<string, VerovioWrapper> // measure.id, verovioWrapper
   private m2m: Mouse2MEI;
 
   private undoMEIStacks: Array<string>;
@@ -85,7 +70,6 @@ class Core {
     //this.undoAnnotationStacks.push(new Array<Element>())
     this.redoAnnotationStacks = new Array<Array<Element>>();
     //this.redoAnnotationStacks.push(new Array<Element>())
-    this.verivioMeasureWrappers = new Map();
     this.windowHandler = new WindowHandler()
     this.svgFiller = new SVGFiller()
 
@@ -159,7 +143,7 @@ class Core {
         //cq.getBySelector(this.containerId, "#", targetDivID, "#", ">").innerHTML = svg
         document.querySelector("#" + this.containerId + "> #svg_output").innerHTML = svg
       }catch(ignore){
-        console.log("Fehler bei einfügen von SVG")
+        console.log("Error inserting SVG")
       }
       this.svgFiller.distributeIds(this.container.querySelector("#rootSVG .definition-scale"))
       this.container.querySelector("#rootSVG").setAttribute("preserveAspectRatio", "xMidYMid meet")
@@ -199,7 +183,6 @@ class Core {
         }
 
         if(this.meiChangedCallback != undefined){
-          console.log(this, this.currentMEI)
           this.meiChangedCallback(this.currentMEI)
         }
 
@@ -354,7 +337,6 @@ class Core {
    * 
    */
   insert = (function insert (newNote: NewNote, replace: Boolean = false): Promise<boolean> {    
-    console.log(newNote)
     this.lastInsertedNoteId = newNote.id
 
     return new Promise((resolve, reject): void => {
@@ -550,7 +532,7 @@ class Core {
             //arr.push(node.id)
             arr.push( cq.getRootSVG(this.containerId).querySelector("#"+node.id))
           }catch{
-            console.log("CATCH ", node)
+            console.log("Catched Midi Event", node)
           }
         })
         resolve(noteTimes)
@@ -610,7 +592,6 @@ class Core {
         })
 
         reorderedBoxes.forEach(sr => {
-          console.log(sr.tagName, sr)
           if(!["g", "path"].includes(sr.tagName.toLowerCase())){
             //sr.remove()
             return
@@ -723,17 +704,41 @@ class Core {
     return this.deleteHandler;
   }
 
-  getInsertHandler(): InsertModeHandler{
+  getInsertModeHandler(): InsertModeHandler{
     return this.insertModeHandler
   }
 
-  getCurrentMEI(asDocument: boolean = false): string | Document {
+  getCurrentMEI(asDocument: boolean = true): string | Document {
     if(asDocument){
       var meiDoc = meiConverter.meiToDoc(this.currentMEI)
       meiDoc = meiConverter.standardizeAccid(meiDoc)
       return meiDoc
     }
     return this.currentMEI;
+  }
+  
+  getNoteDragHandler(){
+    return this.noteDragHandler
+  }
+
+  getGlobalKeyboardHandler(){
+    return this.keyboardHandler
+  }
+
+  getSidebarHandler(){
+    return this.sidebarHandler
+  }
+
+  getLabelHandler(){
+    return this.labelHandler
+  }
+
+  getModifierHandler(){
+    return this.modHandler
+  }
+
+  getWindowHandler(){
+    return this.windowHandler
   }
 
   getCurrentMidi(){
@@ -742,6 +747,24 @@ class Core {
 
   getMusicPlayer(): MusicPlayer{
     return this.musicplayer;
+  }
+
+  getScoreGraph(){
+    return this.scoreGraph
+  }
+
+
+  getContainer(){
+    return this.container
+  }
+
+  /**
+   * Access Verovio from outside of score editor.
+   * Use getToolkit method to access any method which is not wrapped
+   * @returns VerovioWrapper instance
+   */
+  getVerovioWrapper(){
+    return this.verovioWrapper
   }
 
   setMEIChangedCallback(meiChangedCallback: (mei: string) => void) {
