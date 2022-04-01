@@ -144,7 +144,7 @@ export default class VerovioWrapper {
 
     /**
      * Get Toolkit instance to use any method of verovio outside of score editor.
-     * For a documentation of all available methods go to: https://book.verovio.org/toolkit-reference/toolkit-methods.html
+     * FOr all available methods go to: https://book.verovio.org/toolkit-reference/toolkit-methods.html
      * @returns toolkit instance
      */
     getToolkit(){

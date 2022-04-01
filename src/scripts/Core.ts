@@ -20,6 +20,7 @@ import ModHandler from './handlers/ModHandler';
 import * as cq from "./utils/convenienceQueries"
 import * as coordinates from "./utils/coordinates"
 import * as ffbb from "./utils/firefoxBBoxes"
+import { ObjectFlags } from 'typescript';
 
 
 /**
@@ -55,11 +56,19 @@ class Core {
   private container: Element
   private interactionOverlay: Element
   private meiChangedCallback: (mei: string) => void;
+  private doHideUX: boolean
+  private hideOptions: {}
+  private styleOptions: {}
+  private attributeOptions: {}
 
   /**
    * Constructor for NeonCore
    */
   constructor (containerId: string) {
+    this.doHideUX = false
+    this.hideOptions = {}
+    this.styleOptions = {}
+    this.attributeOptions = {}
 
     this.containerId = containerId
     this.container = document.getElementById(containerId)
@@ -82,10 +91,7 @@ class Core {
 
   /**
    * Load data into the verovio toolkit and update the cache.
-   * @param pageURI - The URI of the selected page.
-   * @param data - The MEI of the page as a string.
-   * @param dirty - If the cache entry should be marked as dirty.
-   */
+  */
   loadData (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string): Promise<string> {
   
     if(cq.getRootSVG(this.containerId) !== null){
@@ -242,6 +248,7 @@ class Core {
    * distribute Callback functions for each element which uses some information from of the Core (Handlers, Musicplayer, Callbacks, etc)
    */
   dispatchFunctions(){
+
     this.labelHandler
       .setContainerId(this.containerId)
       .setCurrentMEI(this.currentMEIDoc)
@@ -287,16 +294,6 @@ class Core {
       .setLoadDataCallback(this.loadDataFunction)
       .setScoreGraph(this.scoreGraph)
       .resetListeners()
-    
-    this.windowHandler
-      .setContainerId(this.containerId)
-      .setM2M(this.m2m)
-      .setCurrentMEI(this.currentMEIDoc)
-      .setLoadDataCallback(this.loadDataFunction)
-      .setSVGReloadCallback(this.reloadDataFunction)
-      .setAnnotations(this.insertModeHandler.getAnnotations())
-      .setInsertModeHandler(this.insertModeHandler)
-      .resetListeners()
 
     this.sidebarHandler
       .setContainerId(this.containerId)
@@ -312,6 +309,31 @@ class Core {
       .resetListeners()
       .setCurrentMEI(this.currentMEIDoc)
       .setLoadDataCallback(this.loadDataFunction)
+
+    this.windowHandler
+      .setContainerId(this.containerId)
+      .setM2M(this.m2m)
+      .setCurrentMEI(this.currentMEIDoc)
+      .setLoadDataCallback(this.loadDataFunction)
+      .setSVGReloadCallback(this.reloadDataFunction)
+      .setAnnotations(this.insertModeHandler.getAnnotations())
+      .setInsertModeHandler(this.insertModeHandler)
+      .resetListeners()
+
+      if(this.doHideUX){
+        this.hideUX(this.hideOptions)
+      }else{
+        this.viewUX(this.hideOptions)
+      }
+
+      if(Object.entries(this.styleOptions).length > 0){
+        this.setStyles(this.styleOptions)
+      }
+
+      if(Object.entries(this.attributeOptions).length > 0){
+        this.setAttributes(this.attributeOptions)
+      }
+
   }
 
   /**
@@ -691,6 +713,38 @@ class Core {
     return this.verovioWrapper.setMessage(message).attributes;
   }).bind(this)
 
+  
+  /**
+   * hide ux elements, so that no interaction is possible
+   * should be best called afteer promise of loadData
+   * @param options 
+   */
+  hideUX(options = {}){
+    if(Object.entries(options).length === 0){
+      options = {annotationCanvas: true, labelCanvas: true, canvasMusicPlayer: true, scoreRects: true, manipulatorCanvas: true, sidebarContainer: true, btnToolbar: true, customToolbar: true}
+    }
+    
+    for(const [key, value] of Object.entries(options)){
+      if(value){
+        (this.container.querySelector("#" + key) as HTMLElement)?.style.setProperty("display" ,"none", "important")
+      }
+    }
+  }
+  /**
+   * View UX elements if they where hidden earlier
+   * @param options 
+   */
+   viewUX(options = {}){
+    if(Object.entries(options).length === 0){
+      options = {annotationCanvas: true, labelCanvas: true, canvasMusicPlayer: true, scoreRects: true, manipulatorCanvas: true, sidebarContainer: true, btnToolbar: true, customToolbar: true}
+    }    
+    for(const [key, value] of Object.entries(options)){
+      if(value){
+        (this.container.querySelector("#" + key) as HTMLElement)?.style.removeProperty("display")
+      }
+    }
+  }
+
   ////////// GETTER/ SETTER
   /**
    * 
@@ -770,6 +824,67 @@ class Core {
   setMEIChangedCallback(meiChangedCallback: (mei: string) => void) {
     this.meiChangedCallback = meiChangedCallback
   }
+
+  setHideUX(hide: boolean){
+    this.doHideUX = true
+  }
+
+  setHideOptions(options: {}){
+    this.hideOptions = options
+  }
+
+  /**
+   * Set Attibutes for any element in the result svg as {selector: {attributeName: [values as string]}}.
+   * By default will be concatenated with spaces as value string for this attribute
+   * @param options 
+   * @param separator optional separator, default: " "
+   */
+  setAttributes(options: {}, separator = " "){
+    var svg = cq.getRootSVG(this.containerId)
+    for(const [elKey, elValue] of Object.entries(options)){
+      var element = svg.querySelector(elKey)
+      if(element !== null){
+        for(const [attrKey, attrValue] of Object.entries(elValue)){
+          element.setAttribute(attrKey, (attrValue as Array<String>).join(separator))
+        }
+      }
+    }
+  }
+
+  setAttributeOptions(options: {}){
+    this.attributeOptions = options
+    return this
+  }
+
+  /**
+   * Set Styles for any element in the result svg as {selector: {attributeName: [values as string]}}.
+   * By default will be concatenated with spaces as value string for this attribute
+   * @param options 
+   * @param separator optional separator, default: " "
+   */
+  setStyles(options: {}, separator = " "){
+    var svg = cq.getRootSVG(this.containerId)
+    for(const [elKey, elValue] of Object.entries(options)){
+      var element = svg.querySelector(elKey) as HTMLElement
+      if(element !== null){
+        for(const [styleKey, styleValue] of Object.entries(elValue)){
+          var importantIdx = (styleValue as Array<string>).indexOf("important")
+          if(importantIdx === -1){
+            element.style.setProperty(styleKey, styleValue.join(separator))
+          }else{
+            var important = (styleValue as Array<string>).splice(importantIdx, 1)[0]
+            element.style.setProperty(styleKey, styleValue.join(separator), important)
+          }
+        }
+      }
+    }
+  }
+
+  setStyleOptions(options: {}){
+    this.styleOptions = options
+    return this
+  }
+
 }
 
 export { Core as default };

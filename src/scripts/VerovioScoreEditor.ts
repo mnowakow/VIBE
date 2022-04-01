@@ -146,8 +146,6 @@ class VerovioScoreEditor{
 
             var tb = new Toolbar(this.options, this.container.id)
             tb.createToolbars()
-
-
             //attach mei first time
             this.coreInstance = new Core(this.container.id);
             this.container.append(dc.makeNewDiv(c._TARGETDIVID_, ""))
@@ -180,6 +178,10 @@ class VerovioScoreEditor{
         this.coreInstance.setMEIChangedCallback(this.meiChangedCallback)
     }
 
+    /**
+     * Get Core Instance to manipulate svg output
+     * @returns 
+     */
     getCore(){
         return this.coreInstance
     }

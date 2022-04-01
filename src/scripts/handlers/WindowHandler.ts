@@ -55,6 +55,9 @@ class WindowHandler implements Handler{
         return this
     }
 
+    /**
+     * Update all elements that are affected by a size change
+     */
     update = (function update(e: Event){
         // special rule for transition events since so much with different propertynames are fired
         if(e instanceof TransitionEvent){ 
@@ -70,9 +73,12 @@ class WindowHandler implements Handler{
         }, 500)  
     }).bind(this)
 
+    /**
+     * Only for safari and firefox browsers
+     */
     updateSVG = (function updateSVG(e: Event){
         var t = e.target as HTMLElement
-        if((["apple", "firefox"].some(n => navigator.userAgent.toLowerCase().includes(n)) 
+        if((["apple", "firefox"].some(n => navigator.userAgent.toLowerCase().includes(n) && !navigator.userAgent.toLowerCase().includes("chrome")) 
         && t.id === "sidebarContainer" 
         && (e as TransitionEvent).propertyName !== "width") || e.type === "resize"){
             var mei = meiConverter.restoreXmlIdTags(this.currentMEI)
