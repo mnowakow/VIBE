@@ -15,39 +15,36 @@ The data can be present in different forms. So to indicate which kind of process
 ### xmlData
 The 'xmlData' can be passed either as String of the corresponding MusicXML or MEI, or as Document.
 
-'''
+```
 var vse = new VerovioScoreEditor(container, {data: xmlData})
-'''
+```
 
 ### urls
 The 'url' must include a source for MEI data.
 
-'''
+```
 var vse = new VerovioScoreEditor(container, {meiURL: url})
-'''
+```
 
 ### empty score
 Initialization with an empty measure
-'''
+```
 var vse = new VerovioScoreEditor(container, null)
-'''
+```
 
 ### callbacks
 A callback can be passed to return the changed data as MEI. The MEI is returned as String
 
-'''
+```
 var vse = new VerovioScoreEditor(container, {data: xmlData}, callback)
-'''
+```
 or
-'''
+```
 var vse = new VerovioScoreEditor(container, {meiURL: url}, callback)
-'''
+```
 or
-'''
+```
 var vse = new VerovioScoreEditor(container, null, callback)
-'''
-
-
-## Interaction
+```
 
 
