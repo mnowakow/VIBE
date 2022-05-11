@@ -7,6 +7,7 @@ import { constants as c } from './constants'
 import ScoreGraph from './datastructures/ScoreGraph';
 import * as coordinates from "./utils/coordinates"
 import * as cq from "./utils/convenienceQueries"
+import { isThrowStatement } from 'typescript';
 
 const currentlyPlayingFlag = "currentlyPlaying"
 const followerRectID = "followerRect"
@@ -216,6 +217,15 @@ class MusicPlayer{
             })
             result = it.next()
         }
+
+        var that = this
+        this.container.querySelector("#playBtn").addEventListener("click", function(e){
+            that.context.resume().then(() => that.playMidi())
+        })
+
+        this.container.querySelector("#rewindBtn").addEventListener("click", function(e){
+            that.rewind()
+        })
     }
 
     removeListeners(){
@@ -588,6 +598,7 @@ class MusicPlayer{
     }
 
     update(){
+        this.resetInstruments()
         this.resetListeners()
         this.initPlayer()
         return this

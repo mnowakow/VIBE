@@ -28,7 +28,7 @@ export default class VerovioWrapper {
           pageWidth: 1800,
           svgRemoveXlink: true,
           svgViewBox: true, 
-          svgBoundingBoxes: true
+          //svgBoundingBoxes: true
           //pageHeight: 60000
       })
     }

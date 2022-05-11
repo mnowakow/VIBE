@@ -56,7 +56,7 @@ class Core {
   private container: Element
   private interactionOverlay: Element
   private meiChangedCallback: (mei: string) => void;
-  private doHideUX: boolean
+  private doHideUI: boolean
   private hideOptions: {}
   private styleOptions: {}
   private attributeOptions: {}
@@ -65,7 +65,7 @@ class Core {
    * Constructor for NeonCore
    */
   constructor (containerId: string) {
-    this.doHideUX = false
+    this.doHideUI = false
     this.hideOptions = {}
     this.styleOptions = {}
     this.attributeOptions = {}
@@ -82,11 +82,11 @@ class Core {
     this.windowHandler = new WindowHandler()
     this.svgFiller = new SVGFiller()
 
-    window.addEventListener("error", (function(e){
-        console.error("Emergency Undo", e)
-        this.undo()
-      }).bind(this)
-    )// emergency reload if some error occurs
+    // window.addEventListener("error", (function(e){
+    //     console.error("Emergency Undo", e)
+    //     this.undo()
+    //   }).bind(this)
+    // )// emergency reload if some error occurs
   }
 
   /**
@@ -320,10 +320,10 @@ class Core {
       .setInsertModeHandler(this.insertModeHandler)
       .resetListeners()
 
-      if(this.doHideUX){
-        this.hideUX(this.hideOptions)
+      if(this.doHideUI){
+        this.hideUI(this.hideOptions)
       }else{
-        this.viewUX(this.hideOptions)
+        this.viewUI(this.hideOptions)
       }
 
       if(Object.entries(this.styleOptions).length > 0){
@@ -560,6 +560,7 @@ class Core {
         resolve(noteTimes)
       })
   }
+  
 
   /**
    * Create an overlay of all interative elements over the the score svg.
@@ -624,27 +625,28 @@ class Core {
             var that = this
             async function computeCoords(){ // since order is not important, this block can be asynchronous
               return new Promise((resolve): void => {
-                if(!sr.id.includes("bbox-") && sr.tagName.toLowerCase() === "g") return
-                var parentsr: Element
-                if(sr.tagName.toLowerCase() === "g"){
-                  Array.from(sr.classList).forEach(c => {
-                    var prefix = "bb"
-                    if(c === "bounding-box") return
-                    if(c.indexOf(prefix) === 0) return
-                    sr.classList.add(prefix + c)
-                    sr.classList.remove(c)
-                  })
-                  parentsr = sr.parentElement
-                }else{
-                  parentsr = sr
-                }
+                // if(!sr.id.includes("bbox-") && sr.tagName.toLowerCase() === "g") return
+                // var parentsr: Element
+                // if(sr.tagName.toLowerCase() === "g"){
+                //   Array.from(sr.classList).forEach(c => {
+                //     var prefix = "bb"
+                //     if(c === "bounding-box") return
+                //     if(c.indexOf(prefix) === 0) return
+                //     sr.classList.add(prefix + c)
+                //     sr.classList.remove(c)
+                //   })
+                //   parentsr = sr.parentElement
+                // }else{
+                //   parentsr = sr
+                // }
+                var parentsr = sr
                 var rect = document.createElementNS(c._SVGNS_, "rect")
                 var g = document.createElementNS(c._SVGNS_, "g")
                 var refId: string = parentsr.id !== "" ? parentsr.id : parentsr.getAttribute("refId")
                 if(refId !== "" && refId !== null){
                   g.setAttribute("refId", refId)
                 }
-               parentsr.classList.forEach(c => g.classList.add(c))
+                parentsr.classList.forEach(c => g.classList.add(c))
                 var bbox = sr.getBoundingClientRect()
                 var cc = coordinates.getDOMMatrixCoordinates(bbox, that.interactionOverlay)
                 rect.setAttribute("x", cc.left.toString())
@@ -715,11 +717,11 @@ class Core {
 
   
   /**
-   * hide ux elements, so that no interaction is possible
+   * hide ui elements, so that no interaction is possible
    * should be best called afteer promise of loadData
    * @param options 
    */
-  hideUX(options = {}){
+  hideUI(options = {}){
     if(Object.entries(options).length === 0){
       options = {annotationCanvas: true, labelCanvas: true, canvasMusicPlayer: true, scoreRects: true, manipulatorCanvas: true, sidebarContainer: true, btnToolbar: true, customToolbar: true}
     }
@@ -731,10 +733,10 @@ class Core {
     }
   }
   /**
-   * View UX elements if they where hidden earlier
+   * View Ui elements if they where hidden earlier
    * @param options 
    */
-   viewUX(options = {}){
+   viewUI(options = {}){
     if(Object.entries(options).length === 0){
       options = {annotationCanvas: true, labelCanvas: true, canvasMusicPlayer: true, scoreRects: true, manipulatorCanvas: true, sidebarContainer: true, btnToolbar: true, customToolbar: true}
     }    
@@ -825,8 +827,8 @@ class Core {
     this.meiChangedCallback = meiChangedCallback
   }
 
-  setHideUX(hide: boolean){
-    this.doHideUX = true
+  setHideUI(hide: boolean){
+    this.doHideUI = true
   }
 
   setHideOptions(options: {}){

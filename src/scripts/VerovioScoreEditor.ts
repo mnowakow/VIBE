@@ -128,6 +128,12 @@ class VerovioScoreEditor{
             //parentElement for sidebar open/close
             this.container.append(dc.makeNewDiv("sideBarGroup", btnGrpClass, {role: "group"}))
 
+            //parentElement for playback
+            this.container.append(dc.makeNewDiv("soundGroup", btnGrpClass, {role: "goup"}))
+
+            //parentElement for fileselect group
+            this.container.append(dc.makeNewDiv("fileSelectGroup", btnGrpClass, {role: "group"}))
+
             // parentElement for toolbarTop
             this.container.append(dc.makeNewDiv("btnToolbar", "btn-toolbar d-inline-flex align-items-stretch", {role: "toolbar"}))
 
@@ -136,6 +142,12 @@ class VerovioScoreEditor{
         
             // parentElement for customToolbar
             this.container.append(dc.makeNewDiv("customToolbar", "btn-toolbar align-items-stretch", {role: "toolbar"}))
+
+            //textTest
+            // var tt = dc.makeNewDiv("textTest", "")
+            // tt.innerHTML = "&#xE014;";
+            // this.container.append(tt)
+
 
             //Statusbar
             //c ontainer.parentElement.insertBefore(dc.makeNewDiv("statusBar", ""), container.nextElementSibling)
@@ -165,6 +177,8 @@ class VerovioScoreEditor{
                     resolve()
                 });
             }
+            tb.setImportCallback(this.coreInstance.loadDataFunction)
+            tb.setGetMEICallback(this.coreInstance.getMEI.bind(this.coreInstance))
         })
         
     }

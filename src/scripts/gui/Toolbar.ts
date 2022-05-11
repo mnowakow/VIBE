@@ -9,6 +9,7 @@ import * as cq from "../utils/convenienceQueries"
 
 const buttonStyleDarkOutline = "btn btn-outline-dark btn-md"
 const buttonStyleDark = "btn btn-dark btn-md"
+const smuflFont = "smufl"
 
 class Toolbar{
 
@@ -18,6 +19,8 @@ class Toolbar{
     private modButtonGroup: HTMLElement
     private sidebar: HTMLElement
     private sideBarGroup: HTMLElement;
+    private soundGroup: HTMLElement;
+    private fileSelectGroup: HTMLElement;
 
     private customToolbar: HTMLElement
     private chordGroupKM: HTMLElement
@@ -30,6 +33,8 @@ class Toolbar{
     private container: Element
     private interactionOverlay: Element
     private rootSVG: Element
+    importCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>
+    getMEICallback: (pageURI: string) => Promise<string>
 
     //private task: Evaluation
 
@@ -87,27 +92,27 @@ class Toolbar{
         var keyListCMaj = dc.makeNewDiv("keyListC", "list-group flex-fill col")
         keySelectItem.querySelector("#selectKeyDiv").appendChild(keyListCMajRow)
         keyListCMajRow.appendChild(keyListCMaj)
-        keyListCMaj.appendChild(dc.makeNewAElement("CMaj", "KeyCMaj", "list-group-item list-group-item-action", "#"))
+        keyListCMaj.appendChild(dc.makeNewAElement("=&#xE01A;&#xE050;&#xE014;=&#xE014;=&#xE014;=&#xE014;=&#xE014;=&#xE014;", "KeyCMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
         
         var keyListSignedRow = dc.makeNewDiv("keyListCrossDIV", "col row g-0")
         var keyListCross = dc.makeNewDiv("keyListCross", "list-group flex-fill col")
         keySelectItem.querySelector("#selectKeyDiv").appendChild(keyListSignedRow)
         keyListSignedRow.appendChild(keyListCross)
-        keyListCross.appendChild(dc.makeNewAElement("GMaj", "KeyGMaj", "list-group-item list-group-item-action", "#"))
-        keyListCross.appendChild(dc.makeNewAElement("DMaj", "KeyDMaj", "list-group-item list-group-item-action", "#"))
-        keyListCross.appendChild(dc.makeNewAElement("AMaj", "KeyAMaj", "list-group-item list-group-item-action", "#"))
-        keyListCross.appendChild(dc.makeNewAElement("EMaj", "KeyEMaj", "list-group-item list-group-item-action", "#"))
-        keyListCross.appendChild(dc.makeNewAElement("BMaj", "KeyBMaj", "list-group-item list-group-item-action", "#"))
-        keyListCross.appendChild(dc.makeNewAElement("F#Maj", "KeyF#Maj", "list-group-item list-group-item-action", "#"))
+        keyListCross.appendChild(dc.makeNewAElement("=&#xE01A;&#xE050;&#xE014;&#xEB93;&#xE262;=&#xE014;=&#xE014;=&#xE014;=&#xE014;=&#xE014;", "KeyGMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        keyListCross.appendChild(dc.makeNewAElement("=&#xE01A;&#xE050;&#xE014;&#xEB93;&#xE262;=&#xE014;&#xEB90;&#xE262;=&#xE014;=&#xE014;=&#xE014;=&#xE014;", "KeyDMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        keyListCross.appendChild(dc.makeNewAElement("=&#xE01A;&#xE050;&#xE014;&#xEB93;&#xE262;=&#xE014;&#xEB90;&#xE262;=&#xE014;&#xEB94;&#xE262;=&#xE014;=&#xE014;=&#xE014;", "KeyAMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        keyListCross.appendChild(dc.makeNewAElement("=&#xE01A;&#xE050;&#xE014;&#xEB93;&#xE262;=&#xE014;&#xEB90;&#xE262;=&#xE014;&#xEB94;&#xE262;=&#xE014;&#xEB91;&#xE262;=&#xE014;=&#xE014;", "KeyEMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        keyListCross.appendChild(dc.makeNewAElement("=&#xE01A;&#xE050;&#xE014;&#xEB93;&#xE262;=&#xE014;&#xEB90;&#xE262;=&#xE014;&#xEB94;&#xE262;=&#xE014;&#xEB91;&#xE262;=&#xE014;&#xEB98;&#xE262;=&#xE014;", "KeyBMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        keyListCross.appendChild(dc.makeNewAElement("=&#xE01A;&#xE050;&#xE014;&#xEB93;&#xE262;=&#xE014;&#xEB90;&#xE262;=&#xE014;&#xEB94;&#xE262;=&#xE014;&#xEB91;&#xE262;=&#xE014;&#xEB98;&#xE262;=&#xE014;&#xEB92;&#xE262;", "KeyF#Maj", "list-group-item list-group-item-action " + smuflFont, "#", true))
 
         var keyListB = dc.makeNewDiv("keyListB", "list-group flex-fill col")
         keyListSignedRow.appendChild(keyListB)
-        keyListB.appendChild(dc.makeNewAElement("FMaj", "KeyFMaj", "list-group-item list-group-item-action", "#"))
-        keyListB.appendChild(dc.makeNewAElement("BbMaj", "KeyBbMaj", "list-group-item list-group-item-action", "#"))
-        keyListB.appendChild(dc.makeNewAElement("EbMaj", "KeyEbMaj", "list-group-item list-group-item-action", "#"))
-        keyListB.appendChild(dc.makeNewAElement("AbMaj", "KeyAbMaj", "list-group-item list-group-item-action", "#"))
-        keyListB.appendChild(dc.makeNewAElement("DbMaj", "KeyDbMaj", "list-group-item list-group-item-action", "#"))
-        keyListB.appendChild(dc.makeNewAElement("GbMaj", "KeyGbMaj", "list-group-item list-group-item-action", "#"))
+        keyListB.appendChild(dc.makeNewAElement("=&#xE01A;&#xE050;&#xE01A;&#xE260;=&#xE014;=&#xE014;=&#xE014;=&#xE014;=&#xE014;", "KeyFMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        keyListB.appendChild(dc.makeNewAElement("=&#xE01A;&#xE050;&#xE01A;&#xE260;=&#xE014;&#xEB92;&#xE260;=&#xE014;=&#xE014;=&#xE014;=&#xE014;", "KeyBbMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        keyListB.appendChild(dc.makeNewAElement("=&#xE01A;&#xE050;&#xE01A;&#xE260;=&#xE014;&#xEB92;&#xE260;=&#xE014;&#xEB98;&#xE260;=&#xE014;=&#xE014;=&#xE014;", "KeyEbMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        keyListB.appendChild(dc.makeNewAElement("=&#xE01A;&#xE050;&#xE01A;&#xE260;=&#xE014;&#xEB92;&#xE260;=&#xE014;&#xEB98;&#xE260;=&#xE014;&#xEB91;&#xE260;=&#xE014;=&#xE014;", "KeyAbMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        keyListB.appendChild(dc.makeNewAElement("=&#xE01A;&#xE050;&#xE01A;&#xE260;=&#xE014;&#xEB92;&#xE260;=&#xE014;&#xEB98;&#xE260;=&#xE014;&#xEB91;&#xE260;=&#xE014;&#xEB99;&#xE260;=&#xE014;", "KeyDbMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        keyListB.appendChild(dc.makeNewAElement("=&#xE01A;&#xE050;&#xE01A;&#xE260;=&#xE014;&#xEB92;&#xE260;=&#xE014;&#xEB98;&#xE260;=&#xE014;&#xEB91;&#xE260;=&#xE014;&#xEB99;&#xE260;=&#xE014;&#xEB90;&#xE260;", "KeyGbMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
 
         return keySelectItem
     }
@@ -117,9 +122,9 @@ class Toolbar{
         var clefSelectItem = dc.makeNewAccordionItem("sidebarList", "selectClef", "selectClefHeader", "selectClefBtn", "Clef",  buttonStyleDark, "selectClefDiv")
         var clefList = dc.makeNewDiv("clefList", "list-group flex-fill")
         clefSelectItem.querySelector("#selectClefDiv").appendChild(clefList)
-        clefList.appendChild(dc.makeNewAElement("treble", "GClef", "list-group-item list-group-item-action", "#"))
-        clefList.appendChild(dc.makeNewAElement("alt", "CClef", "list-group-item list-group-item-action", "#"))
-        clefList.appendChild(dc.makeNewAElement("bass", "FClef", "list-group-item list-group-item-action", "#"))
+        clefList.appendChild(dc.makeNewAElement("&#xE050", "GClef", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        clefList.appendChild(dc.makeNewAElement("&#xE05C", "CClef", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        clefList.appendChild(dc.makeNewAElement("&#xE062", "FClef", "list-group-item list-group-item-action " + smuflFont, "#", true))
         return clefSelectItem
     }
 
@@ -272,28 +277,37 @@ class Toolbar{
         this.handlerGroup.append(handlerDropdown)
 
         this.noteButtonGroup = cq.getContainer(this.containerId).querySelector("#noteGroup")
-        this.noteButtonGroup.append(dc.makeNewButton("", "fullNote", buttonStyleDarkOutline))
-        this.noteButtonGroup.append(dc.makeNewButton("", "halfNote", buttonStyleDarkOutline))
-        this.noteButtonGroup.append(dc.makeNewButton("", "quarterNote", buttonStyleDarkOutline))
-        this.noteButtonGroup.append(dc.makeNewButton("", "eigthNote", buttonStyleDarkOutline))
-        this.noteButtonGroup.append(dc.makeNewButton("", "sixteenthNote", buttonStyleDarkOutline))
-        this.noteButtonGroup.append(dc.makeNewButton("", "thirtysecondNote", buttonStyleDarkOutline))
+        this.noteButtonGroup.append(dc.makeNewButton("&#x1D15D", "fullNote", buttonStyleDarkOutline + " " + smuflFont, "", true))
+        this.noteButtonGroup.append(dc.makeNewButton("&#x1D15E", "halfNote", buttonStyleDarkOutline + " " + smuflFont, "", true))
+        this.noteButtonGroup.append(dc.makeNewButton("&#x1D15F", "quarterNote", buttonStyleDarkOutline + " " + smuflFont, "", true))
+        this.noteButtonGroup.append(dc.makeNewButton("&#x1D160", "eigthNote", buttonStyleDarkOutline + " " + smuflFont, "", true))
+        this.noteButtonGroup.append(dc.makeNewButton("&#x1D161", "sixteenthNote", buttonStyleDarkOutline + " " + smuflFont, "", true))
+        this.noteButtonGroup.append(dc.makeNewButton("&#x1D162", "thirtysecondNote", buttonStyleDarkOutline + " " + smuflFont, "", true))
 
         this.dotButtonGroup = cq.getContainer(this.containerId).querySelector("#dotGroup")
-        this.dotButtonGroup.append(dc.makeNewButton("", "oneDot", buttonStyleDarkOutline))
-        this.dotButtonGroup.append(dc.makeNewButton("", "twoDot", buttonStyleDarkOutline))
+        this.dotButtonGroup.append(dc.makeNewButton(".", "oneDot", buttonStyleDarkOutline + " " + smuflFont, "", true))
+        this.dotButtonGroup.append(dc.makeNewButton(". .", "twoDot", buttonStyleDarkOutline + " " + smuflFont, "", true))
 
         this.modButtonGroup = cq.getContainer(this.containerId).querySelector("#modGroup")
-        this.modButtonGroup.appendChild(dc.makeNewButton("", "pauseNote", buttonStyleDarkOutline))
-        this.modButtonGroup.appendChild(dc.makeNewButton("", "tieNotes", buttonStyleDarkOutline))
-        this.modButtonGroup.appendChild(dc.makeNewButton("", "organizeBeams", buttonStyleDarkOutline))
-        this.modButtonGroup.appendChild(dc.makeNewButton("", "alterDown", buttonStyleDarkOutline))
-        this.modButtonGroup.appendChild(dc.makeNewButton("", "alterUp", buttonStyleDarkOutline))
-        this.modButtonGroup.appendChild(dc.makeNewButton("", "alterNeutral", buttonStyleDarkOutline))
-        this.modButtonGroup.appendChild(dc.makeNewButton("", "alterDDown", buttonStyleDarkOutline))
-        this.modButtonGroup.appendChild(dc.makeNewButton("", "alterDUp", buttonStyleDarkOutline))
-    }
+        this.modButtonGroup.appendChild(dc.makeNewButton("&#x1D13D;&#x1D13E;", "pauseNote", buttonStyleDarkOutline + " " + smuflFont, "", true))
+        this.modButtonGroup.appendChild(dc.makeNewButton("&#x1D175;&#x1D176;", "tieNotes", buttonStyleDarkOutline + " " + smuflFont, "", true))
+        this.modButtonGroup.appendChild(dc.makeNewButton("&#x1D173;&#x1D160;&#x1D160;&#x1D174;", "organizeBeams", buttonStyleDarkOutline + " " + smuflFont, "", true))
+        this.modButtonGroup.appendChild(dc.makeNewButton("&#x266D;", "alterDown", buttonStyleDarkOutline + " " + smuflFont, "", true))
+        this.modButtonGroup.appendChild(dc.makeNewButton("&#x266F;", "alterUp", buttonStyleDarkOutline + " " + smuflFont, "", true))
+        this.modButtonGroup.appendChild(dc.makeNewButton("&#x266E;", "alterNeutral", buttonStyleDarkOutline + " " + smuflFont, "", true))
+        this.modButtonGroup.appendChild(dc.makeNewButton("&#x1D12B", "alterDDown", buttonStyleDarkOutline + " " + smuflFont, "", true))
+        this.modButtonGroup.appendChild(dc.makeNewButton("&#x1D12A", "alterDUp", buttonStyleDarkOutline + " " + smuflFont, "", true))
 
+        this.soundGroup = cq.getContainer(this.containerId).querySelector("#soundGroup")
+        this.soundGroup.appendChild(dc.makeNewButton("", "playBtn", buttonStyleDarkOutline))
+        //this.soundGroup.appendChild(dc.makeNewButton("", "pauseBtn", buttonStyleDarkOutline))
+        this.soundGroup.appendChild(dc.makeNewButton("", "rewindBtn", buttonStyleDarkOutline))
+
+        this.fileSelectGroup = cq.getContainer(this.containerId).querySelector("#fileSelectGroup")
+        this.fileSelectGroup.append(dc.makeNewInput("importFile", "file", ""))
+        this.fileSelectGroup.append(dc.makeNewButton("Import File", "importFileBtn", buttonStyleDarkOutline))
+        this.fileSelectGroup.append(dc.makeNewButton("Export MEI", "exportFileBtn", buttonStyleDarkOutline))
+    }
 
     createInsertSelect(){
         //InsertSelect DropdownMenu
@@ -383,6 +397,8 @@ class Toolbar{
         btnToolbar.appendChild(this.noteButtonGroup)
         btnToolbar.appendChild(this.dotButtonGroup)
         btnToolbar.appendChild(this.modButtonGroup)
+        btnToolbar.appendChild(this.soundGroup)
+        btnToolbar.appendChild(this.fileSelectGroup)
     }
 
     createCustomToolbar(){
@@ -460,6 +476,50 @@ class Toolbar{
                 listeners: { move: this.resizeListListener.bind(this) },
             })
 
+        //FileSelection
+        cq.getContainer(this.containerId).querySelector("#importFileBtn").addEventListener("click", function(){
+            var impF = this.parentElement.querySelector("#importFile")
+            impF.setAttribute("accept", [".musicxml", ".mei"].join(", "))
+            impF.click()
+        })
+
+        var that = this
+        cq.getContainer(this.containerId).querySelector("#importFile").addEventListener("change", function(e){
+            var fr = new FileReader()
+            fr.onload = function(){
+                that.importCallback("", fr.result as string, false, c._TARGETDIVID_)
+            }
+            fr.readAsText(this.files[0])
+           
+        }, false)
+
+        cq.getContainer(this.containerId).querySelector("#exportFileBtn").addEventListener("click", function(){
+            that.getMEICallback("").then(mei => {
+                var d = new Date()
+                var fileName = d.getUTCFullYear() 
+                    + ("0" + d.getDate()).slice(-2) 
+                    + ("0" + d.getMonth()).slice(-2)
+                    + "_"
+                    + ("0" + d.getHours()).slice(-2)
+                    + ("0" + d.getMinutes()).slice(-2)
+                    + ("0" + d.getSeconds()).slice(-2)
+                    + "_"
+                    +  "vseScore_" + that.containerId  + ".mei"
+                that.download(fileName, mei)
+            }) 
+        })
+    }
+
+    download(file: string, text: string){
+        //creating an invisible element
+        var element = document.createElement('a');
+        element.setAttribute('href', 
+        'data:text/plain;charset=utf-8, '
+        + encodeURIComponent(text));
+        element.setAttribute('download', file);
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
     }
 
     removeListeners(){
@@ -619,6 +679,18 @@ class Toolbar{
     annotHandler(){
         //this.removeAllCustomGroups()
         this.customToolbar.append(this.annotGroupKM)
+    }
+
+    /**
+     * Callback from Core, so that imported mei or musicxml can be loaded in the editor
+     * @param importCallback 
+     */
+    setImportCallback(importCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>){
+        this.importCallback = importCallback
+    }
+
+    setGetMEICallback(getMEICallback: (pageURI: string) =>  Promise<string>){
+        this.getMEICallback = getMEICallback
     }
 }
 

@@ -228,8 +228,6 @@ class SidebarHandler implements Handler{
         var posx = pt.x
         var posy = pt.y
 
-        console.log(posx, posy, e.clientX, e.clientY)
-
         var eventTarget = e.target as Element
         var eventTargetParent = eventTarget.parentElement
         var eventTargetIsClef = eventTargetParent.id.toLowerCase().includes("clef")
@@ -274,7 +272,6 @@ class SidebarHandler implements Handler{
                 this.getElementInInteractOverlay(dt.id)?.classList.add(dropFlag)
             }
         })
-        console.log(document.querySelectorAll("." + dropFlag))
     }
 
     findDropTargetFunction =(function findBarline(e: MouseEvent){

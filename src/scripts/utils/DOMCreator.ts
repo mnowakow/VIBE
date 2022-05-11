@@ -8,7 +8,7 @@ export function makeNewButtonH5P(text: string, id: string, className: string): s
     return "<button type=\"button\" id=\"" + id + "\" class=\"" + className +"\">" + text + "</button>"
 }
 
-export function makeNewButton(text: string, id: string, className: string, toggle: string = ""): Element{
+export function makeNewButton(text: string, id: string, className: string, toggle: string = "", textInnerHTML = false): Element{
     var b = document.createElement("button")
     b.setAttribute("id", id)
     //b.setAttribute("type", "button")
@@ -25,7 +25,7 @@ export function makeNewButton(text: string, id: string, className: string, toggl
         b.setAttribute("data-toggle", toggle)
         b.setAttribute("autocomplete", "off")
     }
-    if(text.indexOf("&nbsp;") > -1){
+    if(text.indexOf("&nbsp;") > -1 || textInnerHTML === true){
         b.innerHTML = text
     }else{
         b.textContent = text
@@ -33,13 +33,17 @@ export function makeNewButton(text: string, id: string, className: string, toggl
     return b
 }
 
-export function makeNewAElement(text: string, id: string, className: string, href: string): Element{
+export function makeNewAElement(text: string, id: string, className: string, href: string, textInnerHTML = false): Element{
     var a = document.createElement("a")
     var classList = className.split(" ")
     classList.forEach(c =>  a.classList.add(c))
     a.setAttribute("href", href)
     if(id.length > 0) a.setAttribute("id", id)
-    a.textContent = text
+    if(textInnerHTML === true){
+        a.innerHTML = text
+    }else{
+        a.textContent = text
+    }
     return a
 
 }

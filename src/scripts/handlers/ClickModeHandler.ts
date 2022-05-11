@@ -108,6 +108,7 @@ class ClickModeHandler implements Handler{
         this.m2m.defineNote(posx, posy, options);
 
         var newNote: NewNote = this.m2m.getNewNote()
+        if(newNote == undefined) return //Eingabemaske in Chrome: zusätzliche Notenlinien in Noteneditor #10
         var meiDoc = this.m2m.getCurrentMei()
         var pitchExists: Boolean = false
 

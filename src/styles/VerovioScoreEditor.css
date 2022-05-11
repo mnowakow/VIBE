@@ -1,5 +1,15 @@
 @import '~bootstrap/dist/css/bootstrap.min.css';
 
+@font-face {
+    font-family: "Bravura";
+    src: url(../fonts/Bravura.otf), format("opentype");
+}
+
+@font-face {
+    font-family: "BravuraText";
+    src: url(../fonts/BravuraText.otf), format("opentype");
+}
+
 .dropdown button{
     height: 100%;
 }
@@ -75,6 +85,13 @@ text{
 /*
 *   TOOLBAR
 */
+
+.verticalLine{
+    border-left: 1px solid black;
+    height: auto;
+    position: absolute;
+}
+
 #insertMode.empty{
     background-image: url(../images/GUI/edit-solid.svg);
     background-position-x: 10%;
@@ -85,6 +102,11 @@ text{
     color: black;
 }
 
+.smufl{
+    font-family: "BravuraText";
+    font-size: xx-large !important;
+}
+/* 
 #fullNote{
     background-image: url(../images/bravura_notes/full.svg);
 }
@@ -144,6 +166,21 @@ text{
 }
 #alterDDown{
     background-image: url(../images/bravura_notes/alterDDown.svg)
+} */
+
+#playBtn{
+    background-image: url(../images/GUI/play-solid.svg);
+    background-size: 80%;
+}
+
+#pauseBtn{
+    background-image: url(../images/GUI/pause-solid.svg);
+    background-size: 80%;
+}
+
+#rewindBtn{
+    background-image: url(../images/GUI/backward-fast-solid.svg);
+    background-size: 80%;
 }
 
 .btn{
@@ -152,6 +189,7 @@ text{
     background-position-y: center;
     outline: none;
     background-size: 20% contain;
+    font-family: Bravura;
 }
 
 .btn:hover, .btn.selected {
@@ -177,14 +215,25 @@ text{
 }
 
 #toggleSidebar.closedSidebar{
-    background-image: url(../images/GUI/caret-right-solid.svg);
+    background-image: url(../images/GUI/bars-solid.svg);
+    background-size: 80%;
 }
 
 #toggleSidebar.openSidebar{
-    background-image: url(../images/GUI/caret-left-solid.svg);
+    background-image: url(../images/GUI/bars-solid.svg);
+    background-size: 80%;
 }
 
 #insertDropdownKM .hide{
+    display: none;
+}
+
+#fileSelectGroup{
+  position: absolute;
+  right: 0;
+}
+
+#importFile{
     display: none;
 }
 
