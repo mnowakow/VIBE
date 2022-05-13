@@ -1,11 +1,12 @@
 # VerovioScoreEditor
 
-![npm](https://img.shields.io/npm/v/verovioscoreeditor)
-![GitHub package.json version](https://img.shields.io/github/package-json/v/mnowakow/VerovioScoreEditor)
+Current version in npm repo: ![npm](https://img.shields.io/npm/v/verovioscoreeditor)
+
+Current version on github: ![GitHub package.json version](https://img.shields.io/github/package-json/v/mnowakow/VerovioScoreEditor)
 
 A score editor using verovio as rendering engine
 
-## Initialising
+## Initializing
 To initailize the score editor only need two different things are needed 
 1. The `container` the score editor will be displayed in. The container must contain an ID, since many editors can be displayed on one page.
 2. If known beforehand, the data
