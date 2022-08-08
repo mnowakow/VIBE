@@ -74,13 +74,11 @@ class WindowHandler implements Handler{
     }).bind(this)
 
     /**
-     * Only for safari and firefox browsers
+     * Reload svg. 
      */
     updateSVG = (function updateSVG(e: Event){
         var t = e.target as HTMLElement
-        if((["apple", "firefox"].some(n => navigator.userAgent.toLowerCase().includes(n) && !navigator.userAgent.toLowerCase().includes("chrome")) 
-        && t.id === "sidebarContainer" 
-        && (e as TransitionEvent).propertyName !== "width") || e.type === "resize"){
+        if(t.id === "sidebarContainer" && ((e as TransitionEvent).propertyName !== "width") || e.type === "resize"){
             var mei = meiConverter.restoreXmlIdTags(this.currentMEI)
             this.loadDataCallback("", mei, false, "svg_output")
         }

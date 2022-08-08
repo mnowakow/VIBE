@@ -7,8 +7,12 @@ import ScoreGraph from "../datastructures/ScoreGraph";
 import LabelHandler from "./LabelHandler";
 import * as cq from "../utils/convenienceQueries"
 
-
 const marked = "marked"
+const lastAdded = "lastAdded"
+const editStates  = [marked, lastAdded]
+const editStateSelector = "." + editStates.join(",.")
+const noteEditStateSelector = editStateSelector.replace(".", ".note.")
+
 
 class GlobalKeyboardHandler implements Handler{
 
@@ -127,7 +131,6 @@ class GlobalKeyboardHandler implements Handler{
     pasteHandler(e: KeyboardEvent){
         //if(!this.hasContainerFocus()) return
         //e.preventDefault()
-        console.log("pasteHandler")
         var pastePosition = this.container.querySelector(".chord.marked, .note.marked, .rest.marked, .mRest.marked")?.id || this.container.querySelector("#cursor")?.getAttribute("refId")
         if(this.copiedIds != undefined && pastePosition != undefined){
             var lastId = meiOperation.paste(this.copiedIds, pastePosition, this.currentMEI)
@@ -143,16 +146,20 @@ class GlobalKeyboardHandler implements Handler{
     resetHandler(e: KeyboardEvent){
         if(!this.hasContainerFocus()) return
         e.preventDefault()
-        this.container.querySelectorAll(".marked").forEach(el => {
-            el.classList.remove(marked)
+        this.container.querySelectorAll(editStateSelector).forEach(el => {
+            editStates.forEach(es => {
+                el.classList.remove(es)
+            })
+            
         })
         this.musicPlayer.rewind()
     }
 
     transposeHandler(e: KeyboardEvent){
         if(!this.hasContainerFocus()) return
+        if(["annotMode", "harmonyMode"].some(cn => this.container.classList.contains(cn))) return 
         //e.preventDefault()
-        if(document.querySelectorAll(".note.marked").length === 0){return}
+        if(document.querySelectorAll(noteEditStateSelector).length === 0){return}
 
         var mei: Document
         switch(e.key){

@@ -7,6 +7,7 @@ import { constants as c } from "../constants"
 import LabelHandler from './LabelHandler';
 import * as coordinates from "../utils/coordinates"
 import * as cq from "../utils/convenienceQueries"
+import { idText } from 'typescript';
 
 const marked = "marked"
 
@@ -122,9 +123,11 @@ class SelectionHandler implements Handler{
             selectRect?.remove();
             var firstMarkedNote = that.rootSVG.querySelector(".chord.marked, .note.marked")?.id
             var meiNote = that.m2m.getCurrentMei().getElementById(firstMarkedNote)
-            document.getElementById(that.containerId)?.querySelectorAll("#noteGroup *, #dotGroup *").forEach(b => b.classList.remove("selected"))
-            document.getElementById(that.containerId)?.querySelector("#"+numToNoteButtonId.get(meiNote?.getAttribute("dur")))?.classList.add("selected")
-            document.getElementById(that.containerId)?.querySelector("#"+numToDotButtonId.get(meiNote?.getAttribute("dots")))?.classList.add("selected")
+            if(firstMarkedNote?.length > 0){
+                document.getElementById(that.containerId)?.querySelectorAll("#noteGroup *, #dotGroup *").forEach(b => b.classList.remove("selected"))
+                document.getElementById(that.containerId)?.querySelector("#"+numToNoteButtonId.get(meiNote?.getAttribute("dur")))?.classList.add("selected")
+                document.getElementById(that.containerId)?.querySelector("#"+numToDotButtonId.get(meiNote?.getAttribute("dots")))?.classList.add("selected")
+            }
         }
         this.dsa = dragSelectAction
         this.setListeners()
@@ -160,7 +163,7 @@ class SelectionHandler implements Handler{
             let note = this.rootSVG.querySelector("#" + bb.id)
             note.classList.remove(marked)
         })
-        this.interactionOverlay.querySelectorAll(".note, .rest").forEach(el => {
+        this.interactionOverlay.querySelectorAll(".note, .rest, .mRest, .notehead").forEach(el => {
             el.removeEventListener("click", this.markedHandler)
         })
         this.interactionOverlay.removeEventListener("keydown", this.shiftKeyHandler)
@@ -189,12 +192,11 @@ class SelectionHandler implements Handler{
      */
     markedHandler = (function markedHandler(e: MouseEvent){ 
         if(!this.shiftPressed){
-            console.log("markedhandler")
             Array.from(this.container.querySelectorAll("." + marked)).forEach(n => {
                 (n as Element).classList.remove(marked)
             })
         }
-
+        e.preventDefault()
         var target = e.target as Element
         if(target.getAttribute("refId") === null){
             target = target.closest("[refId]")
@@ -206,9 +208,11 @@ class SelectionHandler implements Handler{
         // change the selected durations in the toolbar
         var firstMarkedNote = this.rootSVG.querySelector(".chord.marked, .note.marked, .rest.marked")?.id
         var meiNote = this.m2m.getCurrentMei().getElementById(firstMarkedNote)
-        document.getElementById(this.containerId)?.querySelectorAll("#noteGroup *, #dotGroup *").forEach(b => b.classList.remove("selected"))
-        document.getElementById(this.containerId)?.querySelector("#"+numToNoteButtonId.get(meiNote?.getAttribute("dur")))?.classList.add("selected")
-        document.getElementById(this.containerId)?.querySelector("#"+numToDotButtonId.get(meiNote?.getAttribute("dots")))?.classList.add("selected")
+        if(firstMarkedNote?.length > 0){
+            document.getElementById(this.containerId)?.querySelectorAll("#noteGroup *, #dotGroup *").forEach(b => b.classList.remove("selected"))
+            document.getElementById(this.containerId)?.querySelector("#"+numToNoteButtonId.get(meiNote?.getAttribute("dur")))?.classList.add("selected")
+            document.getElementById(this.containerId)?.querySelector("#"+numToDotButtonId.get(meiNote?.getAttribute("dots")))?.classList.add("selected")
+        }
     }).bind(this)
     
     shiftKeyHandler = (function shiftKeyHandler(e: KeyboardEvent){

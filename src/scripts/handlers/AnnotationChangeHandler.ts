@@ -48,7 +48,7 @@ class AnnotationChangeHandler implements Handler{
 
 
     setListeners() {
-        if(document.getElementById(this.containerId).querySelector(".sidebar.openSidebar") != null) return
+        //if(document.getElementById(this.containerId).querySelector(".sidebar.openSidebar") != null) return
         var that = this
 
         this.shapeListener = interact("#"+ this.containerId + " #interactionOverlay .customAnnotShape")
@@ -185,6 +185,16 @@ class AnnotationChangeHandler implements Handler{
         if(line!== null){
             line.setAttribute("x1", rectX)
             line.setAttribute("y1", rectY)
+        }
+
+        var dragRects = targetParent?.querySelectorAll(".lineDragRect")
+        if(dragRects.length > 0){
+            dragRects.forEach(dr => {
+                if(dr.classList.contains("x1")){
+                    dr.setAttribute("x", rectX)
+                    dr.setAttribute("y", rectY)
+                }
+            });
         }
     }
 
@@ -341,7 +351,7 @@ class AnnotationChangeHandler implements Handler{
     //LINES
 
     dragLineListener(event){
-        if(document.getElementById(this.containerId).querySelector(".sidebar.openSidebar") != null) return
+        //if(document.getElementById(this.containerId).querySelector(".sidebar.openSidebar") != null) return
         var target = event.target as SVGRectElement
         this.interactTarget = target
         if(!this.isInteracting){
@@ -515,7 +525,7 @@ class AnnotationChangeHandler implements Handler{
         // this.container.querySelectorAll("*[fill=green]").forEach(fg => {
         //     fg.removeAttribute("fill")
         // })
-        objToAttach.setAttribute("fill", "green")
+        //objToAttach.setAttribute("fill", "green")
 
         // some rules for custom shapes
         if(objToAttach.classList.contains("customAnnotShape")){

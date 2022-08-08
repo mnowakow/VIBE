@@ -64,7 +64,7 @@ class KeyModeHandler implements Handler{
   keyModeHandler = (function keyModeHandler (evt: KeyboardEvent): void {
     if(!cq.hasActiveElement(this.containerId)) return
     if(this.musicPlayer.getIsPlaying() === true){return} // getIsPlaying could also be undefined
-    if(keyCodeNoteMap.has(evt.code) && typeof this.cursor !== "undefined"){
+    if(keyCodeNoteMap.has(evt.code) && typeof this.cursor != undefined){
       evt.preventDefault()
       var pname = keyCodeNoteMap.get(evt.code)
       var oct = octToNum.get(this.container.querySelector("#octaveGroupKM .selected")?.id) || "4"
@@ -94,7 +94,7 @@ class KeyModeHandler implements Handler{
           this.resetListeners()
           var currentTargetId;
           if(newNote.chordElement != undefined){
-            currentTargetId = this.rootSvg.querySelector("#" + newNote.chordElement.id).closest(".chord").id // new chord with own ID is created, if note is added
+            currentTargetId = this.rootSVG.querySelector("#" + newNote.chordElement.id).closest(".chord").id // new chord with own ID is created, if note is added
           }else{
             currentTargetId = newNote.id
           }
@@ -204,6 +204,12 @@ class KeyModeHandler implements Handler{
    * @param direction Key Code for Arrows
    */
   navigateCursor(direction: string){
+   
+    var container = document.getElementById(this.containerId)
+    var cbs = container.querySelector("#chordButton").classList.contains("selected")
+    if(cbs){
+      this.scoreGraph.nextClass(["chord", "note"], direction)
+    }else{
       switch(direction){
         case "ArrowLeft":
           this.scoreGraph.nextLeft()
@@ -218,6 +224,8 @@ class KeyModeHandler implements Handler{
           this.scoreGraph.nextDown()
           break;
       }
+    }
+
       if(this.scoreGraph.getCurrentNode() == undefined) return
 
       this.cursor.definePosById(this.scoreGraph.getCurrentNode().getId())

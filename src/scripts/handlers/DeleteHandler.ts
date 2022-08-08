@@ -60,7 +60,21 @@ class DeleteHandler implements Handler{
      */
     backSpaceHandler = (function backSpaceHandler(e: KeyboardEvent){
         if(!cq.hasActiveElement(this.containerId)) return
-        Array.from(cq.getRootSVG(this.containerId).querySelectorAll("." + this.deleteFlag)).forEach(el => this.selectedElements.push(el))
+        if(e.code !== "Backspace") return
+        var hasRests = false
+        var hasNotes = false
+        if(cq.getRootSVG(this.containerId).querySelectorAll("." + this.deleteFlag + ".rest").length > 0){hasRests = true}
+        if(cq.getRootSVG(this.containerId).querySelectorAll("." + this.deleteFlag + ":not(.rest)").length > 0){hasNotes = true}
+        Array.from(cq.getRootSVG(this.containerId).querySelectorAll("." + this.deleteFlag)).forEach(el => {
+            if(hasNotes && hasRests){
+                if(!el.classList.contains("rest")){
+                    this.selectedElements.push(el)
+                }
+            }else{
+                this.selectedElements.push(el)
+            }
+        })
+        
         if((e.code === "Backspace" || e.code === "Delete") && this.selectedElements.length > 0 && this.container.querySelectorAll(".harmonyDiv").length === 0){
             this.deleteCallback(this.selectedElements).then(() => {
                 this.selectedElements.length = 0

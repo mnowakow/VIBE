@@ -19,7 +19,7 @@ class HarmonyLabel implements Label{
         this.inputString = inputString
         this.element = this.currentMEI.getElementById(startid)
 
-        if(this.element.tagName === "note"){
+        if(["note", "chord"].some(c => this.element.tagName === c)){
             this.checkFormat(inputString)        
             this.createElement(inputString)
         }
@@ -50,6 +50,7 @@ class HarmonyLabel implements Label{
         
         this.element = this.currentMEI.createElement("harm")
         this.element.setAttribute("id", uuidv4())
+        this.element.setAttribute("place", "above")
         
         Array.from(this.element.children).forEach(c => {
             c.remove()

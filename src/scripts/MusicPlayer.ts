@@ -219,14 +219,20 @@ class MusicPlayer{
         }
 
         var that = this
-        this.container.querySelector("#playBtn").addEventListener("click", function(e){
-            that.context.resume().then(() => that.playMidi())
-        })
+        this.container.querySelector("#playBtn").addEventListener("click", this.playBtn)
 
-        this.container.querySelector("#rewindBtn").addEventListener("click", function(e){
-            that.rewind()
-        })
+        this.container.querySelector("#rewindBtn").addEventListener("click", this.rewindBtn)
     }
+
+    playBtn = (function playBtn(e: MouseEvent){
+        e.preventDefault()
+        this.context.resume().then(() => this.playMidi())
+    }).bind(this)
+
+    rewindBtn = (function rewindBtn(e: MouseEvent){
+        e.preventDefault()
+        this.rewind()
+    }).bind(this)
 
     removeListeners(){
         if(this.midiTimes == undefined){
@@ -272,7 +278,7 @@ class MusicPlayer{
             evt.preventDefault()
             if(evt.shiftKey || document.getElementById("followerRect") !== null){
                 this.context.resume().then(() => this.playMidi())
-            }else if(typeof this.player !== "undefined" ){
+            }else if(typeof this.player != undefined ){
                 this.stopInstruments()
             }
         }

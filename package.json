@@ -1,6 +1,6 @@
 {
     "name": "verovioscoreeditor",
-    "version": "1.2.8",
+    "version": "1.2.11",
     "main": "src/scripts/js/VerovioScoreEditor.js",
     "keywords": [],
     "author": "Matthias Nowakowski",

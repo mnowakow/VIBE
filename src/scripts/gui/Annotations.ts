@@ -49,6 +49,7 @@ class Annotations implements Handler{
             this.annotationCanvas.setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))
         }
         
+        this.interactionOverlay = cq.getInteractOverlay(this.containerId)
         if(this.annotationCanvas.classList.contains("front")){
             this.interactionOverlay.insertBefore(this.annotationCanvas, this.interactionOverlay.lastChild.nextSibling)
         }else{
@@ -331,6 +332,7 @@ class Annotations implements Handler{
      * @param e 
      */
     select(e: MouseEvent){
+        console.log(e)
         e.stopPropagation() //do not trigger other events
         var t = e.target as Element
         if(t.classList.contains("annotDiv") && t.closest(".annotLinkedText") !== null){ // only apply for linked texts
@@ -355,7 +357,7 @@ class Annotations implements Handler{
 
             //this.AnnotationLineHandler.initDragRects()
         }
-        t = t.tagName === "svg" ? t : t.closest("svg") as Element
+
         t.classList?.add("selected")
         this.annotationChangeHandler.resetListeners()
     }
@@ -392,7 +394,7 @@ class Annotations implements Handler{
         var listHasFocus = Array.from(this.container.querySelectorAll("#annotList > *")).some(le => le === document.activeElement)
 
         if(isValidKey && isInAnnotMode && !hasEditableElement && !listHasFocus){
-            this.interactionOverlay.querySelectorAll(".annotLinkedText.selected, .customAnnotShape.selected").forEach(el => {
+            this.interactionOverlay.querySelectorAll(".selected").forEach(el => {
                 if(el.closest("g") !== null){
                     el.closest("g").remove()
                 }else{

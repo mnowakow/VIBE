@@ -299,3 +299,15 @@ export const clefToLine: Map<string, string> = new Map;
 clefToLine.set("G", "2")
 clefToLine.set("C", "3")
 clefToLine.set("F", "4")
+
+export const unicodeToTimesig: Map<string, string> = new Map;
+unicodeToTimesig.set("E080", "0")
+unicodeToTimesig.set("E081", "1")
+unicodeToTimesig.set("E082", "2")
+unicodeToTimesig.set("E083", "3")
+unicodeToTimesig.set("E084", "4")
+unicodeToTimesig.set("E085", "5")
+unicodeToTimesig.set("E086", "6")
+unicodeToTimesig.set("E087", "7")
+unicodeToTimesig.set("E088", "8")
+unicodeToTimesig.set("E089", "9")

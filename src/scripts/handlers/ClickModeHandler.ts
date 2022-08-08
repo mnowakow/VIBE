@@ -85,6 +85,7 @@ class ClickModeHandler implements Handler{
      * Event handler for inserting Notes
      */
     clickHandler = (function clickHandler (evt: MouseEvent): void{
+        if(["clef", "meterSig", "keySig"].some(c => (evt.target as Element).parentElement.classList.contains(c))){return} // when over other interactable elements discard event
         if(!this.phantomElementHandler.getIsTrackingMouse()){return}
         if(this.musicPlayer.getIsPlaying() === true){return} // getIsPlaying could also be undefined
         

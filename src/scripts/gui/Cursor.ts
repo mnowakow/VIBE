@@ -73,7 +73,6 @@ class Cursor{
 
     clickHandler = (function clickHandler(evt: MouseEvent){
         //evt.stopPropagation();
-        console.log("I got CLICKED!")
         var selectRect = this.container.querySelector("#keyModeSelectRect")
         if(selectRect !== null){
             selectRect.remove()
@@ -89,8 +88,6 @@ class Cursor{
         var ptY =  pt.matrixTransform(rootMatrix).y
         var element = this.findScoreTarget(ptX, ptY)
         this.definePosById(element?.id)
-        console.log("FIND SCORE TARGET", element)
-        
     }).bind(this)
 
     findScoreTarget(x: number, y: number): Element{
@@ -119,7 +116,7 @@ class Cursor{
         // this.rootSVG.querySelectorAll("*[fill=green]").forEach(fg => {
         //     fg.removeAttribute("fill")
         // })
-       this.rootSVG.querySelector("#" + id)?.setAttribute("fill", "green")
+       //this.rootSVG.querySelector("#" + id)?.setAttribute("fill", "green")
         //
 
         if(id == undefined) return

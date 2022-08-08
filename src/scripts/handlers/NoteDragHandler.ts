@@ -75,12 +75,12 @@ class NoteDragHandler implements Handler{
       .on('drag', this.dragging.bind(this))
       .on('end', this.dragEnded.bind(this));
 
-    this.notes = d3.selectAll("#interactionOverlay .notehead"); 
+    this.notes = d3.select("#" + this.containerId + " #interactionOverlay").selectAll(".note"); 
     this.draggedOverlayElement = null;
     this.notes.call(dragBehaviour);
 
       // Drag effects
-    function dragStarted (): void {        
+    function dragStarted (): void {      
       this.draggedOverlayElement =  d3.event.sourceEvent.currentTarget
       this.draggedRootSVGElement = this.rootSVG.querySelector("#" + this.draggedOverlayElement.getAttribute("refId"))?.closest(".note")
       this.dragStartCoords = [d3.event.x, d3.event.y]//coordinates.transformToDOMMatrixCoordinates(d3.event.sourceEvent.clientX, d3.event.sourceEvent.clientY, document.getElementById(c._ROOTSVGID_))

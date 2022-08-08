@@ -5,6 +5,7 @@ import InsertHandler from './handlers/InsertModeHandler';
 import { Mouse2MEI } from './utils/Mouse2MEI';
 import * as dc from './utils/DOMCreator'
 import Toolbar from './gui/Toolbar'
+import { disconnect } from 'tone';
 
 /**
  * Main Class for the VerovioScoreEditor
@@ -179,6 +180,14 @@ class VerovioScoreEditor{
             }
             tb.setImportCallback(this.coreInstance.loadDataFunction)
             tb.setGetMEICallback(this.coreInstance.getMEI.bind(this.coreInstance))
+            //block everthing when firefox
+            if(navigator.userAgent.toLowerCase().includes("firefox")){
+                var div = document.createElement("div")
+                div.id = "ff_warning"
+                this.container.insertAdjacentElement("beforebegin", div)
+                div.append(this.container)
+                div.textContent = "This Application can't currently be used with Firefox.\n Please use another browser."
+            }
         })
         
     }

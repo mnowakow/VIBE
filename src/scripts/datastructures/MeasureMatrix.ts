@@ -129,17 +129,17 @@ class MeasureMatrix{
             for(var j = 0; j < this.rows; j++){
                 let staffDef = mei.querySelector("staffDef[n=\"" + (j+1).toString() + "\"]")
                 let staff: Staff = {}
-                let clefs = prevStaves[j].querySelectorAll("clef")
-                let keysigs = staves[j].querySelectorAll("keySig")
+                let clefs = i === 0 ? [] : prevStaves[j].querySelectorAll("clef")
+                let keysigs = i === 0 ? [] :staves[j].querySelectorAll("keySig")
                 let meterSigs = staves[j].querySelectorAll("meterSig")
 
                 let clefIdx: number
                 if(clefs.length > 0){
-                        if(i === 0){
-                            clefIdx = 0
-                        }else{
-                            clefIdx = clefs.length -1
-                        }
+                    if(i === 0){
+                        clefIdx = 0
+                    }else{
+                        clefIdx = clefs.length -1
+                    }
                     let clefShape = clefs[clefIdx].getAttribute("shape")
                     staff.clef = clefShape;
                 }else{

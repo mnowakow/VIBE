@@ -235,6 +235,7 @@ class ModHandler implements Handler{
         })
 
         var mei = meiConverter.restoreXmlIdTags(this.currentMEI)
+        meiOperation.adjustAccids(mei)
         this.loadDataCallback("", mei, false, c._TARGETDIVID_)
     }
 
@@ -243,14 +244,17 @@ class ModHandler implements Handler{
      * @returns this
      */
      makeScoreElementsClickable(){
+        var that = this
         cq.getInteractOverlay(this.containerId).querySelectorAll(modSelector).forEach(c => {
             c.addEventListener("click", function(e: MouseEvent){
+                e.preventDefault()
                 e.stopImmediatePropagation()
-                this.rootSVG.querySelectorAll(modSelector).forEach(c => c.classList.remove("marked"))
-                if(c.classList.contains("marked")){
-                    c.classList.remove("marked")
+                that.rootSVG.querySelectorAll(modSelector).forEach(c => c.classList.remove("marked"))
+                var originSVG = that.rootSVG.querySelector("#" + this.getAttribute("refId"))
+                if(originSVG.classList.contains("marked")){
+                    originSVG.classList.remove("marked")
                 }else{
-                    c.classList.add("marked")
+                    originSVG.classList.add("marked")
                 }
             })
         })

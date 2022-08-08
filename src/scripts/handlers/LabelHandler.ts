@@ -11,7 +11,7 @@ import MusicPlayer from "../MusicPlayer";
 import Label from '../gui/Label'
 import * as cq from "../utils/convenienceQueries"
 
-const labelClasses = ["harm", "tempo", "note", "fb"]
+const labelClasses = ["harm", "tempo", "note", "chord", "fb"]
 const labelSelectors = "." + labelClasses.join(",.")
 
 class LabelHandler implements Handler{
@@ -345,6 +345,7 @@ class LabelHandler implements Handler{
         }
 
         this.closeModifyWindow()
+        meiOperation.cleanUp(this.currentMEI)
         var mei = meiConverter.restoreXmlIdTags(this.currentMEI)
         this.loadDataCallback("", mei, false, c._TARGETDIVID_).then(() => {
             this.reset()

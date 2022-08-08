@@ -2,6 +2,7 @@
  * Class to fill SVG of Score in HTML with information from underlying mei
  */
 
+import { collapseTextChangeRangesAcrossMultipleVersions } from "typescript"
 import { uuidv4 } from "./random"
 
 class SVGFiller{
@@ -24,7 +25,7 @@ class SVGFiller{
     }
 
     /**
-     * Fill measure, staff and layer with attributes from MEI
+     * Fill measure, staff and layer with n attributes from MEI
      * @param mei Document from MEI 
      */
     fillSystemCounts(mei: Document){
@@ -43,14 +44,16 @@ class SVGFiller{
     }
 
     cacheClasses(){
-        var svg = document.querySelector("#"+this.containerId + " #rootSVG")
+        //var svg = document.querySelector("#"+this.containerId + " #rootSVG")
+        var svg = document.querySelector("#"+this.containerId)
         if(svg === null){
             return this
         }
 
         this.classListMap = new Map();
         svg.querySelectorAll("*").forEach(el => {
-            if(el.tagName.toLowerCase() === "g" && el.getAttribute("id") !== null){
+            //if(el.tagName.toLowerCase() === "g" && el.getAttribute("id") !== null){
+            if(el.getAttribute("id") !== null){
                 if(!this.classListMap.has(el.id)){
                     this.classListMap.set(el.id, new Array())
                 }

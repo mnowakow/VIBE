@@ -6,12 +6,15 @@ import { keysigToNotes, nextStepUp, nextStepDown, clefToLine, keyIdToSig } from 
 import MeiTemplate from '../assets/mei_template'
 import ScoreGraph from '../datastructures/ScoreGraph'
 import MeasureMatrix from '../datastructures/MeasureMatrix'
+import HarmonyLabel from '../gui/HarmonyLabel'
 
 
 const countableNoteUnitSelector: string =  
 ":scope *[dur]:not([grace])"
 
 const overfillMeasure = false
+
+const siblingNames = ["note", "chord", "clef", "beam"] 
 
 // ":scope > note:not([grace])," +
 // ":scope > chord," +
@@ -44,7 +47,7 @@ export function removeFromMEI(scoreElements: Array<Element>, currentMEI: Documen
         //may be some of the following: accid
         var closestNote = currentMEI.getElementById(se?.closest(".note")?.id)
         if(closestNote !== null){
-          console.log("removing ", se)
+          //console.log("removing ", se)
           var attrName = se.classList.item(0).toLowerCase()
           closestNote.removeAttribute(attrName)
           if(attrName === "accid"){
@@ -219,7 +222,8 @@ export function addToMEI(newSound: NewNote | NewChord, currentMEI: Document, rep
           if(!isTrueSibling){
               var currParent: HTMLElement = trueParent;
               while(!isTrueSibling){
-                isTrueSibling = (trueSibling.tagName === "note" && trueSibling.closest("chord") === null) || trueSibling.closest("chord") === trueSibling //parentLayer == currParent.parentElement 
+                //isTrueSibling = (trueSibling.tagName === "note" && trueSibling.closest("chord") === null) || trueSibling.closest("chord") === trueSibling //parentLayer == currParent.parentElement 
+                isTrueSibling = (siblingNames.includes(trueSibling.tagName) && trueSibling.closest("chord") === null) || trueSibling.closest("chord") === trueSibling
                 if(!isTrueSibling){
                   trueSibling = currParent;
                   currParent = currParent?.parentElement;
@@ -227,7 +231,7 @@ export function addToMEI(newSound: NewNote | NewChord, currentMEI: Document, rep
               }
           }
 
-          newElem.classList.add("marked")
+          //newElem.classList.add("marked")
 
           //if(replace && trueSibling.nextSibling !== null){
           if(replace){
@@ -239,7 +243,7 @@ export function addToMEI(newSound: NewNote | NewChord, currentMEI: Document, rep
               //changeDuration(currentMEI, "reduce", measureSiblings, newElem)
               //changeDuration(currentMEI, "reduce", [(trueSibling as Element)], newElem)
             }else{
-              if(trueSibling.nextSibling !== null){
+              if(["clef"].every(el => trueSibling.nextElementSibling?.tagName !== el) && trueSibling.nextElementSibling !== null){
                 let ms = Array.from(trueSibling.parentElement.querySelectorAll("note:not(chord note), chord, rest, mRest")) as Element[]
                 var measureSiblings = ms.filter((v, i) => i >= ms.indexOf(trueSibling.nextSibling as Element))
                 trueSibling.parentElement.insertBefore(newElem, trueSibling.nextSibling)
@@ -247,14 +251,15 @@ export function addToMEI(newSound: NewNote | NewChord, currentMEI: Document, rep
                 //changeDuration(currentMEI, "reduce", measureSiblings, newElem)
                 //changeDuration(currentMEI, "reduce", [(trueSibling.nextSibling as Element)], newElem)
               }else{
-                trueSibling.parentElement.append(newElem)
+                //trueSibling.parentElement.append(newElem)
+                trueSibling.parentElement.insertBefore(newElem, trueSibling.nextElementSibling)
               }
             }
           }else{          
             if(newNote.relPosX === "left"){
               trueSibling.parentElement.insertBefore(newElem, trueSibling)
             }else{
-              trueSibling.parentElement.insertBefore(newElem, trueSibling.nextSibling)
+              trueSibling.parentElement.insertBefore(newElem, trueSibling.nextElementSibling)
             }
           }
         }
@@ -290,8 +295,11 @@ export function addToMEI(newSound: NewNote | NewChord, currentMEI: Document, rep
       }
     }
 
+    fillLayerWithRests(newElem.closest("layer"), currentMEI)
+
     cleanUp(currentMEI)
     // Warum ist das ein Problem?
+    adjustAccids(currentMEI)
     currentMEI = meiConverter.restoreXmlIdTags(currentMEI)
     return currentMEI
     //resolve(currentMEI)
@@ -669,8 +677,7 @@ export function extrapolateMeter(currentMEI : Document): number {
     graceNotes.forEach(g => {
       xmlCopy.getElementById(g.id).remove()
     })
-    ///////////////
-    
+
     var childElements = Array.from(layer.children);
     var ratio = 0;
     childElements.forEach(element => {
@@ -704,81 +711,93 @@ export function extrapolateMeter(currentMEI : Document): number {
 export function adjustAccids(currentMEI : Document): Document{
 
   var measureMatrix = new MeasureMatrix()
-  measureMatrix.populateFromMEI(currentMEI )
+  measureMatrix.populateFromMEI(currentMEI)
+  var prevAccidMap = new Map<string, string>() // key: pname+oct
+  var currentLayer = "1"
+  var currentStaff = "1"
+  var currentMeasure = "1"
 
-  currentMEI .querySelectorAll("note").forEach(note => {
-    let staffN = note.closest("staff").getAttribute("n")
-    let measureN = note.closest("measure").getAttribute("n")
-    let sig = measureMatrix.get(measureN, staffN).keysig
-    let keySymbol = sig.charAt(1)
-    let signedNotes = keysigToNotes.get(sig)
+  currentMEI.querySelectorAll("note").forEach(note => {
+    var layerN = note.closest("layer").getAttribute("n")
+    var staffN = note.closest("staff").getAttribute("n")
+    var measureN = note.closest("measure").getAttribute("n")
 
-
-    var accid = note.getAttribute("accid")
-    var accidGes = note.getAttribute("accid.ges")
-    var pname = note.getAttribute("pname")
-
-
-    if(signedNotes.some(sn => sn === pname)){
-      if(accid === keySymbol){
-        note.setAttribute("accid.ges", accid)
-        note.removeAttribute("accid")
-      }
-      if(accid === null && accidGes === null){
-        note.setAttribute("accid", "n")
-      }
-    }else if(accid === "n"){
-      note.removeAttribute("accid")
-      note.removeAttribute("accidGes")
-    }else if(accidGes !== null){
-      note.removeAttribute("accidGes")
-      note.setAttribute("accid", accidGes)
+    if(layerN !== currentLayer || staffN !== currentStaff || measureN !== currentMeasure){
+      prevAccidMap = new Map<string, string>() // key: pname+oct
+      currentLayer = layerN
+      currentStaff = staffN
+      currentMeasure = measureN
     }
-    hideAccid(note)
+
+    var sig = measureMatrix.get(measureN, staffN).keysig
+    var sigSymbol = sig.charAt(1)
+    var signedNotes = keysigToNotes.get(sig)
+    var accid = note.getAttribute("accid") || note.getAttribute("accid.ges")
+    accid = accid === "n" || accid === "" ? null : accid
+
+    // remove all accids so I don't have to look it up several times
+    note.removeAttribute("accid")
+    note.removeAttribute("accid.ges")
+
+    var pname = note.getAttribute("pname")
+    var oct = note.getAttribute("oct")
+    var mapKey = pname+oct
+    var noteInKey = signedNotes.some(sn => sn === pname)
+    
+    if(accid === null){ // "I have no accid"
+      accid = "n"
+      if(prevAccidMap.has(mapKey)){ // "does someone before me has any accid?"
+        if(prevAccidMap.get(mapKey) === "n"){
+          prevAccidMap.delete(mapKey)
+        }else{
+          note.setAttribute("accid", accid)
+          prevAccidMap.set(mapKey, accid)
+        }
+      }else if(noteInKey){
+        note.setAttribute("accid", accid)
+        prevAccidMap.set(mapKey, accid)
+      }
+    }else{ // "I have accid" 
+      if(prevAccidMap.has(mapKey)){
+        if(prevAccidMap.get(mapKey) === accid){
+          note.setAttribute("accid.ges", accid)
+          prevAccidMap.set(mapKey, accid)
+        }else{
+          note.setAttribute("accid", accid)
+          prevAccidMap.set(mapKey, accid)
+        }
+      }else{
+        if(noteInKey){
+          if(sigSymbol === accid){
+            if(prevAccidMap.has(mapKey)){
+              if(prevAccidMap.get(mapKey) === accid){
+                note.setAttribute("accid.ges", accid)
+                prevAccidMap.set(mapKey, accid)
+              }else{
+                note.setAttribute("accid", accid)
+                prevAccidMap.set(mapKey, accid)
+              }
+            }else{
+              if(sigSymbol === accid){
+                note.setAttribute("accid.ges", accid)
+                prevAccidMap.set(mapKey, accid)
+              }else{
+                note.setAttribute("accid", accid)
+                prevAccidMap.set(mapKey, accid)
+              }
+            }
+          }else{
+            note.setAttribute("accid", accid)
+            prevAccidMap.set(mapKey, accid)
+          }
+        }else{
+          note.setAttribute("accid", accid)
+          prevAccidMap.set(mapKey, accid)
+        }
+      }
+    }
   })
-
-  return currentMEI 
-}
-
-/**
- * Hides Accid, if measure already has accid in notes before
- * @param note given note from MEI
- */
-function hideAccid(note: Element){
-  var root = note.closest("mei")
-  var accid = note.getAttribute("accid")
-  var noteid = note.getAttribute("id")
-  if(root !== null){ // && document.getElementById(noteid).classList.contains("marked")){
-    var pname = note.getAttribute("pname")
-    var currentLayer = note.closest("layer")
-    var layerNotes = currentLayer.querySelectorAll("note")
-    var hasAccidBefore = false
-    for(var i = 0; i < layerNotes.length; i++){
-      var currentNote = layerNotes[i]
-      if(currentNote === note){
-        break
-      }
-      var currPname = currentNote.getAttribute("pname")
-      var currAccid = currentNote.getAttribute("accid")
-      var currAccidGes = currentNote.getAttribute("accid.ges")
-      if(pname === currPname && (currAccid === accid || currAccidGes === accid) && accid !== null){
-        hasAccidBefore = true
-      }
-      
-      if(pname === currPname && (currAccid !== accid || currAccidGes !== accid) && accid !== null){
-        hasAccidBefore = false
-      }
-      
-      if(pname === currPname && accid === null && hasAccidBefore){
-        hasAccidBefore = false
-        note.setAttribute("accid", "n")
-      }
-    }
-    if(hasAccidBefore){
-      note.removeAttribute("accid")
-      note.setAttribute("accid.ges", accid)
-    }
-  }
+  return currentMEI
 }
 
 /**
@@ -788,7 +807,7 @@ function hideAccid(note: Element){
  * @returns 
  */
 export function transposeByStep(currentMEI : Document, direction: string): Document{
-  document.querySelectorAll(".activeContainer #rootSVG .note.marked").forEach(nm => {
+  document.querySelectorAll(".activeContainer #rootSVG :is(.note.marked, .note.lastAdded)").forEach(nm => {
     var noteMEI = currentMEI.getElementById(nm.id)
     var pname = noteMEI.getAttribute("pname")
     var oct = parseInt(noteMEI.getAttribute("oct"))
@@ -872,7 +891,7 @@ export function changeMeter(currentMEI : Document): Document {
  * @returns 
  */
 export function disableFeatures(features: Array<string>, currentMEI : Document){
-  console.log("Features disabled:", features)
+  //console.log("Features disabled:", features)
   features.forEach(f => {
     
     var elements = Array.from(currentMEI .getElementsByTagName(f))
@@ -916,12 +935,28 @@ export function fillWithRests(newElement: Element, oldElement: Element, currentM
     newElement.classList.add("changed")
     for(var i=0; i<restCount; i++){
       var rest = createNewRestElement(restDur)
-      currentMEI .getElementById(newElement.id).parentElement.insertBefore(rest, newElement.nextElementSibling)
+      currentMEI.getElementById(newElement.id).parentElement.insertBefore(rest, newElement.nextElementSibling)
     }
 
   }
 
   return currentMEI 
+}
+
+export function fillLayerWithRests(layer: Element, currentMEI: Document){
+  var targetDur = getMeterRatioLocal(currentMEI, layer)
+  var currentDur = getAbsoluteRatio(layer)
+  if(currentDur < targetDur){
+    var remainRatio = targetDur - currentDur
+    var smallestUnit = gcd(remainRatio)
+    var restDur = ratioToDur(smallestUnit)[0]
+    var restCount = remainRatio/smallestUnit
+
+    for(var i=0; i<restCount; i++){
+      var rest = createNewRestElement(restDur)
+      Array.from(layer.querySelectorAll("note, chord, rest")).reverse()[0].insertAdjacentElement("afterend", rest)
+    }
+  }
 }
 
 
@@ -1004,7 +1039,8 @@ function replaceWithRest(element: Element, currentMEI : Document){
   elmei.remove()
 }
 
-/**
+/** 
+ * @deprecated
  * Change duration of the following sound events. Elements to change duration are determined by the class to be "marked". 
  * @param currentMEI  Current MEI as Document
  * @param additionalElements Elements to be considered to be changed.
@@ -1013,15 +1049,16 @@ function replaceWithRest(element: Element, currentMEI : Document){
  * @param marked Consider marked elements
  * @returns 
  */
-export function changeDuration(currentMEI : Document, additionalElements: Array<Element> = new Array(), refElement: Element = null): Document{
-  var currMeiClone = currentMEI .cloneNode(true)
+function _changeDuration(currentMEI : Document, additionalElements: Array<Element> = new Array(), refElement: Element = null): Document{
+  var currMeiClone = currentMEI.cloneNode(true)
   var changedFlag = "changed"
   var multiplier: number
 
   var elmei: Element
 
-  for(var i = 0; i < additionalElements.length; i++){
-    elmei = currentMEI .getElementById(additionalElements[i].id) as Element
+  var i = refElement === null ? 1 : 0
+  for(i; i < additionalElements.length; i++){
+    elmei = currentMEI.getElementById(additionalElements[i].id) as Element
     var elmeiRatio = getAbsoluteRatio(elmei)
     var chord = elmei.closest("chord")
 
@@ -1038,7 +1075,6 @@ export function changeDuration(currentMEI : Document, additionalElements: Array<
     var dots = parseInt(elmei.getAttribute("dots")) // is NaN if elmei has no dots
 
     if(dur > 0){
-      dur = dur*multiplier
 
       var layerRatio = getAbsoluteRatio(elmei.closest("layer")) // current ratio of layer with already inserted new sound event
       var localRatio = getMeterRatioLocal(currentMEI , elmei) //getMeterRatioGlobal(currentMEI )
@@ -1060,9 +1096,23 @@ export function changeDuration(currentMEI : Document, additionalElements: Array<
         }
       }
 
-      if(layerRatio < localRatio){
+      if((layerRatio <= localRatio && refElement === null) || (layerRatio < localRatio && refElement !== null)){
         var nextElementRatio = getAbsoluteRatio(elmei)
-        var neNewRatio = nextElementRatio - getAbsoluteRatio(refElement)
+        var neNewRatio: number
+        if(refElement !== null){
+          neNewRatio = nextElementRatio - getAbsoluteRatio(refElement)
+        }else{
+          var addRatios = (function (elements: Element[]): number{
+            var r = 0
+            elements.forEach((v, i) => {
+              if(i > 0){
+                r += getAbsoluteRatio(v)
+              }
+            })
+            return r
+          })
+          neNewRatio =  nextElementRatio - (layerRatio - addRatios(additionalElements) - getAbsoluteRatio(additionalElements[0]))
+        }
         if(neNewRatio > 0 ){
           var durArr = ratioToDur(neNewRatio)
           elmei.setAttribute("dur", durArr[0].toString())
@@ -1092,6 +1142,63 @@ export function changeDuration(currentMEI : Document, additionalElements: Array<
   return currentMEI 
 }
 
+function addRatios(elements: Element[]): number{
+  var r = 0
+  elements.forEach((v, i) => {
+    //if(i > 0){
+      r += getAbsoluteRatio(v)
+    //}
+  })
+  return r
+}
+
+export function changeDuration(currentMEI : Document, additionalElements: Array<Element> = new Array(), refElement: Element = null, meiToReset: Document = null): Document{
+  var meiCopy = meiToReset || currentMEI.cloneNode(true) as Document
+
+  let ms = Array.from(refElement.parentElement.querySelectorAll("note:not(chord note), chord, rest")) as Element[]
+  var measureSiblings = ms.filter((v, i) => i <= ms.indexOf(refElement))
+
+  var ratioUpTpRef = addRatios(measureSiblings)
+  var refElementRatio = getAbsoluteRatio(refElement)
+  var remainBarRatio = getMeterRatioLocal(currentMEI, refElement) - ratioUpTpRef
+
+  if(getAbsoluteRatio(refElement.parentElement) === getMeterRatioLocal(currentMEI, refElement)){ // bar has right size, 
+    return currentMEI
+  }
+  
+  if(additionalElements.length > 0){
+    var adEl = additionalElements.shift()
+    var adElRatio = getAbsoluteRatio(adEl)
+    var diffRatio = adElRatio - refElementRatio 
+    var isDotted = (Math.abs(diffRatio) < adElRatio && Math.abs(diffRatio) > 0)
+    if(adElRatio === Math.abs(diffRatio) && refElementRatio <= adElRatio){
+      currentMEI.getElementById(adEl.id).remove()
+    }else if(diffRatio > 0 || isDotted){
+      if(isDotted){
+        diffRatio = Math.abs(diffRatio)
+      }
+      var dur = ratioToDur(diffRatio)
+      currentMEI.getElementById(adEl.id).setAttribute("dur", dur.shift().toString())
+      if(dur.length > 0){
+        currentMEI.getElementById(adEl.id).setAttribute("dots", dur.shift().toString())
+      }
+    }else if(diffRatio === 0){
+      currentMEI.getElementById(adEl.id).remove()
+    }else{
+      currentMEI.getElementById(adEl.id).remove()
+      changeDuration(currentMEI, additionalElements, refElement, meiCopy)
+    }
+  }else{
+    if(remainBarRatio < 0){
+      currentMEI = meiCopy || currentMEI
+      //TODO: note in den nächsten Takt verlängern, das darüber erstmal löschen
+    }
+  }
+
+  cleanUp(currentMEI )
+  return currentMEI
+}
+
 /**
  * Check if elment is overfilling the current layer element. Must provide previous MEI for reference.
  * Violate rule: true; follow rules: false
@@ -1116,11 +1223,11 @@ export function elementIsOverfilling(element: Element, currMeiClone: Document): 
  * @param currentMEI  
  */
 export function cleanUp(currentMEI : Document){
-  deleteDefSequences(currentMEI )
-  reorganizeBeams(currentMEI )
-  removeEmptyElements(currentMEI )
-  //fillWithRests(currentMEI )
-  adjustRests(currentMEI )
+  deleteDefSequences(currentMEI)
+  reorganizeBeams(currentMEI)
+  removeEmptyElements(currentMEI)
+  //fillWithRests(currentMEI)
+  adjustRests(currentMEI)
 }
 
 
@@ -1236,9 +1343,34 @@ function reorganizeBeams(currentMEI : Document){
     }
   })
 
+  // allow no empty and rest-note element chord elements
   Array.from(currentMEI .querySelectorAll("chord")).forEach(c => {
     if(c.childElementCount === 0){currentMEI .getElementById(c.id).remove()}
+    else if(c.childElementCount === 1){c.outerHTML = c.innerHTML}
+    else if(c.childElementCount === 2 && c.querySelector("rest") !== null && c.querySelector("note") !== null){
+      c.querySelector("note").setAttribute("dur", c.getAttribute("dur"))
+      c.querySelector("rest").remove()
+      c.outerHTML = c.innerHTML
+    }
   })
+
+  // Empty harms could be somewhere
+  Array.from(currentMEI.querySelectorAll("harm")).forEach(h => {
+    if(h.childElementCount > 0){
+      if(h.firstElementChild.childElementCount === 0) h.remove()
+    }else if(h.textContent === ""){
+      h.remove() 
+    }
+
+  })
+
+  // remove all xmlns since they are someties empty and also are not parsable sometimes
+  Array.from(currentMEI.querySelectorAll("*")).forEach(el => {
+    if(el.tagName.toLowerCase() === "xml") return 
+    el.removeAttribute("xmlns")
+  })
+
+
 
   // Array.from(currentMEI .querySelectorAll("measure")).forEach(m => {
   //   if(m.querySelectorAll("note, chord").length === 0){
@@ -1255,7 +1387,9 @@ function reorganizeBeams(currentMEI : Document){
   //mRest and any Element with dur attribute are not allowed in the same layer
   currentMEI .querySelectorAll("layer").forEach(l =>{
     var hasAnyDurAttributes = l.querySelectorAll("*[dur]").length > 0
-    if(l.children.length === 0){
+    var hasTags = l.querySelectorAll("clef, keySig").length > 0
+    var hasMrest = l.querySelectorAll("mRest").length > 0
+    if(l.children.length === 0 || (hasTags && !hasAnyDurAttributes && !hasMrest)){
       //no layer should be empty, has at least an mRest (therefore: mRests are virtually not deletable)
       var newMrest = new MeiTemplate().createMRest()
       l.append(newMrest)
@@ -1445,7 +1579,7 @@ export function paste(ids: Array<string>, refId: string, currentMEI : Document):
   var currentMeasure: Element
   let anyNew
 
-  console.log(...meiElements)
+  //console.log(...meiElements)
 
   meiElements.forEach((staff,staffIdx) => {
     if(refElement === null) return
@@ -1463,8 +1597,9 @@ export function paste(ids: Array<string>, refId: string, currentMEI : Document):
         anyNew = newChord
         var elementArr = Array.from(element.querySelectorAll("note"))
       }
+      var replace = (document.querySelector(".activeContainer")?.querySelector("#insertToggle") as HTMLInputElement)?.checked
+      addToMEI(anyNew, currentMEI, replace) 
 
-      addToMEI(anyNew, currentMEI) 
       refElement = convertToElement(anyNew, currentMEI) //element
     })
 
@@ -1584,12 +1719,12 @@ export function insertKey(target: Element, newSig: string, currentMEI: Document)
 
 export function replaceMeterInScoreDef(target: Element, currentMEI: Document): Document {
   var staffN = document.querySelector(".activeContainer #rootSVG #" + target.id).closest(".staff").getAttribute("n")
-  var staffDefMeter = currentMEI.querySelector("staffDef[n=\"" + staffN + "\"] > meterSig")
+  var staffDefMeter = currentMEI.querySelector("staffDef[n=\"" + staffN + "\"]")
 
   var count = (document.querySelector(".activeContainer #timeCount") as HTMLSelectElement).value
   var unit = (document.querySelector(".activeContainer #timeUnit") as HTMLSelectElement).value
-  staffDefMeter.setAttribute("count", count)
-  staffDefMeter.setAttribute("unit", unit)
+  staffDefMeter.setAttribute("meter.count", count)
+  staffDefMeter.setAttribute("meter.unit", unit)
   cleanUp(currentMEI)
   currentMEI = meiConverter.restoreXmlIdTags(currentMEI)
   return currentMEI

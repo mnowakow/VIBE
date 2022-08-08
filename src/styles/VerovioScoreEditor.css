@@ -2,12 +2,12 @@
 
 @font-face {
     font-family: "Bravura";
-    src: url(../fonts/Bravura.otf), format("opentype");
+    src: url(/../fonts/Bravura.otf), format("opentype");
 }
 
 @font-face {
     font-family: "BravuraText";
-    src: url(../fonts/BravuraText.otf), format("opentype");
+    src: url(/../fonts/BravuraText.otf), format("opentype");
 }
 
 .dropdown button{
@@ -78,7 +78,7 @@ text{
     filter: drop-shadow(5px 16px 15px black)
 }
 
-.note, .note *, .staff, .measure, .manipulator, .slur, .tie *{
+.note, .note *, .rest, .rest *, .staff, .measure, .manipulator, .slur, .tie *{
     cursor: pointer !important; 
 }
 
@@ -106,67 +106,6 @@ text{
     font-family: "BravuraText";
     font-size: xx-large !important;
 }
-/* 
-#fullNote{
-    background-image: url(../images/bravura_notes/full.svg);
-}
-
-#halfNote{
-    background-image: url(../images/bravura_notes/half.svg);
-}
-
-#quarterNote{
-    background-image: url(../images/bravura_notes/quarter.svg);
-}
-
-#eigthNote{
-    background-image: url(../images/bravura_notes/eigth.svg);
-}
-
-#sixteenthNote{
-    background-image: url(../images/bravura_notes/16th.svg);
-}
-
-#thirtysecondNote{
-    background-image: url(../images/bravura_notes/32th.svg);
-}
-
-#oneDot{
-    background-image: url(../images/bravura_notes/oneDot.svg);
-}
-
-#twoDot{
-    background-image: url(../images/bravura_notes/twoDot.svg);
-}
-
-#pauseNote{
-    background-image: url(../images/bravura_notes/pauseNote.svg);
-}
-
-#tieNotes{
-    background-image: url(../images/bravura_notes/tie.svg);
-    transform: scaleY(-1);
-}
-
-#organizeBeams{
-    background-image: url(../images/bravura_notes/beams.svg);
-}
-
-#alterUp{
-    background-image: url(../images/bravura_notes/alterUp.svg)
-}
-#alterDown{
-    background-image: url(../images/bravura_notes/alterDown.svg)
-}
-#alterNeutral{
-    background-image: url(../images/bravura_notes/alterNeutral.svg)
-}
-#alterDUp{
-    background-image: url(../images/bravura_notes/alterDUp.svg)
-}
-#alterDDown{
-    background-image: url(../images/bravura_notes/alterDDown.svg)
-} */
 
 #playBtn{
     background-image: url(../images/GUI/play-solid.svg);
@@ -240,7 +179,7 @@ text{
 #sidebarContainer{
     position: absolute;
     left: 0;
-    z-index: 1;
+    /*z-index: 1;*/
     top: 0;
     height: 100%;
     border-color: black;
@@ -250,7 +189,9 @@ text{
     transition: 0.5s;
     border-top-left-radius: 5px;
     border-bottom-left-radius: 5px;
-    overflow:visible;
+    overflow: visible;
+    display: flex;
+    flex-direction: column;
 }
 
 #sidebarContainer a{
@@ -285,11 +226,9 @@ text{
 }
 
 #sidebarList{
-    position: absolute;
+    position: relative;
     overflow: scroll;
     width: 100%;
-    height: fit-content;
-    z-index: 1;
 }
 
 .dropKey, .dropClef, .dropTime, .dropTempo{
@@ -298,18 +237,16 @@ text{
 }
 
 #annotList{
-    height: 50%;
     width: 100%;
-    position: absolute;
-    top: 50%;
+    position: relative;
     background-color: white;
     border-top-color: black;
     border-left-color: white;
     border-right-color: white;
     border-bottom-color: white;
     border-style: double;
-    z-index: 2;
     overflow: scroll;
+    order: 2;
 }
 
 #annotList > a{
@@ -444,6 +381,10 @@ text{
     fill: red
 }
 
+.lastAdded{
+    fill: crimson
+}
+
 .playing{
     fill: red
 }
@@ -565,4 +506,18 @@ text{
     fill: firebrick;
     stroke: black;
     stroke-width: 1px;
+}
+
+
+/*Disable interaction*/
+
+#ff_warning{
+    background: rgba(0, 0, 0, 0.25);
+    width: 100%;
+    margin: auto;
+    height: 100%;
+    text-align: center;
+    font-size: xx-large;
+    color:crimson;
+    text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
 }

@@ -360,6 +360,50 @@ class ScoreGraph {
         return this.currentNode
     }
 
+    /**
+     * Go to next Element with given classname. 
+     * Whatever comes first according to the classNames array.
+     * @param classNames 
+     * @param direction 
+     * @returns 
+     */
+    nextClass(classNames: string[], direction: string){
+        var currentId = this.currentNode.getId()
+        var nextIsNull = false
+        do{
+            switch(direction){
+                case "ArrowLeft":
+                case "left":
+                    nextIsNull = [null, undefined].some(n => this.currentNode.getLeft() == n) 
+                    this.nextLeft()
+                    break;
+                case "ArrowRight":
+                case "right":
+                    nextIsNull = [null, undefined].some(n => this.currentNode.getRight() == n) 
+                    this.nextRight()
+                    break;
+                case "ArrowUp":
+                case "up":
+                    nextIsNull = [null, undefined].some(n => this.currentNode.getUp() == n) 
+                    this.nextUp()
+                    break;
+                case "ArrowDown":
+                case "down":
+                    nextIsNull = [null, undefined].some(n => this.currentNode.getDown() == n) 
+                    this.nextDown()
+                    break;
+                default: 
+                    console.error(direction + " is not allowed. Use left, right, up or down")
+                    return
+            }
+        }while(!classNames.some(cn => this.currentNode?.getDocElement()?.classList.contains(cn)) && !nextIsNull)
+
+        if(nextIsNull){
+            this.setCurrentNodeById(currentId)
+        }
+        return this.currentNode
+    }
+
     //Check if ScoreGraph is at beginning of layer
     isBOL(): Boolean {
         return this.currentNode.getLeft() === null && this.currentNode.getId().indexOf("BOL") !== -1

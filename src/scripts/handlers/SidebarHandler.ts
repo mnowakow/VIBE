@@ -1,7 +1,7 @@
 import MusicPlayer from "../MusicPlayer";
 import { Mouse2MEI } from "../utils/Mouse2MEI";
 import Handler from "./Handler";
-import { keyIdToSig, clefToLine } from "../utils/mappings"
+import { keyIdToSig, clefToLine, unicodeToTimesig } from "../utils/mappings"
 import { constants as c } from "../constants"
 import * as meiConverter from "../utils/MEIConverter"
 import * as meiOperation from "../utils/MEIOperations"
@@ -67,12 +67,13 @@ class SidebarHandler implements Handler{
        this.container.querySelectorAll("*[id*=keyList] > *").forEach(k => {
             if(k.tagName === "A"){
                 k.removeEventListener("dblclick", this.keySigSelectHandler)
+                k.removeEventListener("click", this.keyChangeHandler)
             }
         })
 
         this.container.querySelectorAll("*[id*=clefList] > *").forEach(k => {
             if(k.tagName === "A"){
-                k.removeEventListener("dblclick", this.clefSelectHandler)
+                k.removeEventListener("click", this.clefChangeHandler)
             }
         })
         document.removeEventListener("dragover", (e) => {
@@ -81,6 +82,10 @@ class SidebarHandler implements Handler{
         this.container.querySelectorAll("#sidebarList a, #timeDiv").forEach(sa => {
             sa.removeEventListener("drag", this.findDropTargetFunction)
             sa.removeEventListener("dragend", this.dropOnTargetFunction)
+        })
+
+        this.container.querySelectorAll("#timeUnit, #timeCount").forEach(t => {
+            t.removeEventListener("change", this.changeTimeHandler)
         })
 
         return this
@@ -95,18 +100,23 @@ class SidebarHandler implements Handler{
         this.container.querySelectorAll("*[id*=keyList] > *").forEach(k => {
             if(k.tagName === "A"){
                 k.addEventListener("dblclick", this.keySigSelectHandler)
+                k.addEventListener("click", this.keyChangeHandler)
             }
         })
 
         this.container.querySelectorAll("*[id*=clefList] > *").forEach(k => {
             if(k.tagName === "A"){
-                k.addEventListener("dblclick", this.clefSelectHandler)
+                k.addEventListener("click", this.clefChangeHandler)
             }
         })
 
         this.container.querySelectorAll("#sidebarList a, #timeDiv, #tempoDiv").forEach(sa => {
             sa.addEventListener("drag", this.findDropTargetFunction)
             sa.addEventListener("dragend", this.dropOnTargetFunction)
+        })
+        
+        this.container.querySelectorAll("#timeUnit, #timeCount").forEach(t => {
+            t.addEventListener("change", this.changeTimeHandler)
         })
 
         return this
@@ -120,14 +130,16 @@ class SidebarHandler implements Handler{
     makeScoreElementsClickable(){
         var that = this
         // Clefs are clickable and will be filled red (see css)
-        this.interactionOverlay.querySelectorAll(".clef, .keySig").forEach(c => {
-            c.addEventListener("click", function(){
+        this.interactionOverlay.querySelectorAll(".clef, .keySig, .meterSig").forEach(c => {
+        //this.interactionOverlay.querySelectorAll("*").forEach(c => {
+            c.addEventListener("click", function(e){
                 if(c.classList.contains("marked")){
                     c.classList.remove("marked")
                     that.getElementInSVG(c.getAttribute("refId"))?.classList.remove("marked")
                 }else{
                     c.classList.add("marked")
                     that.getElementInSVG(c.getAttribute("refId"))?.classList.add("marked")
+                    that.changeSelectedElementInSidebar(c)
                 }
             })
         })
@@ -135,7 +147,87 @@ class SidebarHandler implements Handler{
         return this
     }
 
-    keySigSelectHandler = (function handler(e: MouseEvent){
+    /**
+     * Change Values in Sidebar to match the selected element in the score.
+     * Currently only for time 
+     * @param element 
+     */
+    changeSelectedElementInSidebar(element: Element){
+        if(!element.classList.contains("meterSig")) return
+
+        var baseEl = this.rootSVG.querySelector("#" + element.getAttribute("refId"))
+        var tempY: string
+        var count: string = ""
+        var unit: string = ""
+        baseEl.querySelectorAll("use").forEach(u => {
+            var num = unicodeToTimesig.get(u.getAttribute("href").slice(1, 5))
+            
+            if(count === ""){
+                count = num
+            }
+            else if(u.getAttribute("y") === tempY && count !== ""){
+                count += num
+            }else if(u.getAttribute("y") === tempY && unit !== ""){
+                unit += num
+            }else{
+                unit = num
+            }
+            tempY = u.getAttribute("y")
+        });
+
+        (this.container.querySelector("#timeCount") as any).value = count;
+        (this.container.querySelector("#timeUnit") as any).value = unit;
+    }
+
+    changeTimeHandler = (function changeTimeHandler(e: MouseEvent){
+        e.preventDefault()
+        this.setTimeForSelectedElements(e)
+    }).bind(this)
+
+    setTimeForSelectedElements(e: MouseEvent){
+        var target = e.target as Element
+        var changeCount = false
+        var changeUnit = false
+
+        if(target.id.includes("Count")){
+            changeCount = true
+        }
+        if(target.id.includes("Unit")){
+            changeUnit = true
+        }
+
+        var count = (this.container.querySelector("#timeCount") as any).value
+        var unit = (this.container.querySelector("#timeUnit") as any).value
+
+        var markedTimes = Array.from(this.rootSVG.querySelectorAll(".meterSig.marked"))
+        var reload = false
+        markedTimes.forEach(mt => {
+            var isInStaffDef = this.currentMEI.querySelector("#" + mt.id) === null
+            if(isInStaffDef){
+                var rowNum = parseInt(mt.closest(".staff").getAttribute("n")) - 1
+                var targetMeterSigDef = this.currentMEI.querySelectorAll("staffDef")[rowNum]
+                if(targetMeterSigDef.getAttribute("meter.count") !== count && changeCount){
+                    targetMeterSigDef.setAttribute("meter.count", count)
+                    reload = true
+                }
+                if(targetMeterSigDef.getAttribute("meter.unit") !== unit && changeUnit){
+                    targetMeterSigDef.setAttribute("meter.unit", unit)
+                    reload = true
+                }
+            }else{
+                this.currentMEI.querySelector("#" + mt.id).setAttribute("count", count)
+                this.currentMEI.querySelector("#" + mt.id).setAttribute("unit", unit)
+                reload = true
+            }
+        })
+
+        if(reload){
+            meiOperation.cleanUp(this.currentMEI)
+            this.loadDataCallback("", meiConverter.restoreXmlIdTags(this.currentMEI), false, c._TARGETDIVID_)
+        }
+    }
+
+    keySigSelectHandler = (function keySigSelectHandler(e: MouseEvent){
         e.preventDefault()
         this.setKeyGlobal(e)
     }).bind(this)
@@ -146,12 +238,41 @@ class SidebarHandler implements Handler{
         this.currentMEI.querySelectorAll("staffDef > keySig").forEach(s => {
             s.setAttribute("sig", keyIdToSig.get(target.id))
         })
-
         var mei = meiOperation.adjustAccids(this.currentMEI)
+        meiOperation.cleanUp(mei)
         mei = meiConverter.restoreXmlIdTags(mei)
         this.loadDataCallback("", mei, false, c._TARGETDIVID_)
 
         return this
+    }
+
+    keyChangeHandler = (function keyChangeHandler(e: MouseEvent){
+        e.preventDefault()
+        this.setKeyLocal(e)
+    }).bind(this)
+
+    setKeyLocal(e: MouseEvent){
+        var target = e.target as Element
+        var markedClefs = Array.from(this.rootSVG.querySelectorAll(".keySig.marked"))
+        var reload = false
+        markedClefs.forEach(mc => {
+            var isInStaffDef = this.currentMEI.querySelector("#" + mc.id) === null
+            if(isInStaffDef){
+                var rowNum = parseInt(mc.closest(".staff").getAttribute("n")) - 1
+                var targetKeySigDef = this.currentMEI.querySelectorAll("staffDef > keySig")[rowNum]
+                if(targetKeySigDef.getAttribute("sig") !== keyIdToSig.get(target.id)){
+                    targetKeySigDef.setAttribute("sig", keyIdToSig.get(target.id))
+                    reload = true
+                }
+            }else{
+                this.currentMEI.querySelector("#" + mc.id).setAttribute("sig", keyIdToSig.get(target.id))
+                reload = true
+            }
+        })
+        if(reload){
+            meiOperation.cleanUp(this.currentMEI)
+            this.loadDataCallback("", meiConverter.restoreXmlIdTags(this.currentMEI), false, c._TARGETDIVID_)
+        }
     }
 
     /**
@@ -189,30 +310,38 @@ class SidebarHandler implements Handler{
         }
     }).bind(this)
 
-    clefSelectHandler = (function handler(e: MouseEvent){
+    clefChangeHandler = (function clefChangeHandler(e: MouseEvent){
         e.preventDefault()
-        this.setClefGlobal(e)
+        this.setClef(e)
     }).bind(this)
 
     /**
      * Set Clefshape for all marked clefelements
      * @param e MouseEvent
      */
-    setClefGlobal(e: MouseEvent){
+    setClef(e: MouseEvent){
         var target = e.target as Element
         var markedClefs = Array.from(this.rootSVG.querySelectorAll(".clef.marked"))
         var reload = false
         markedClefs.forEach(mc => {
-            var rowNum = parseInt(mc.closest(".staff").getAttribute("n")) - 1
-            var targetClefDef = this.currentMEI.querySelectorAll("staffDef > clef")[rowNum]
-            if(targetClefDef.getAttribute("shape") !== target.id.charAt(0)){
-                targetClefDef.setAttribute("shape", target.id.charAt(0))
-                targetClefDef.setAttribute("line", clefToLine.get(target.id.charAt(0)))
+            var isInStaffDef = this.currentMEI.querySelector("#" + mc.id) === null
+            if(isInStaffDef){
+                var rowNum = parseInt(mc.closest(".staff").getAttribute("n")) - 1
+                var targetClefDef = this.currentMEI.querySelectorAll("staffDef > clef")[rowNum]
+                if(targetClefDef.getAttribute("shape") !== target.id.charAt(0)){
+                    targetClefDef.setAttribute("shape", target.id.charAt(0))
+                    targetClefDef.setAttribute("line", clefToLine.get(target.id.charAt(0)))
+                    reload = true
+                }
+            }else{
+                this.currentMEI.querySelector("#" + mc.id).setAttribute("shape", target.id.charAt(0))
+                this.currentMEI.querySelector("#" + mc.id).setAttribute("line", clefToLine.get(target.id.charAt(0)))
                 reload = true
             }
         })
         
         if(reload){
+            meiOperation.cleanUp(this.currentMEI)
             this.loadDataCallback("", meiConverter.restoreXmlIdTags(this.currentMEI), false, c._TARGETDIVID_)
         }
     }
@@ -234,29 +363,33 @@ class SidebarHandler implements Handler{
         var eventTargetIsKey = eventTargetParent.id.toLowerCase().includes("key")
         var eventTargetIsTime = eventTarget.id.toLocaleLowerCase().includes("time")
         var eventTargetIsTempo = eventTarget.id.toLocaleLowerCase().includes("tempo")
-        var dropTargets: NodeListOf<Element>
+        var dropTargets: Array<Element> //NodeListOf<Element>
         var dropFlag: string
 
         if(eventTargetIsClef){
-            dropTargets = this.rootSVG.querySelectorAll(".clef, .barLine > path")
+            dropTargets = Array.from(this.rootSVG.querySelectorAll(".clef, .barLine > path"))
             dropFlag = "dropClef"
         }else if(eventTargetIsKey){
-            dropTargets = this.rootSVG.querySelectorAll(".keySig, .barLine > path, .clef")
+            dropTargets = Array.from(this.rootSVG.querySelectorAll(".keySig, .barLine > path, .clef"))
             dropFlag = "dropKey"
         }else if(eventTargetIsTime){
-            dropTargets = this.rootSVG.querySelectorAll(".meterSig, .barLine > path, .clef")
+            dropTargets = Array.from(this.rootSVG.querySelectorAll(".meterSig, .barLine > path, .clef"))
             dropFlag = "dropTime"
         }else if(eventTargetIsTempo){
-            dropTargets = this.rootSVG.querySelectorAll(".note, .chord, .rest, .mRest")
+            dropTargets = Array.from(this.rootSVG.querySelectorAll(".note, .chord, .rest, .mRest"))
             dropFlag = "dropTempo"
         }
         else{
             return
         }
 
+        dropTargets.push(this.container.querySelector("#sidebarContainer"))
+        dropTargets.push(this.container.querySelector("#btnToolbar"))
+        dropTargets.push(this.container.querySelector("#customToolbar"))
+
         var tempDist = Math.pow(10, 10)
         dropTargets.forEach(dt => {
-            var interacationElement = this.interactionOverlay.querySelector("[refId=" + dt.id +"]")
+            var interacationElement = this.interactionOverlay.querySelector("[refId=" + dt.id +"]") || this.container.querySelector("#" + dt.id)
             var blbbox = interacationElement.getBoundingClientRect()
             var ptdt = coordinates.getDOMMatrixCoordinates(blbbox, this.interactionOverlay)
             var bbx  = ptdt.left
@@ -270,6 +403,7 @@ class SidebarHandler implements Handler{
                 tempDist = dist
                 dt.classList.add(dropFlag)
                 this.getElementInInteractOverlay(dt.id)?.classList.add(dropFlag)
+            
             }
         })
     }

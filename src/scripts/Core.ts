@@ -61,6 +61,8 @@ class Core {
   private styleOptions: {}
   private attributeOptions: {}
 
+  private firstStart = true
+
   /**
    * Constructor for NeonCore
    */
@@ -184,8 +186,12 @@ class Core {
         //   m.classList.remove("marked")
         // })
 
-        if(this.lastInsertedNoteId != undefined && this.container.querySelector("#" + targetDivID).classList.contains("clickmode")){
-          this.container.querySelector("#" + this.lastInsertedNoteId)?.classList.add("marked")
+        var lastAddedClass = "lastAdded"
+        document.querySelectorAll("." + lastAddedClass).forEach(m => {
+          m.classList.remove(lastAddedClass)
+        })
+        if(this.lastInsertedNoteId != undefined && ["textmode", "clickmode"].some(mode => this.container.classList.contains(mode))){
+          this.container.querySelector("#" + this.lastInsertedNoteId)?.classList.add(lastAddedClass)
         }
 
         if(this.meiChangedCallback != undefined){
@@ -208,6 +214,8 @@ class Core {
       })
     });
   }
+
+
 
   reloadDataFunction = (function reloadData(): Promise<boolean>{
       return this.loadData("", this.currentMEIDoc, false, c._TARGETDIVID_)
@@ -334,6 +342,11 @@ class Core {
         this.setAttributes(this.attributeOptions)
       }
 
+      // always start from click mode
+      if(this.firstStart){
+        document.getElementById("clickInsert").click()
+        this.firstStart = false
+      }
   }
 
   /**
@@ -472,7 +485,7 @@ class Core {
             response = this.verovioWrapper.setMessage(message);          
             resolve(response.result);
           })
-        })
+        }) 
       }else{
         var nn = this.m2m.getNewNote()
         var editNote = this.currentMEIDoc.getElementById(nn.nearestNoteId)
@@ -614,6 +627,9 @@ class Core {
           }
         })
 
+        // staff always has to be on top of sibling elements, so that one can interact with score elements
+        reorderedBoxes = reorderedBoxes.reverse()
+
         reorderedBoxes.forEach(sr => {
           if(!["g", "path"].includes(sr.tagName.toLowerCase())){
             //sr.remove()
@@ -640,7 +656,6 @@ class Core {
                 //   parentsr = sr
                 // }
                 var parentsr = sr
-                var rect = document.createElementNS(c._SVGNS_, "rect")
                 var g = document.createElementNS(c._SVGNS_, "g")
                 var refId: string = parentsr.id !== "" ? parentsr.id : parentsr.getAttribute("refId")
                 if(refId !== "" && refId !== null){
@@ -649,6 +664,7 @@ class Core {
                 parentsr.classList.forEach(c => g.classList.add(c))
                 var bbox = sr.getBoundingClientRect()
                 var cc = coordinates.getDOMMatrixCoordinates(bbox, that.interactionOverlay)
+                var rect = document.createElementNS(c._SVGNS_, "rect")
                 rect.setAttribute("x", cc.left.toString())
                 rect.setAttribute("y", cc.top.toString())
                 var w: number
@@ -658,6 +674,7 @@ class Core {
                 if(cc.height === 0) h = 2
                 rect.setAttribute("height", h?.toString() || cc.height.toString())
                 g.appendChild(rect)
+              
                 scoreRects.append(g)
                 if(navigator.userAgent.toLowerCase().includes("firefox")){
                   ffbb.adjustBBox(g)

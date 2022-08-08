@@ -284,6 +284,13 @@ export class Mouse2MEI{
         let belowSystem: boolean = (y > this.staffLineBBoxes[lowerStaffBound]?.y) ? true: false;
         let isInSystem: boolean = !aboveSystem && !belowSystem;
 
+        //this will cause that the duration of the chord will not be applied on inserted note
+        let isRestChord = false
+        if(options.targetChord != undefined){
+            isRestChord = options.targetChord.classList.contains("rest")
+        }
+        options.targetChord = isRestChord ? undefined : options.targetChord
+
         this.getElementInRootSVG(this.lastStaffMouseEnter?.getAttribute("refId"))?.querySelectorAll(".layer").forEach(l => {
             if(l.hasChildNodes()){
                 staffIsEmpty = false
@@ -318,7 +325,9 @@ export class Mouse2MEI{
             })
             leftRightPos = isLeftOfNote ? "left" : "right"
         }
-
+        if(isRestChord){
+            leftRightPos = "left"
+        } 
 
         let currentNearestStaffLine: StaffLineBBox = null;
         let currentNearestLineIdx: number = null;
@@ -593,13 +602,15 @@ export class Mouse2MEI{
                 newMeiElement = meiElement
             }
 
-            this.currentMEI = meiOperation.fillWithRests(newMeiElement, oldMeiElement, this.currentMEI) //test for application of this method is made internally
-            if(this.currentMEI.querySelectorAll(".changed").length <= 0){
+            oldMeiElement.replaceWith(newMeiElement)
+            this.currentMEI = meiOperation.fillWithRests(newMeiElement, oldMeiElement, this.currentMEI)
+            //if(this.currentMEI.querySelectorAll(".changed").length ===  0){
                 var additionalElements = Array.from(newMeiElement.closest("layer").querySelectorAll("*[dur]"))
                 additionalElements = additionalElements.filter((v, i) => i > additionalElements.indexOf(newMeiElement))
                 //this.currentMEI = meiOperation.changeDuration(this.currentMEI, "reduce", additionalElements)
-                this.currentMEI = meiOperation.changeDuration(this.currentMEI, additionalElements)
-            }
+                //additionalElements.unshift(oldMeiElement) // we need this information to determine the new duration of an element that has to be shortened
+                this.currentMEI = meiOperation.changeDuration(this.currentMEI, additionalElements, newMeiElement) //this.currentMEI = meiOperation.changeDuration(this.currentMEI, additionalElements)
+            //}
             this.currentMEI.querySelectorAll(".changed").forEach(c => c.classList.remove("changed"))
 
             //check if following events (notes, chords, rests) should be replaced 
@@ -637,13 +648,15 @@ export class Mouse2MEI{
                 newMeiElement = meiElement
             }
 
+            oldMeiElement.replaceWith(newMeiElement)
             this.currentMEI = meiOperation.fillWithRests(newMeiElement, oldMeiElement, this.currentMEI)
-            if(this.currentMEI.querySelectorAll(".changed").length <= 0){
+            //if(this.currentMEI.querySelectorAll(".changed").length ===  0){
                 var additionalElements = Array.from(newMeiElement.closest("layer").querySelectorAll("*[dur]"))
                 additionalElements = additionalElements.filter((v, i) => i > additionalElements.indexOf(newMeiElement))
                 //this.currentMEI = meiOperation.changeDuration(this.currentMEI, "reduce", additionalElements)
-                this.currentMEI = meiOperation.changeDuration(this.currentMEI, additionalElements)
-            }
+                //additionalElements.unshift(oldMeiElement) // we need this information to determine the new duration of an element that has to be shortened
+                this.currentMEI = meiOperation.changeDuration(this.currentMEI, additionalElements, newMeiElement) //this.currentMEI = meiOperation.changeDuration(this.currentMEI, additionalElements)
+            //}
             this.currentMEI.querySelectorAll(".changed").forEach(c => c.classList.remove("changed"))
 
             if(meiOperation.elementIsOverfilling(meiElement, currMeiClone)){

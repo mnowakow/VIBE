@@ -290,8 +290,8 @@ class Toolbar{
 
         this.modButtonGroup = cq.getContainer(this.containerId).querySelector("#modGroup")
         this.modButtonGroup.appendChild(dc.makeNewButton("&#x1D13D;&#x1D13E;", "pauseNote", buttonStyleDarkOutline + " " + smuflFont, "", true))
-        this.modButtonGroup.appendChild(dc.makeNewButton("&#x1D175;&#x1D176;", "tieNotes", buttonStyleDarkOutline + " " + smuflFont, "", true))
-        this.modButtonGroup.appendChild(dc.makeNewButton("&#x1D173;&#x1D160;&#x1D160;&#x1D174;", "organizeBeams", buttonStyleDarkOutline + " " + smuflFont, "", true))
+        this.modButtonGroup.appendChild(dc.makeNewButton("&#8256", "tieNotes", buttonStyleDarkOutline + " " + smuflFont, "", true))
+        this.modButtonGroup.appendChild(dc.makeNewButton("&#9835;", "organizeBeams", buttonStyleDarkOutline + " " + smuflFont, "", true))
         this.modButtonGroup.appendChild(dc.makeNewButton("&#x266D;", "alterDown", buttonStyleDarkOutline + " " + smuflFont, "", true))
         this.modButtonGroup.appendChild(dc.makeNewButton("&#x266F;", "alterUp", buttonStyleDarkOutline + " " + smuflFont, "", true))
         this.modButtonGroup.appendChild(dc.makeNewButton("&#x266E;", "alterNeutral", buttonStyleDarkOutline + " " + smuflFont, "", true))
@@ -313,7 +313,10 @@ class Toolbar{
         //InsertSelect DropdownMenu
         this.insertSelectGroup = dc.makeNewDiv("insertGroup", "customGroup btn-group me-2 h-100", {role: "group"}) as HTMLElement
         var toggle = dc.makeNewToggle("insertToggle", buttonStyleDarkOutline, "Replace", "insertToggleDiv")
-        toggle.addEventListener("click", function(e){
+        toggle.addEventListener("click", function(e: MouseEvent){
+            e.preventDefault()
+            var target = e.target as Element
+            if(target.tagName.toLowerCase() !== "label") return
             var label = e.target as Element
             var input = <HTMLInputElement> label.previousElementSibling
             if(label.textContent === "Replace"){
@@ -440,7 +443,7 @@ class Toolbar{
 
         //document.getElementsByClassName("vse-container")[0]?.addEventListener("click", this.closeHandlerMouse)
         
-        cq.getContainer(this.containerId).querySelectorAll(".btn-group button").forEach(el => {
+        cq.getContainer(this.containerId).querySelectorAll("#dotGroup button, #noteGroup button").forEach(el => {
             el.addEventListener("click", this.exclusiveSelectHandler)
         })
 
@@ -468,13 +471,13 @@ class Toolbar{
 
         cq.getContainer(this.containerId).addEventListener("annotChanged", this.createAnnotListFunction, true)
 
-        interact("#" + this.containerId + " #annotList")
-            .resizable({
-                // resize from all edges and corners
-                edges: { left: false, right: false, bottom: false, top: true },
+        // interact("#" + this.containerId + " #annotList")
+        //     .resizable({
+        //         // resize from all edges and corners
+        //         edges: { left: false, right: false, bottom: false, top: true },
     
-                listeners: { move: this.resizeListListener.bind(this) },
-            })
+        //         listeners: { move: this.resizeListListener.bind(this) },
+        //     })
 
         //FileSelection
         cq.getContainer(this.containerId).querySelector("#importFileBtn").addEventListener("click", function(){
@@ -594,25 +597,44 @@ class Toolbar{
 
 
     /**
-     * Make Notes and Dots selectable exclusively
+     * MAke Buttons in Toolbar selectable exclusively
      */
     exclusiveSelectHandler = (function exclusiveSelectHandler(evt: MouseEvent): void{
-        var target = evt.target as Element
-        var tagname = "BUTTON"
-        var allowedParentClass = "customGroup" //["dotGroup", "chordGroupKM", "octaveGroupKM", "annotGroupKM", "modGroup"]
-        if(target.tagName === tagname && target.id !== "toggleSidebar"){ // this should have no effect on the sidebar
+        // var target = evt.target as Element
+        // var tagname = "button"
+        // var allowedParentClass = "customGroup" //["dotGroup", "chordGroupKM", "octaveGroupKM", "annotGroupKM", "modGroup"]
+        // var allowedParentAttr = ["dotGroup", "customGroup"]
+        // if(target.tagName.toLowerCase() === tagname && target.id !== "toggleSidebar"){ // this should have no effect on the sidebar
+        //     Array.from(target.parentElement.children).forEach(btn => {
+        //         if(btn.tagName.toLowerCase() === tagname && btn !== target){
+        //             btn.classList.remove("selected")
+        //         }
+        //     })
+        //     if(target.classList.contains("selected") &&  allowedParentAttr.some(a => target.parentElement.classList.contains(a) || target.parentElement.id === a)){ //target.parentElement.classList.contains(allowedParentClass)){ //allowedParentClass.includes(target.parentElement.id)){ //enable deselect for dotGroup and modgroup
+        //         target.classList.remove("selected")
+        //     }else{
+        //         target.classList.add("selected")
+        //     }
+        // }
+        this.exclusiveSelect(evt)
+    }).bind(this)
+
+    exclusiveSelect(e: MouseEvent){
+        var target = e.target as Element
+        var tagname = "button"
+        if(target.tagName.toLowerCase() === tagname){
             Array.from(target.parentElement.children).forEach(btn => {
-                if(btn.tagName === tagname && btn !== target){
+                if(btn.tagName.toLowerCase() === tagname && btn !== target){
                     btn.classList.remove("selected")
                 }
             })
-            if(target.classList.contains("selected") && !target.parentElement.classList.contains(allowedParentClass)){ //allowedParentClass.includes(target.parentElement.id)){ //enable deselect for dotGroup and modgroup
+            if(target.classList.contains("selected")){
                 target.classList.remove("selected")
             }else{
                 target.classList.add("selected")
             }
         }
-    }).bind(this)
+    }
 
     sidebarHandler = (function sidebarHandler (evt: MouseEvent): void{
         //toggle

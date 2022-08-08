@@ -116,6 +116,7 @@ class InsertModeHandler implements Handler{
       currNodeId = this.keyModeHandler.scoreGraph.getCurrentNode().getId()
     } 
     this.keyModeHandler
+      .setContainerId(this.containerId)
       .setInsertCallback(this.insertCallback)
       .setDeleteCallback(this.deleteCallback)
       .setScoreGraph(this.scoreGraph)
