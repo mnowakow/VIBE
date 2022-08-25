@@ -61,12 +61,12 @@ class KeyModeHandler implements Handler{
   /**
    * Event handler for inserting Notes
    */
-  keyModeHandler = (function keyModeHandler (evt: KeyboardEvent): void {
+  keyModeHandler = (function keyModeHandler (e: KeyboardEvent): void {
     if(!cq.hasActiveElement(this.containerId)) return
     if(this.musicPlayer.getIsPlaying() === true){return} // getIsPlaying could also be undefined
-    if(keyCodeNoteMap.has(evt.code) && typeof this.cursor != undefined){
-      evt.preventDefault()
-      var pname = keyCodeNoteMap.get(evt.code)
+    if(keyCodeNoteMap.has(e.code) && typeof this.cursor != undefined){
+      e.preventDefault()
+      var pname = keyCodeNoteMap.get(e.code)
       var oct = octToNum.get(this.container.querySelector("#octaveGroupKM .selected")?.id) || "4"
       const newNote: NewNote = this.createNewNote(pname, oct, null)
       if(newNote == undefined) return

@@ -427,7 +427,7 @@ function createEmptyCopy(element: Element): Element{
 
 ///// GENERAL OPERATIONS /////
 
-function getAbsoluteRatio(el: Element): number{
+export function getAbsoluteRatio(el: Element): number{
   var i = 0;
   var arr: Array<Element>;
 
@@ -832,10 +832,10 @@ export function transposeByStep(currentMEI : Document, direction: string): Docum
     }
 
     //Change Octave
-    if( ["c", "bs"].includes(pname + accid) && nextNote === "b"){
+    if( ["c", "cf"].includes(pname + accid) && direction === "down"){
       noteMEI.setAttribute("oct", (oct-1).toString())
     }
-    if(["b", "cf"].includes(pname + accid) && nextNote === "c"){
+    if(["b", "bs"].includes(pname + accid) && direction === "up"){
       noteMEI.setAttribute("oct", (oct+1).toString())
     }
   })
@@ -1152,7 +1152,7 @@ function addRatios(elements: Element[]): number{
   return r
 }
 
-export function changeDuration(currentMEI : Document, additionalElements: Array<Element> = new Array(), refElement: Element = null, meiToReset: Document = null): Document{
+export function changeDuration(currentMEI : Document, additionalElements: Array<Element> = new Array(), refElement: Element = null, remainRatio: number = null, meiToReset: Document = null): Document{
   var meiCopy = meiToReset || currentMEI.cloneNode(true) as Document
 
   let ms = Array.from(refElement.parentElement.querySelectorAll("note:not(chord note), chord, rest")) as Element[]
@@ -1167,35 +1167,56 @@ export function changeDuration(currentMEI : Document, additionalElements: Array<
   }
   
   if(additionalElements.length > 0){
-    var adEl = additionalElements.shift()
-    var adElRatio = getAbsoluteRatio(adEl)
-    var diffRatio = adElRatio - refElementRatio 
-    var isDotted = (Math.abs(diffRatio) < adElRatio && Math.abs(diffRatio) > 0)
-    if(adElRatio === Math.abs(diffRatio) && refElementRatio <= adElRatio){
-      currentMEI.getElementById(adEl.id).remove()
-    }else if(diffRatio > 0 || isDotted){
-      if(isDotted){
-        diffRatio = Math.abs(diffRatio)
-      }
+    // var adEl = additionalElements.shift()
+    // var adElRatio = getAbsoluteRatio(adEl)
+    // var diffRatio = adElRatio - refElementRatio 
+    // remainDur = Math.abs(diffRatio)
+  //   //var isDotted = (Math.abs(diffRatio) < adElRatio && Math.abs(diffRatio) > 0)
+  //   if(adElRatio === Math.abs(diffRatio) && refElementRatio <= adElRatio){
+  //     currentMEI.getElementById(adEl.id).remove()
+  //   //}else if(diffRatio > 0 || isDotted){
+  //   }else if(remainDur > 0){
+  //     //if(isDotted){
+  //       diffRatio = Math.abs(diffRatio)
+  //     //}
+  //     var dur = ratioToDur(diffRatio)
+  //     currentMEI.getElementById(adEl.id).setAttribute("dur", dur.shift().toString())
+  //     if(dur.length > 0){
+  //       currentMEI.getElementById(adEl.id).setAttribute("dots", dur.shift().toString())
+  //     }
+  //   }else if(diffRatio === 0){
+  //     currentMEI.getElementById(adEl.id).remove()
+  //   }else{
+  //     currentMEI.getElementById(adEl.id).remove()
+  //     changeDuration(currentMEI, additionalElements, refElement, remainDur, meiCopy)
+  //   }
+  // }else{
+  //   if(remainBarRatio < 0){
+  //     currentMEI = meiCopy || currentMEI
+  //     //TODO: note in den nächsten Takt verlängern, das darüber erstmal löschen
+  //   }
+
+    var nextNote = additionalElements.shift()
+    var nnRatio = getAbsoluteRatio(nextNote)
+    remainRatio = remainRatio || refElementRatio 
+    
+    if(remainRatio < nnRatio){
+      var diffRatio = nnRatio - remainRatio
       var dur = ratioToDur(diffRatio)
-      currentMEI.getElementById(adEl.id).setAttribute("dur", dur.shift().toString())
+      currentMEI.getElementById(nextNote.id).setAttribute("dur", dur.shift().toString())
       if(dur.length > 0){
-        currentMEI.getElementById(adEl.id).setAttribute("dots", dur.shift().toString())
+        currentMEI.getElementById(nextNote.id).setAttribute("dots", dur.shift().toString())
       }
-    }else if(diffRatio === 0){
-      currentMEI.getElementById(adEl.id).remove()
+    }else if(remainRatio === nnRatio){
+      currentMEI.getElementById(nextNote.id).remove()
     }else{
-      currentMEI.getElementById(adEl.id).remove()
-      changeDuration(currentMEI, additionalElements, refElement, meiCopy)
-    }
-  }else{
-    if(remainBarRatio < 0){
-      currentMEI = meiCopy || currentMEI
-      //TODO: note in den nächsten Takt verlängern, das darüber erstmal löschen
+      remainRatio = remainRatio - nnRatio
+      currentMEI.getElementById(nextNote.id).remove()
+      changeDuration(currentMEI, additionalElements, refElement, remainRatio, meiCopy)
     }
   }
 
-  cleanUp(currentMEI )
+  cleanUp(currentMEI)
   return currentMEI
 }
 
@@ -1224,7 +1245,7 @@ export function elementIsOverfilling(element: Element, currMeiClone: Document): 
  */
 export function cleanUp(currentMEI : Document){
   deleteDefSequences(currentMEI)
-  reorganizeBeams(currentMEI)
+  //reorganizeBeams(currentMEI)
   removeEmptyElements(currentMEI)
   //fillWithRests(currentMEI)
   adjustRests(currentMEI)

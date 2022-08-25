@@ -71,8 +71,8 @@ class Cursor{
         this.interactionOverlay.removeEventListener('click', this.clickHandler)
     }
 
-    clickHandler = (function clickHandler(evt: MouseEvent){
-        //evt.stopPropagation();
+    clickHandler = (function clickHandler(e: MouseEvent){
+        //e.stopPropagation();
         var selectRect = this.container.querySelector("#keyModeSelectRect")
         if(selectRect !== null){
             selectRect.remove()
@@ -82,7 +82,7 @@ class Cursor{
             })
         }
 
-        var pt = new DOMPoint(evt.clientX, evt.clientY)
+        var pt = new DOMPoint(e.clientX, e.clientY)
         var rootMatrix = (this.rootSVG as unknown as SVGGraphicsElement).getScreenCTM().inverse()
         var ptX = pt.matrixTransform(rootMatrix).x
         var ptY =  pt.matrixTransform(rootMatrix).y
@@ -97,12 +97,12 @@ class Cursor{
         if(nbb != undefined && nbb !== null){
             var element = this.rootSVG.querySelector("#" + nbb.id)
         }
-        if(element === null && element == undefined) return
+        if(element === null || element == undefined) return
         if(element.classList.contains("note") && element.closest(".chord") !== null){
             element = element.closest(".chord")
         }
         this.nextElement = element
-        console.log(this.nextElement)
+        //console.log(this.nextElement)
         return element
     }
 

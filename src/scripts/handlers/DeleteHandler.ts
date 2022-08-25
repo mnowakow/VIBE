@@ -8,7 +8,9 @@ const action = "mousedown"
 class DeleteHandler implements Handler{
 
     private selectedElements: Array<Element>;
-    private deleteFlag:string = "marked"
+    private primaryDeleteFlag:string = "marked"
+    private secondaryDeleteFlag:string = "lastAdded"
+
 
     private deleteCallback: (items: Array<Element>) => Promise<any> 
     containerId: string;
@@ -37,19 +39,19 @@ class DeleteHandler implements Handler{
         document.removeEventListener("keyup", this.backSpaceHandler)
     }
 
-    clickHandler = (function clickHandler(evt: MouseEvent){
-        var target = evt.target as SVGSVGElement
+    clickHandler = (function clickHandler(e: MouseEvent){
+        var target = e.target as SVGSVGElement
         target = target.closest(".note")
         let stem = target.querySelector(".stem") as HTMLElement 
-        if(!target.classList.contains(this.deleteFlag)){
-            target.classList.add(this.deleteFlag)
+        if(!target.classList.contains(this.primaryDeleteFlag)){
+            target.classList.add(this.primaryDeleteFlag)
             if(stem !== null){
-                stem.classList.add(this.deleteFlag)
+                stem.classList.add(this.primaryDeleteFlag)
             }
         }else{
-            target.classList.remove(this.deleteFlag)
+            target.classList.remove(this.primaryDeleteFlag)
             if(stem !== null){
-                stem.classList.remove(this.deleteFlag)
+                stem.classList.remove(this.primaryDeleteFlag)
             }
         }      
       
@@ -63,9 +65,9 @@ class DeleteHandler implements Handler{
         if(e.code !== "Backspace") return
         var hasRests = false
         var hasNotes = false
-        if(cq.getRootSVG(this.containerId).querySelectorAll("." + this.deleteFlag + ".rest").length > 0){hasRests = true}
-        if(cq.getRootSVG(this.containerId).querySelectorAll("." + this.deleteFlag + ":not(.rest)").length > 0){hasNotes = true}
-        Array.from(cq.getRootSVG(this.containerId).querySelectorAll("." + this.deleteFlag)).forEach(el => {
+        if(cq.getRootSVG(this.containerId).querySelectorAll("." + this.primaryDeleteFlag + ".rest, ." + this.secondaryDeleteFlag + ".rest").length > 0){hasRests = true}
+        if(cq.getRootSVG(this.containerId).querySelectorAll("." + this.primaryDeleteFlag + ":not(.rest), ." + this.secondaryDeleteFlag + ":not(.rest)").length > 0){hasNotes = true}
+        Array.from(cq.getRootSVG(this.containerId).querySelectorAll("." + this.primaryDeleteFlag + ", ." + this.secondaryDeleteFlag)).forEach(el => {
             if(hasNotes && hasRests){
                 if(!el.classList.contains("rest")){
                     this.selectedElements.push(el)
@@ -78,6 +80,10 @@ class DeleteHandler implements Handler{
         if((e.code === "Backspace" || e.code === "Delete") && this.selectedElements.length > 0 && this.container.querySelectorAll(".harmonyDiv").length === 0){
             this.deleteCallback(this.selectedElements).then(() => {
                 this.selectedElements.length = 0
+                cq.getRootSVG(this.containerId).querySelectorAll("." + this.primaryDeleteFlag + ", ." + this.secondaryDeleteFlag).forEach(el => {
+                    el.classList.remove(this.primaryDeleteFlag)
+                    el.classList.remove(this.secondaryDeleteFlag)
+                })
             }) 
         }
     }).bind(this)
@@ -105,7 +111,7 @@ class DeleteHandler implements Handler{
     }
 
     getDeleteFlag(){
-        return this.deleteFlag
+        return this.primaryDeleteFlag
     }
 }
 export default DeleteHandler;

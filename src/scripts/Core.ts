@@ -86,7 +86,7 @@ class Core {
 
     // window.addEventListener("error", (function(e){
     //     console.error("Emergency Undo", e)
-    //     this.undo()
+    //     this.reloadDataFunction()
     //   }).bind(this)
     // )// emergency reload if some error occurs
   }
@@ -190,6 +190,7 @@ class Core {
         document.querySelectorAll("." + lastAddedClass).forEach(m => {
           m.classList.remove(lastAddedClass)
         })
+
         if(this.lastInsertedNoteId != undefined && ["textmode", "clickmode"].some(mode => this.container.classList.contains(mode))){
           this.container.querySelector("#" + this.lastInsertedNoteId)?.classList.add(lastAddedClass)
         }
@@ -301,6 +302,7 @@ class Core {
       .setHarmonyHandlerCallback(this.labelHandler.setHarmonyLabelHandlerKey)
       .setLoadDataCallback(this.loadDataFunction)
       .setScoreGraph(this.scoreGraph)
+      .resetLastInsertedNoteCallback(this.resetLastInsertedNoteId)
       .resetListeners()
 
     this.sidebarHandler
@@ -851,6 +853,10 @@ class Core {
   setHideOptions(options: {}){
     this.hideOptions = options
   }
+
+  resetLastInsertedNoteId = function(){
+    this.lastInsertedNoteId = undefined
+  }.bind(this)
 
   /**
    * Set Attibutes for any element in the result svg as {selector: {attributeName: [values as string]}}.

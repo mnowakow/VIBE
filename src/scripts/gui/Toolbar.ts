@@ -1,6 +1,6 @@
 import * as dc from '../utils/DOMCreator'
 import * as customType from "../utils/Types"
-import {Dropdown, Collapse } from 'bootstrap'
+import { Dropdown, Collapse } from 'bootstrap'
 import interact from 'interactjs'
 import { constants as c } from '../constants'
 import * as meioperations from "../utils/MEIOperations"
@@ -10,8 +10,10 @@ import * as cq from "../utils/convenienceQueries"
 const buttonStyleDarkOutline = "btn btn-outline-dark btn-md"
 const buttonStyleDark = "btn btn-dark btn-md"
 const smuflFont = "smufl"
+const alterBtn = "alterBtn"
+const selectedFlag = "selected"
 
-class Toolbar{
+class Toolbar {
 
     private handlerGroup: HTMLElement
     private noteButtonGroup: HTMLElement
@@ -38,26 +40,26 @@ class Toolbar{
 
     //private task: Evaluation
 
-    constructor(options: customType.InstanceOptions = null, containerId){
+    constructor(options: customType.InstanceOptions = null, containerId) {
         this.containerId = containerId
-        if(options !== null){
+        if (options !== null) {
             this.options = options
         }
     }
 
-    createToolbars(){
+    createToolbars() {
         this.sideBarGroup = cq.getContainer(this.containerId).querySelector("#sideBarGroup")
         var toggleBtn = dc.makeNewButton("", "toggleSidebar", buttonStyleDarkOutline + " closedSidebar")
         this.sideBarGroup.append(toggleBtn)
         this.createSideBar()
         this.createMainToolbar()
         this.createCustomToolbar()
-    
+
         this.addElementsToBootstrap();
         this.setListeners();
     }
 
-    private createSideBar(){
+    private createSideBar() {
         this.createModList()
         cq.getContainer(this.containerId).querySelectorAll("#sidebarList a, #timeDiv, #tempoDiv").forEach(sa => {
             sa.setAttribute("draggable", "true")
@@ -66,12 +68,12 @@ class Toolbar{
         this.optionalButtons()
     }
 
-    private createModList(){
+    private createModList() {
         this.sidebar = cq.getContainer(this.containerId).querySelector("#sidebarContainer")
 
         var accordeon = dc.makeNewDiv("sidebarList", "accordion")
         this.sidebar.appendChild(accordeon)
-        
+
         //Keysignatures
         accordeon.appendChild(this.createKeySigAccItem())
 
@@ -85,15 +87,15 @@ class Toolbar{
         //accordeon.appendChild(this.createTempoAccItem())
     }
 
-    createKeySigAccItem(): Element{
-        var keySelectItem = dc.makeNewAccordionItem("sidebarList", "selectKey", "selectKeyHeader", "selectKeyBtn", "Key",  buttonStyleDark, "selectKeyDiv")
+    createKeySigAccItem(): Element {
+        var keySelectItem = dc.makeNewAccordionItem("sidebarList", "selectKey", "selectKeyHeader", "selectKeyBtn", "Key", buttonStyleDark, "selectKeyDiv")
 
         var keyListCMajRow = dc.makeNewDiv("keyListCDIV", "row")
         var keyListCMaj = dc.makeNewDiv("keyListC", "list-group flex-fill col")
         keySelectItem.querySelector("#selectKeyDiv").appendChild(keyListCMajRow)
         keyListCMajRow.appendChild(keyListCMaj)
         keyListCMaj.appendChild(dc.makeNewAElement("=&#xE01A;&#xE050;&#xE014;=&#xE014;=&#xE014;=&#xE014;=&#xE014;=&#xE014;", "KeyCMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
-        
+
         var keyListSignedRow = dc.makeNewDiv("keyListCrossDIV", "col row g-0")
         var keyListCross = dc.makeNewDiv("keyListCross", "list-group flex-fill col")
         keySelectItem.querySelector("#selectKeyDiv").appendChild(keyListSignedRow)
@@ -117,9 +119,9 @@ class Toolbar{
         return keySelectItem
     }
 
-    createClefAccItem(): Element{
+    createClefAccItem(): Element {
         //Music Key
-        var clefSelectItem = dc.makeNewAccordionItem("sidebarList", "selectClef", "selectClefHeader", "selectClefBtn", "Clef",  buttonStyleDark, "selectClefDiv")
+        var clefSelectItem = dc.makeNewAccordionItem("sidebarList", "selectClef", "selectClefHeader", "selectClefBtn", "Clef", buttonStyleDark, "selectClefDiv")
         var clefList = dc.makeNewDiv("clefList", "list-group flex-fill")
         clefSelectItem.querySelector("#selectClefDiv").appendChild(clefList)
         clefList.appendChild(dc.makeNewAElement("&#xE050", "GClef", "list-group-item list-group-item-action " + smuflFont, "#", true))
@@ -128,50 +130,50 @@ class Toolbar{
         return clefSelectItem
     }
 
-    createTimeSigAccItem(): Element{
-         //Time Signature
-         var timeSelectItem = dc.makeNewAccordionItem("sidebarList", "selectTime", "selectTimeHeader", "selectTimeBtn", "Time",  buttonStyleDark, "selectTimeDiv")
-         var timeDiv = dc.makeNewDiv("timeDiv", "row align-items-start")
-         var countDiv = dc.makeNewDiv("countDiv", "col")
-         var tcdatalistname = "timeCountDatalist"
-         var timeCount = dc.makeNewInput("timeCount", "text", "", null, tcdatalistname)
- 
-         //create list for time code select
-         var tcOptionValues = new Array<string>();
-         for(var i = 0; i < 16; i++){
-             tcOptionValues.push((i+1).toString())
-         }
-         var tcDatalist = dc.makeNewSelect("timeCount", tcOptionValues)
- 
-         //countDiv.appendChild(timeCount)
-         countDiv.appendChild(tcDatalist)
-         var slashDiv = dc.makeNewDiv("slash", "col")
-         slashDiv.textContent = "/"
-         var unitDiv = dc.makeNewDiv("unitDiv", "col")
-         var tudatalistname = "timeUnitDatalist"
-         var timeUnit = dc.makeNewInput("timeUnit", "text", "", null, tudatalistname)
- 
-         //create list for time units select
-         var tuOptionValues = new Array<string>();
-         for(var i = 0; i <= 16; i++){
-             if(Number.isInteger(Math.log2(i))){
-                 tuOptionValues.push(i.toString())
-             }   
-         }
-         var tuDataList = dc.makeNewSelect("timeUnit", tuOptionValues)
- 
- 
-         unitDiv.appendChild(tuDataList)
-         timeSelectItem.querySelector("#selectTimeDiv").appendChild(timeDiv)
-         timeDiv.appendChild(countDiv)
-         timeDiv.appendChild(slashDiv)
-         timeDiv.appendChild(unitDiv)
+    createTimeSigAccItem(): Element {
+        //Time Signature
+        var timeSelectItem = dc.makeNewAccordionItem("sidebarList", "selectTime", "selectTimeHeader", "selectTimeBtn", "Time", buttonStyleDark, "selectTimeDiv")
+        var timeDiv = dc.makeNewDiv("timeDiv", "row align-items-start")
+        var countDiv = dc.makeNewDiv("countDiv", "col")
+        var tcdatalistname = "timeCountDatalist"
+        var timeCount = dc.makeNewInput("timeCount", "text", "", null, tcdatalistname)
 
-         return timeSelectItem
+        //create list for time code select
+        var tcOptionValues = new Array<string>();
+        for (var i = 0; i < 16; i++) {
+            tcOptionValues.push((i + 1).toString())
+        }
+        var tcDatalist = dc.makeNewSelect("timeCount", tcOptionValues)
+
+        //countDiv.appendChild(timeCount)
+        countDiv.appendChild(tcDatalist)
+        var slashDiv = dc.makeNewDiv("slash", "col")
+        slashDiv.textContent = "/"
+        var unitDiv = dc.makeNewDiv("unitDiv", "col")
+        var tudatalistname = "timeUnitDatalist"
+        var timeUnit = dc.makeNewInput("timeUnit", "text", "", null, tudatalistname)
+
+        //create list for time units select
+        var tuOptionValues = new Array<string>();
+        for (var i = 0; i <= 16; i++) {
+            if (Number.isInteger(Math.log2(i))) {
+                tuOptionValues.push(i.toString())
+            }
+        }
+        var tuDataList = dc.makeNewSelect("timeUnit", tuOptionValues)
+
+
+        unitDiv.appendChild(tuDataList)
+        timeSelectItem.querySelector("#selectTimeDiv").appendChild(timeDiv)
+        timeDiv.appendChild(countDiv)
+        timeDiv.appendChild(slashDiv)
+        timeDiv.appendChild(unitDiv)
+
+        return timeSelectItem
     }
 
-    createTempoAccItem(): Element{
-        var tempoItem = dc.makeNewAccordionItem("sidebarList", "selectTempo", "selectTempoHeader", "selectTempoBtn", "Tempo",  buttonStyleDark, "selectTempoDiv")
+    createTempoAccItem(): Element {
+        var tempoItem = dc.makeNewAccordionItem("sidebarList", "selectTempo", "selectTempoHeader", "selectTempoBtn", "Tempo", buttonStyleDark, "selectTempoDiv")
 
         var tempoDiv = dc.makeNewDiv("tempoDiv", "row align-items-start")
         var tempoRefDurDiv = dc.makeNewDiv("tempoRefDurDif", "col")
@@ -180,11 +182,11 @@ class Toolbar{
 
         //create list for time code select
         var tcOptionValues = new Array<string>();
-        for(var i = 0; i <= 16; i++){
-            if(Number.isInteger(Math.log2(i))){
+        for (var i = 0; i <= 16; i++) {
+            if (Number.isInteger(Math.log2(i))) {
                 tcOptionValues.push(i.toString())
-                tcOptionValues.push(i.toString()+".")
-            }   
+                tcOptionValues.push(i.toString() + ".")
+            }
         }
         var tcDatalist = dc.makeNewSelect("timeCount", tcOptionValues)
 
@@ -192,7 +194,7 @@ class Toolbar{
 
         var equal = dc.makeNewDiv("equal", "col")
         equal.textContent = "="
-        
+
         var unitDiv = dc.makeNewDiv("unitDiv", "col")
         var timeUnit = dc.makeNewInput("timeUnit", "text", "", null)
         unitDiv.appendChild(timeUnit)
@@ -205,8 +207,8 @@ class Toolbar{
         return tempoItem
     }
 
-    private optionalButtons(){
-        if(typeof this.sidebar === "undefined"){
+    private optionalButtons() {
+        if (typeof this.sidebar === "undefined") {
             return
         }
 
@@ -221,7 +223,7 @@ class Toolbar{
         // }
     }
 
-    private createAnnotList(){
+    private createAnnotList() {
         cq.getContainer(this.containerId).querySelector("#annotList")?.remove()
         var annotList = document.createElement("div")
         annotList.setAttribute("id", "annotList")
@@ -232,20 +234,20 @@ class Toolbar{
             var a = dc.makeNewAElement(text, "", "list-group-item list-group-item-action list-group-item-primary", "#")
             a.setAttribute("refId", c.id)
             a.setAttribute("contenteditable", "true")
-            a.addEventListener("click", function(){
-                Array.from(cq.getContainer(that.containerId).querySelectorAll(".selected")).forEach(s => s.classList.remove("selected"));
-                (<HTMLElement> cq.getContainer(that.containerId).querySelector("#" + c.id)).focus()
-                cq.getContainer(that.containerId).querySelector("#" + c.id).querySelector(".annotLinkedText, .annotStaticText")?.classList.add("selected")
+            a.addEventListener("click", function () {
+                Array.from(cq.getContainer(that.containerId).querySelectorAll(".selected")).forEach(s => s.classList.remove(selectedFlag));
+                (<HTMLElement>cq.getContainer(that.containerId).querySelector("#" + c.id)).focus()
+                cq.getContainer(that.containerId).querySelector("#" + c.id).querySelector(".annotLinkedText, .annotStaticText")?.classList.add(selectedFlag)
             })
-            a.addEventListener("blur", function(e: KeyboardEvent){
+            a.addEventListener("blur", function (e: KeyboardEvent) {
                 var t = e.target as HTMLElement
                 cq.getContainer(that.containerId).querySelector("#" + t.getAttribute("refid")).querySelector(".annotDiv").textContent = t.textContent
             })
-            a.addEventListener("keydown", function(e: KeyboardEvent){
+            a.addEventListener("keydown", function (e: KeyboardEvent) {
                 var t = e.target as HTMLElement
-                if(e.code === "Enter"){
+                if (e.code === "Enter") {
                     t.blur()
-                }else if(e.code === "Space"){
+                } else if (e.code === "Space") {
                     e.preventDefault()
                     document.execCommand("insertText", false, ' ')
                 }
@@ -256,16 +258,17 @@ class Toolbar{
         this.sidebar.appendChild(annotList)
     }
 
-    createAnnotListFunction = (function(e){
+    createAnnotListFunction = (function (e) {
         var t = e.target as Element
-        if(t.closest(".vse-container").id !== this.containerId) return
-        this.createAnnotList(e)}
+        if (t.closest(".vse-container").id !== this.containerId) return
+        this.createAnnotList(e)
+    }
     ).bind(this)
 
-    private createButtonsMainToolbar(){
+    private createButtonsMainToolbar() {
         // Buttons können in eigenes package ausgelagert werden (Editor)
 
-        var handlerDropdown =  dc.makeNewDiv("insertDropdown", "dropdown-menu")
+        var handlerDropdown = dc.makeNewDiv("insertDropdown", "dropdown-menu")
         handlerDropdown.append(dc.makeNewAElement("Mouse Input", "clickInsert", "dropdown-item", "#"))
         handlerDropdown.append(dc.makeNewAElement("Keyboard Input", "keyMode", "dropdown-item", "#"))
         //handlerDropdown.append(dc.makeNewAElement("Select Mode", "activateSelect", "dropdown-item", "#"))
@@ -292,11 +295,12 @@ class Toolbar{
         this.modButtonGroup.appendChild(dc.makeNewButton("&#x1D13D;&#x1D13E;", "pauseNote", buttonStyleDarkOutline + " " + smuflFont, "", true))
         this.modButtonGroup.appendChild(dc.makeNewButton("&#8256", "tieNotes", buttonStyleDarkOutline + " " + smuflFont, "", true))
         this.modButtonGroup.appendChild(dc.makeNewButton("&#9835;", "organizeBeams", buttonStyleDarkOutline + " " + smuflFont, "", true))
-        this.modButtonGroup.appendChild(dc.makeNewButton("&#x266D;", "alterDown", buttonStyleDarkOutline + " " + smuflFont, "", true))
-        this.modButtonGroup.appendChild(dc.makeNewButton("&#x266F;", "alterUp", buttonStyleDarkOutline + " " + smuflFont, "", true))
-        this.modButtonGroup.appendChild(dc.makeNewButton("&#x266E;", "alterNeutral", buttonStyleDarkOutline + " " + smuflFont, "", true))
-        this.modButtonGroup.appendChild(dc.makeNewButton("&#x1D12B", "alterDDown", buttonStyleDarkOutline + " " + smuflFont, "", true))
-        this.modButtonGroup.appendChild(dc.makeNewButton("&#x1D12A", "alterDUp", buttonStyleDarkOutline + " " + smuflFont, "", true))
+        this.modButtonGroup.appendChild(dc.makeNewButton("&#x266D;", "alterDown", buttonStyleDarkOutline + " " + smuflFont + " " + alterBtn, "", true))
+        this.modButtonGroup.appendChild(dc.makeNewButton("&#x266F;", "alterUp", buttonStyleDarkOutline + " " + smuflFont + " " + alterBtn, "", true))
+        this.modButtonGroup.appendChild(dc.makeNewButton("&#x266E;", "alterNeutral", buttonStyleDarkOutline + " " + smuflFont + " " + alterBtn, "", true))
+        this.modButtonGroup.appendChild(dc.makeNewButton("&#x1D12B", "alterDDown", buttonStyleDarkOutline + " " + smuflFont + " " + alterBtn, "", true))
+        this.modButtonGroup.appendChild(dc.makeNewButton("&#x1D12A", "alterDUp", buttonStyleDarkOutline + " " + smuflFont + " " + alterBtn, "", true))
+        this.modButtonGroup.addEventListener("click", this.exclusiveSelectHandler)
 
         this.soundGroup = cq.getContainer(this.containerId).querySelector("#soundGroup")
         this.soundGroup.appendChild(dc.makeNewButton("", "playBtn", buttonStyleDarkOutline))
@@ -309,20 +313,20 @@ class Toolbar{
         this.fileSelectGroup.append(dc.makeNewButton("Export MEI", "exportFileBtn", buttonStyleDarkOutline))
     }
 
-    createInsertSelect(){
+    createInsertSelect() {
         //InsertSelect DropdownMenu
-        this.insertSelectGroup = dc.makeNewDiv("insertGroup", "customGroup btn-group me-2 h-100", {role: "group"}) as HTMLElement
+        this.insertSelectGroup = dc.makeNewDiv("insertGroup", "customGroup btn-group me-2 h-100", { role: "group" }) as HTMLElement
         var toggle = dc.makeNewToggle("insertToggle", buttonStyleDarkOutline, "Replace", "insertToggleDiv")
-        toggle.addEventListener("click", function(e: MouseEvent){
+        toggle.addEventListener("click", function (e: MouseEvent) {
             e.preventDefault()
             var target = e.target as Element
-            if(target.tagName.toLowerCase() !== "label") return
+            if (target.tagName.toLowerCase() !== "label") return
             var label = e.target as Element
-            var input = <HTMLInputElement> label.previousElementSibling
-            if(label.textContent === "Replace"){
+            var input = <HTMLInputElement>label.previousElementSibling
+            if (label.textContent === "Replace") {
                 label.textContent = "Insert"
                 input.checked = false
-            }else{
+            } else {
                 label.textContent = "Replace"
                 input.checked = true
             }
@@ -331,15 +335,15 @@ class Toolbar{
         this.insertSelectGroup.append(toggle)
     }
 
-    createButtonsKeyMode(){
+    createButtonsKeyMode() {
 
         //ChordGroup
-        this.chordGroupKM = dc.makeNewDiv("chordGroupKM", "customGroup btn-group me-2 h-100", {role: "group"}) as HTMLElement
+        this.chordGroupKM = dc.makeNewDiv("chordGroupKM", "customGroup btn-group me-2 h-100", { role: "group" }) as HTMLElement
         this.chordGroupKM.append(dc.makeNewButton("CHORD", "chordButton", buttonStyleDarkOutline))
         this.chordGroupKM.addEventListener("click", this.exclusiveSelectHandler)
 
         //OctaveGroup
-        this.octaveGroupKM = dc.makeNewDiv("octaveGroupKM", "btn-group me-2 h-100", {role: "group"}) as HTMLElement
+        this.octaveGroupKM = dc.makeNewDiv("octaveGroupKM", "btn-group me-2 h-100", { role: "group" }) as HTMLElement
         let oct = dc.makeNewButton("", "subkontraOct", buttonStyleDarkOutline)
         oct.innerHTML = "C" + "0".sub()
         this.octaveGroupKM.appendChild(oct)
@@ -356,41 +360,41 @@ class Toolbar{
         oct.innerHTML = "C" + "3".sub()
         this.octaveGroupKM.appendChild(oct)
 
-        oct = dc.makeNewButton("", "1LineOct", buttonStyleDarkOutline)
+        oct = dc.makeNewButton("", "LineOct1", buttonStyleDarkOutline)
         oct.innerHTML = "C" + "4".sub()
         this.octaveGroupKM.appendChild(oct)
 
-        oct = dc.makeNewButton("", "2LineOct", buttonStyleDarkOutline)
+        oct = dc.makeNewButton("", "LineOct2", buttonStyleDarkOutline)
         oct.innerHTML = "C" + "5".sub()
         this.octaveGroupKM.appendChild(oct)
 
-        oct = dc.makeNewButton("", "3LineOct", buttonStyleDarkOutline)
+        oct = dc.makeNewButton("", "LineOct3", buttonStyleDarkOutline)
         oct.innerHTML = "C" + "6".sub()
         this.octaveGroupKM.appendChild(oct)
 
-        oct = dc.makeNewButton("", "4LineOct", buttonStyleDarkOutline)
+        oct = dc.makeNewButton("", "LineOct4", buttonStyleDarkOutline)
         oct.innerHTML = "C" + "7".sub()
         this.octaveGroupKM.appendChild(oct)
 
-        oct = dc.makeNewButton("", "5LineOct", buttonStyleDarkOutline)
+        oct = dc.makeNewButton("", "LineOct5", buttonStyleDarkOutline)
         oct.innerHTML = "C" + "8".sub()
         this.octaveGroupKM.appendChild(oct)
-       
+
         Array.from(this.octaveGroupKM.children).forEach(btn => {
             btn.addEventListener("click", this.exclusiveSelectHandler)
         })
 
     }
 
-    createButtonsAnnotationMode(){
-        this.annotGroupKM = dc.makeNewDiv("annotGroupKM", "customGroup btn-group me-2 h-100", {role: "group"}) as HTMLElement
+    createButtonsAnnotationMode() {
+        this.annotGroupKM = dc.makeNewDiv("annotGroupKM", "customGroup btn-group me-2 h-100", { role: "group" }) as HTMLElement
         this.annotGroupKM.append(dc.makeNewButton("TEXT", "staticTextButton", buttonStyleDarkOutline))
         this.annotGroupKM.append(dc.makeNewButton("LINKED ANNOTATION", "linkedAnnotButton", buttonStyleDarkOutline + " selected"))
         this.annotGroupKM.append(dc.makeNewButton("HARMONY", "harmonyAnnotButton", buttonStyleDarkOutline))
         this.annotGroupKM.addEventListener("click", this.exclusiveSelectHandler)
     }
 
-    createMainToolbar(){
+    createMainToolbar() {
         this.createButtonsMainToolbar();
 
         var btnToolbar = cq.getContainer(this.containerId).querySelector("#btnToolbar")
@@ -404,20 +408,20 @@ class Toolbar{
         btnToolbar.appendChild(this.fileSelectGroup)
     }
 
-    createCustomToolbar(){
+    createCustomToolbar() {
         this.createButtonsKeyMode()
         this.createInsertSelect()
         this.createButtonsAnnotationMode()
         this.customToolbar = cq.getContainer(this.containerId).querySelector("#customToolbar")
     }
 
-    removeAllCustomGroups(){
+    removeAllCustomGroups() {
         Array.from(this.customToolbar.children).forEach(c => {
             c.remove()
         })
     }
 
-    addElementsToBootstrap(){
+    addElementsToBootstrap() {
         //attach bootstrap functionality to Elements
         // Array.from(document.querySelectorAll(".btn")).forEach(b => {
         //     new Button(b)
@@ -432,8 +436,8 @@ class Toolbar{
         })
     }
 
-    setListeners(){
-        
+    setListeners() {
+
         cq.getContainer(this.containerId).querySelectorAll("#handlerGroup *").forEach(el => {
             el.addEventListener("click", this.closeHandlerMouse)
         })
@@ -442,8 +446,8 @@ class Toolbar{
         document.addEventListener("keydown", this.closeHandlerKey)
 
         //document.getElementsByClassName("vse-container")[0]?.addEventListener("click", this.closeHandlerMouse)
-        
-        cq.getContainer(this.containerId).querySelectorAll("#dotGroup button, #noteGroup button").forEach(el => {
+
+        cq.getContainer(this.containerId).querySelectorAll("#dotGroup button, #noteGroup button, #modGroup button").forEach(el => {
             el.addEventListener("click", this.exclusiveSelectHandler)
         })
 
@@ -467,7 +471,7 @@ class Toolbar{
                 ac.classList.add("show")
             })
 
-        }) 
+        })
 
         cq.getContainer(this.containerId).addEventListener("annotChanged", this.createAnnotListFunction, true)
 
@@ -475,57 +479,57 @@ class Toolbar{
         //     .resizable({
         //         // resize from all edges and corners
         //         edges: { left: false, right: false, bottom: false, top: true },
-    
+
         //         listeners: { move: this.resizeListListener.bind(this) },
         //     })
 
         //FileSelection
-        cq.getContainer(this.containerId).querySelector("#importFileBtn").addEventListener("click", function(){
+        cq.getContainer(this.containerId).querySelector("#importFileBtn").addEventListener("click", function () {
             var impF = this.parentElement.querySelector("#importFile")
             impF.setAttribute("accept", [".musicxml", ".mei"].join(", "))
             impF.click()
         })
 
         var that = this
-        cq.getContainer(this.containerId).querySelector("#importFile").addEventListener("change", function(e){
+        cq.getContainer(this.containerId).querySelector("#importFile").addEventListener("change", function (e) {
             var fr = new FileReader()
-            fr.onload = function(){
+            fr.onload = function () {
                 that.importCallback("", fr.result as string, false, c._TARGETDIVID_)
             }
             fr.readAsText(this.files[0])
-           
+
         }, false)
 
-        cq.getContainer(this.containerId).querySelector("#exportFileBtn").addEventListener("click", function(){
+        cq.getContainer(this.containerId).querySelector("#exportFileBtn").addEventListener("click", function () {
             that.getMEICallback("").then(mei => {
                 var d = new Date()
-                var fileName = d.getUTCFullYear() 
-                    + ("0" + d.getDate()).slice(-2) 
+                var fileName = d.getUTCFullYear()
+                    + ("0" + d.getDate()).slice(-2)
                     + ("0" + d.getMonth()).slice(-2)
                     + "_"
                     + ("0" + d.getHours()).slice(-2)
                     + ("0" + d.getMinutes()).slice(-2)
                     + ("0" + d.getSeconds()).slice(-2)
                     + "_"
-                    +  "vseScore_" + that.containerId  + ".mei"
+                    + "vseScore_" + that.containerId + ".mei"
                 that.download(fileName, mei)
-            }) 
+            })
         })
     }
 
-    download(file: string, text: string){
+    download(file: string, text: string) {
         //creating an invisible element
         var element = document.createElement('a');
-        element.setAttribute('href', 
-        'data:text/plain;charset=utf-8, '
-        + encodeURIComponent(text));
+        element.setAttribute('href',
+            'data:text/plain;charset=utf-8, '
+            + encodeURIComponent(text));
         element.setAttribute('download', file);
         document.body.appendChild(element);
         element.click();
         document.body.removeChild(element);
     }
 
-    removeListeners(){
+    removeListeners() {
         cq.getContainer(this.containerId).querySelectorAll("#handlerGroup *").forEach(el => {
             el.removeEventListener("click", this.closeHandlerMouse)
         })
@@ -552,18 +556,18 @@ class Toolbar{
         interact("#annotList").unset()
     }
 
-    closeHandlerMouse = (function closeHandlerMouse(evt: MouseEvent): void {
-        evt.preventDefault()
+    closeHandlerMouse = (function closeHandlerMouse(e: MouseEvent): void {
+        e.preventDefault()
         Array.from(cq.getContainer(this.containerId).querySelectorAll(".dropdown-toggle")).forEach(dd => {
             //this.closeDropdown(dd)
         })
     }).bind(this)
 
     // Macht momentan nix
-    closeHandlerKey = (function closeHandlerMouse(evt: KeyboardEvent): void {
-        if(!cq.hasActiveElement(this.containerId)) return
-        if(evt.key === "Escape"){
-            //evt.preventDefault()
+    closeHandlerKey = (function closeHandlerMouse(e: KeyboardEvent): void {
+        if (!cq.hasActiveElement(this.containerId)) return
+        if (e.key === "Escape") {
+            //e.preventDefault()
             Array.from(cq.getContainer(this.containerId).querySelectorAll(".dropdown-toggle")).forEach(dd => {
                 //this.closeDropdown(dd)
             })
@@ -571,8 +575,8 @@ class Toolbar{
     }).bind(this)
 
 
-    private closeDropdown(ddButton: Element){
-        if(ddButton.classList.contains("show")){
+    private closeDropdown(ddButton: Element) {
+        if (ddButton.classList.contains("show")) {
             ddButton.classList.remove("show")
             ddButton.removeAttribute("data-popper-placement")
             ddButton.setAttribute("aria-expanded", "false")
@@ -581,7 +585,7 @@ class Toolbar{
         }
     }
 
-    private resizeListListener(event){
+    private resizeListListener(event) {
         event.stopImmediatePropagation()
         var target = event.target as HTMLElement
         var y = (parseFloat(target.getAttribute('data-y')) || 0)
@@ -599,48 +603,34 @@ class Toolbar{
     /**
      * MAke Buttons in Toolbar selectable exclusively
      */
-    exclusiveSelectHandler = (function exclusiveSelectHandler(evt: MouseEvent): void{
-        // var target = evt.target as Element
-        // var tagname = "button"
-        // var allowedParentClass = "customGroup" //["dotGroup", "chordGroupKM", "octaveGroupKM", "annotGroupKM", "modGroup"]
-        // var allowedParentAttr = ["dotGroup", "customGroup"]
-        // if(target.tagName.toLowerCase() === tagname && target.id !== "toggleSidebar"){ // this should have no effect on the sidebar
-        //     Array.from(target.parentElement.children).forEach(btn => {
-        //         if(btn.tagName.toLowerCase() === tagname && btn !== target){
-        //             btn.classList.remove("selected")
-        //         }
-        //     })
-        //     if(target.classList.contains("selected") &&  allowedParentAttr.some(a => target.parentElement.classList.contains(a) || target.parentElement.id === a)){ //target.parentElement.classList.contains(allowedParentClass)){ //allowedParentClass.includes(target.parentElement.id)){ //enable deselect for dotGroup and modgroup
-        //         target.classList.remove("selected")
-        //     }else{
-        //         target.classList.add("selected")
-        //     }
-        // }
-        this.exclusiveSelect(evt)
+    exclusiveSelectHandler = (function exclusiveSelectHandler(e: MouseEvent): void {
+        this.exclusiveSelect(e)
     }).bind(this)
 
-    exclusiveSelect(e: MouseEvent){
+    exclusiveSelect(e: MouseEvent) {
+        var select
         var target = e.target as Element
         var tagname = "button"
-        if(target.tagName.toLowerCase() === tagname){
+        if (target.tagName.toLowerCase() === tagname) {
             Array.from(target.parentElement.children).forEach(btn => {
-                if(btn.tagName.toLowerCase() === tagname && btn !== target){
-                    btn.classList.remove("selected")
+                if (btn.tagName.toLowerCase() === tagname && btn !== target) {
+                    btn.classList.remove(selectedFlag)
                 }
             })
-            if(target.classList.contains("selected")){
-                target.classList.remove("selected")
-            }else{
-                target.classList.add("selected")
+            if (!target.classList.contains(selectedFlag)) {
+                target.classList.add(selectedFlag)
+            }else if(target.parentElement.id === "modGroup" && target.classList.contains(selectedFlag)){
+                target.classList.remove(selectedFlag)
             }
+
         }
     }
 
-    sidebarHandler = (function sidebarHandler (evt: MouseEvent): void{
+    sidebarHandler = (function sidebarHandler(e: MouseEvent): void {
         //toggle
         var sidebarWidthRatio = "30%"
         var btnToolbar = cq.getContainer(this.containerId).querySelector("#btnToolbar")
-        if(this.sidebar.classList.contains("closedSidebar")){
+        if (this.sidebar.classList.contains("closedSidebar")) {
             //document.getElementById("sidebarContainer").style.width = sidebarWidthRatio
             Array.from(cq.getContainer(this.containerId).querySelectorAll(".closedSidebar")).forEach(el => {
                 el.classList.remove("closedSidebar")
@@ -648,7 +638,7 @@ class Toolbar{
             })
             //btnToolbar.style.marginLeft = sidebarWidthRatio
 
-        }else{
+        } else {
             //document.getElementById("sidebarContainer").style.width = "0"
             Array.from(cq.getContainer(this.containerId).querySelectorAll(".openSidebar")).forEach(el => {
                 el.classList.add("closedSidebar")
@@ -661,11 +651,11 @@ class Toolbar{
     /**
      * Creates second toolbar depending on selected option
      */
-    customToolbarHandler = (function customToolbarHandler (e: MouseEvent){
+    customToolbarHandler = (function customToolbarHandler(e: MouseEvent) {
         var target = e.target as Element
         var tID = target.id
         this.removeAllCustomGroups()
-        switch(tID){
+        switch (tID) {
             case "clickInsert":
                 this.clickInsertHandler()
                 break;
@@ -679,26 +669,26 @@ class Toolbar{
                 this.harmHandler()
                 break;
         }
-        if(target.textContent === cq.getContainer(this.containerId).querySelector("#insertMode").textContent){
+        if (target.textContent === cq.getContainer(this.containerId).querySelector("#insertMode").textContent) {
             this.removeAllCustomGroups()
         }
     }).bind(this)
 
-    clickInsertHandler(){
+    clickInsertHandler() {
         this.customToolbar.appendChild(this.insertSelectGroup)
     }
 
-    keyModeHandler(){
+    keyModeHandler() {
         this.customToolbar.appendChild(this.insertSelectGroup)
         this.customToolbar.appendChild(this.chordGroupKM)
         this.customToolbar.appendChild(this.octaveGroupKM)
     }
 
-    harmHandler(){
+    harmHandler() {
         this.removeAllCustomGroups()
     }
 
-    annotHandler(){
+    annotHandler() {
         //this.removeAllCustomGroups()
         this.customToolbar.append(this.annotGroupKM)
     }
@@ -707,11 +697,11 @@ class Toolbar{
      * Callback from Core, so that imported mei or musicxml can be loaded in the editor
      * @param importCallback 
      */
-    setImportCallback(importCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>){
+    setImportCallback(importCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>) {
         this.importCallback = importCallback
     }
 
-    setGetMEICallback(getMEICallback: (pageURI: string) =>  Promise<string>){
+    setGetMEICallback(getMEICallback: (pageURI: string) => Promise<string>) {
         this.getMEICallback = getMEICallback
     }
 }

@@ -131,17 +131,18 @@ class ModHandler implements Handler{
      * @param e 
      */
     organizeBeams(e: MouseEvent){
-        var markedElements = Array.from(this.rootSVG.querySelectorAll(".note.marked, .chord.marked"))
+        var markedElements = Array.from(this.rootSVG.querySelectorAll(".marked")) // (".note.marked, .chord.marked"))
         markedElements = markedElements.filter(me => {
-            return me.closest(".layer").getAttribute("n") === markedElements[0].closest(".layer").getAttribute("n") 
-            && this.currentMEI.getElementById(me.id)?.getAttribute("dur") !== null
+            var isInLayer = me.closest(".layer").getAttribute("n") === markedElements[0].closest(".layer").getAttribute("n")
+            var hasDur = this.currentMEI.getElementById(me.id) !== null ? this.currentMEI.getElementById(me.id).getAttribute("dur") !== null : false
+            return isInLayer && hasDur
         })
         if(markedElements.length === 0){return}
         
-        var haveRightDur = markedElements.every(me => {
+        var haveRightDur = markedElements.filter(me => {
             var dur = this.currentMEI.getElementById(me.id)?.getAttribute("dur")
             return parseInt(dur) > 4
-        })
+        }).length >= 2
 
         if(haveRightDur){
             var firstMeiElement= this.currentMEI.getElementById(markedElements[0].id)

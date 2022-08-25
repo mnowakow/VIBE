@@ -118,7 +118,7 @@ class PhantomElementHandler implements Handler{
         phantomNoteElement.setAttribute("cx", relX.toString());
         phantomNoteElement.setAttribute("cy", relY.toString());
         phantomNoteElement.setAttribute("r", this.m2m?.getLineDist()?.toString() || "0")
-        phantomNoteElement.setAttribute("visibility", "visible")
+        phantomNoteElement.setAttribute("visibility", phantomNoteElement.getAttribute("visibility") || "visible")
         this.m2m.defineNote(relX, relY, options)
         var newCY = (this.m2m.getNewNoteY())?.toString()
         phantomNoteElement.setAttribute("cy", (newCY || "0"))

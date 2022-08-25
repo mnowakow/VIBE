@@ -67,6 +67,7 @@ class PhantomElement{
                 line.setAttribute("y1", y1.toString());
                 line.setAttribute("y2", y2.toString());
                 line.classList.add("phantomLine")
+                line.setAttribute("visibility", this.phantomCanvas.querySelector("#phantomNote")?.getAttribute("visibility"))
                 resolve(true)
             })
         

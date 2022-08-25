@@ -30,7 +30,12 @@ body.waiting * {
     cursor: text;
 }
 
-.clickmode  * {
+
+#scoreRects > :is(.notehead, .clef, .meterSig, .keySig, .rest, .harm, .manipulator, .slur, .tie):hover{
+    cursor: pointer;
+}
+
+.clickmode{
     cursor: crosshair
 }
 
@@ -78,9 +83,9 @@ text{
     filter: drop-shadow(5px 16px 15px black)
 }
 
-.note, .note *, .rest, .rest *, .staff, .measure, .manipulator, .slur, .tie *{
+/* .note, .note *, .rest, .rest *, .staff, .measure, .manipulator, .slur, .tie *{
     cursor: pointer !important; 
-}
+} */
 
 /*
 *   TOOLBAR
@@ -382,7 +387,7 @@ text{
 }
 
 .lastAdded{
-    fill: crimson
+    fill: rgb(16, 100, 16)
 }
 
 .playing{

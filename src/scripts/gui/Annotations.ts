@@ -69,7 +69,7 @@ class Annotations implements Handler{
         this.container.querySelectorAll("#staticTextButton, #linkedAnnotButton").forEach(b => {
             b.addEventListener("click", function(){
                 that.setToFront()
-                harmonyButton.classList.remove("selected")
+                //harmonyButton.classList.remove("selected")
                 that.resetTextListeners()
                 b.dispatchEvent(new Event("annotationButtonClicked"))
             })

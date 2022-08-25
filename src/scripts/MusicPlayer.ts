@@ -266,17 +266,17 @@ class MusicPlayer{
         document.removeEventListener("keydown",this.playHandler)
     }
 
-    playHandler = (function playHandler(evt: KeyboardEvent){
+    playHandler = (function playHandler(e: KeyboardEvent){
         if(!this.hasContainerFocus()) return
-        this.playFunction(evt)
+        this.playFunction(e)
         
     }).bind(this)
 
-    playFunction(evt: KeyboardEvent){
+    playFunction(e: KeyboardEvent){
         if(!this.hasContainerFocus()) return
-        if(evt.code === "Space"){
-            evt.preventDefault()
-            if(evt.shiftKey || document.getElementById("followerRect") !== null){
+        if(e.code === "Space"){
+            e.preventDefault()
+            if(e.shiftKey || document.getElementById("followerRect") !== null){
                 this.context.resume().then(() => this.playMidi())
             }else if(typeof this.player != undefined ){
                 this.stopInstruments()

@@ -211,6 +211,7 @@ nextStepDown.set("fs", "f")
 nextStepDown.set("gf", "f")
 nextStepDown.set("es", "e")
 nextStepDown.set("f", "e")
+nextStepDown.set("ff", "ef")
 nextStepDown.set("e", "ef")
 nextStepDown.set("ds", "d")
 nextStepDown.set("ef", "d")
@@ -219,6 +220,7 @@ nextStepDown.set("cs", "c")
 nextStepDown.set("df", "c")
 nextStepDown.set("bs", "b")
 nextStepDown.set("c", "b")
+nextStepDown.set("cf", "bf")
 
 export const nextStepUp: Map<string, string> = new Map;
 nextStepUp.set("c", "cs")
@@ -240,6 +242,7 @@ nextStepUp.set("bf", "b")
 nextStepUp.set("as", "b")
 nextStepUp.set("cf", "c")
 nextStepUp.set("b", "c")
+nextStepUp.set("bs", "cs")
 
 
 export const keysigToNotes: Map<string, Array<string>> = new Map;
@@ -284,16 +287,30 @@ export const numToDotButtonId: Map<string, string> = new Map;
 numToDotButtonId.set("1", "oneDot")
 numToDotButtonId.set("2", "twoDot")
 
+export const accidToModButtonId: Map<string, string> = new Map;
+accidToModButtonId.set("s", "alterUp")
+accidToModButtonId.set("f", "alterDown")
+accidToModButtonId.set("n", "alterNeutral")
+accidToModButtonId.set("ff", "alterDDown")
+accidToModButtonId.set("ss", "alterDUp")
+
+export const modButtonToAccid: Map<string, string> = new Map;
+modButtonToAccid.set("alterUp", "s")
+modButtonToAccid.set("alterDown", "f")
+modButtonToAccid.set("alterNeutral", "n")
+modButtonToAccid.set("alterDDown", "ff")
+modButtonToAccid.set("alterDUp", "ss")
+
 export const octToNum: Map<string, string> = new Map;
 octToNum.set("subkontraOct", "0")
 octToNum.set("kontraOct", "1")
 octToNum.set("greatOct", "2")
 octToNum.set("smallOct", "3")
-octToNum.set("1LineOct", "4")
-octToNum.set("2LineOct", "5")
-octToNum.set("3LineOct", "6")
-octToNum.set("4LineOct", "7")
-octToNum.set("5LineOct", "8")
+octToNum.set("LineOct1", "4")
+octToNum.set("LineOct2", "5")
+octToNum.set("LineOct3", "6")
+octToNum.set("LineOct4", "7")
+octToNum.set("LineOct5", "8")
 
 export const clefToLine: Map<string, string> = new Map;
 clefToLine.set("G", "2")

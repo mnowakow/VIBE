@@ -2,7 +2,7 @@ import * as d3 from 'd3';
 import { Mouse2MEI } from '../utils/Mouse2MEI';
 import Handler from './Handler';
 import MusicPlayer from '../MusicPlayer';
-import {numToNoteButtonId, numToDotButtonId} from '../utils/mappings'
+import { numToNoteButtonId, numToDotButtonId, accidToModButtonId } from '../utils/mappings'
 import { constants as c } from "../constants"
 import LabelHandler from './LabelHandler';
 import * as coordinates from "../utils/coordinates"
@@ -11,7 +11,7 @@ import { idText } from 'typescript';
 
 const marked = "marked"
 
-class SelectionHandler implements Handler{
+class SelectionHandler implements Handler {
 
     private canvas;
     private initialX: number;
@@ -26,7 +26,7 @@ class SelectionHandler implements Handler{
     private interactionOverlay: Element
     private rootSVG: Element
 
-    constructor(containerId: string){
+    constructor(containerId: string) {
         this.setContainerId(containerId)
 
         this.selectStartEvent = new Event("selectStart")
@@ -34,20 +34,20 @@ class SelectionHandler implements Handler{
         this.shiftPressed = false
         this.setKeyListeners()
 
-        this.canvas = d3.select("#"+this.containerId + " #interactionOverlay"); // draw directly in svg
-        var dragSelectAction = d3.drag() 
-        .on('start', selStart)
-        .on('drag', selecting)
-        .on('end', selEnd)
+        this.canvas = d3.select("#" + this.containerId + " #interactionOverlay"); // draw directly in svg
+        var dragSelectAction = d3.drag()
+            .on('start', selStart)
+            .on('drag', selecting)
+            .on('end', selEnd)
 
         var that = this;
-        function selStart(){
-            if(document.getElementById(that.containerId).classList.contains("annotMode")) return // prevent selecting when resizing annotation objects
+        function selStart() {
+            if (document.getElementById(that.containerId).classList.contains("annotMode")) return // prevent selecting when resizing annotation objects
             var pt = coordinates.transformToDOMMatrixCoordinates(d3.event.sourceEvent.clientX, d3.event.sourceEvent.clientY, cq.getInteractOverlay(that.containerId))
             that.initialX = pt.x //d3.event.x
             that.initialY = pt.y //d3.event.y
 
-            if(!document.getElementById(that.containerId).classList.contains("harmonyMode") && !that.shiftPressed){ //!that.harmonyHandler.getGlobal()){
+            if (!document.getElementById(that.containerId).classList.contains("harmonyMode") && !that.shiftPressed) { //!that.harmonyHandler.getGlobal()){
                 that.m2m.getNoteBBoxes().forEach(bb => {
                     let note = that.rootSVG.querySelector("#" + bb.id)
                     note.classList.remove(marked)
@@ -56,8 +56,8 @@ class SelectionHandler implements Handler{
             that.initRect(that.initialX, that.initialY)
         }
 
-        function selecting(){
-            if(document.getElementById(that.containerId).classList.contains("annotMode")) return // prevent selecting when resizing annotation objects
+        function selecting() {
+            if (document.getElementById(that.containerId).classList.contains("annotMode")) return // prevent selecting when resizing annotation objects
             var pt = coordinates.transformToDOMMatrixCoordinates(d3.event.sourceEvent.clientX, d3.event.sourceEvent.clientY, cq.getInteractOverlay(that.containerId))
             const curX = pt.x //d3.event.x + container.scrollLeft 
             const curY = pt.y //d3.event.y + container.scrollTop 
@@ -66,7 +66,7 @@ class SelectionHandler implements Handler{
             const newY = curY < that.initialY ? curY : that.initialY;
             const width = curX < that.initialX ? that.initialX - curX : curX - that.initialX;
             const height = curY < that.initialY ? that.initialY - curY : curY - that.initialY;
-      
+
             that.updateRect(newX, newY, width, height);
 
             var rect = that.interactionOverlay.querySelector("#selectRect");
@@ -83,50 +83,56 @@ class SelectionHandler implements Handler{
             var ry = rectpt.y
             var noteBBoxes = that.m2m.getNoteBBoxes();
             noteBBoxes.forEach(bb => {
-                var note = cq.getRootSVG(that.containerId).querySelector("#"+bb.id)
+                var note = cq.getRootSVG(that.containerId).querySelector("#" + bb.id)
                 let stem = note.querySelector(".stem") as HTMLElement
                 let accid = note.querySelector(".accid") as HTMLElement
-                if( bb.x >= rx && 
+                if (bb.x >= rx &&
                     //bb.x <= rx + rectBBox.width &&
-                    bb.x <= rx +  rectWidthpt &&
+                    bb.x <= rx + rectWidthpt &&
                     bb.y >= ry &&
                     //bb.y <= ry + rectBBox.height
                     bb.y <= ry + rectHeightpt
-                    ){
-                        note.classList.add(marked)
-                        if(stem !== null) stem.classList.add(marked)
-                        var chord = note.closest(".chord")
-                        if(chord !== null){
-                            //if(!chord.classList.contains(marked)) 
-                            let noteArr = Array.from(chord.querySelectorAll(".note"))
-                            if(noteArr.every(c => c.classList.contains(marked)) && noteArr.length > 0){
-                                chord.classList.add(marked)
-                            }
+                ) {
+                    note.classList.add(marked)
+                    if (stem !== null) stem.classList.add(marked)
+                    var chord = note.closest(".chord")
+                    if (chord !== null) {
+                        //if(!chord.classList.contains(marked)) 
+                        let noteArr = Array.from(chord.querySelectorAll(".note"))
+                        if (noteArr.every(c => c.classList.contains(marked)) && noteArr.length > 0) {
+                            chord.classList.add(marked)
                         }
-                    }else if(!that.shiftPressed){
-                        note.classList.remove(marked)
-                        stem?.classList.remove(marked)
-                        accid?.classList.remove(marked)
-                        var chord = note.closest(".chord")
-                        chord?.classList.remove(marked)
                     }
+                } else if (!that.shiftPressed) {
+                    note.classList.remove(marked)
+                    stem?.classList.remove(marked)
+                    accid?.classList.remove(marked)
+                    var chord = note.closest(".chord")
+                    chord?.classList.remove(marked)
+                }
             })
-            
+
         }
 
-        function selEnd(){
-            if(document.getElementById(that.containerId).classList.contains("annotMode")) return // prevent selecting when resizing annotation objects
+        function selEnd() {
+            if (document.getElementById(that.containerId).classList.contains("annotMode")) return // prevent selecting when resizing annotation objects
             var selectRect = that.interactionOverlay.querySelector("#selectRect");
-            if(selectRect !== null && selectRect?.getAttribute("width") !== "0" && selectRect?.getAttribute("height") !== "0" ){
+            if (selectRect !== null && selectRect?.getAttribute("width") !== "0" && selectRect?.getAttribute("height") !== "0") {
                 document.dispatchEvent(that.selectEndEvent)
             }
             selectRect?.remove();
-            var firstMarkedNote = that.rootSVG.querySelector(".chord.marked, .note.marked")?.id
+            var firstMarkedNote = that.rootSVG.querySelector(".chord.marked, .note.marked, .rest.marked")?.id
             var meiNote = that.m2m.getCurrentMei().getElementById(firstMarkedNote)
-            if(firstMarkedNote?.length > 0){
-                document.getElementById(that.containerId)?.querySelectorAll("#noteGroup *, #dotGroup *").forEach(b => b.classList.remove("selected"))
-                document.getElementById(that.containerId)?.querySelector("#"+numToNoteButtonId.get(meiNote?.getAttribute("dur")))?.classList.add("selected")
-                document.getElementById(that.containerId)?.querySelector("#"+numToDotButtonId.get(meiNote?.getAttribute("dots")))?.classList.add("selected")
+            document.getElementById(that.containerId)?.querySelectorAll(".lastAdded")?.forEach(la => la.classList.remove("lastAdded"))
+            if (firstMarkedNote?.length > 0) {
+                document.getElementById(that.containerId)?.querySelectorAll("#noteGroup *, #dotGroup *, #modGroup *").forEach(b => b.classList.remove("selected"))
+                //select buttons for given note state
+                document.getElementById(that.containerId)?.querySelector("#" + accidToModButtonId.get(meiNote?.getAttribute("accid")))?.classList.add("selected")
+                if(meiNote?.closest("chord") !== null){
+                    meiNote = meiNote.closest("chord")
+                }
+                document.getElementById(that.containerId)?.querySelector("#" + numToNoteButtonId.get(meiNote?.getAttribute("dur")))?.classList.add("selected")
+                document.getElementById(that.containerId)?.querySelector("#" + numToDotButtonId.get(meiNote?.getAttribute("dots")))?.classList.add("selected")
             }
         }
         this.dsa = dragSelectAction
@@ -137,7 +143,7 @@ class SelectionHandler implements Handler{
     currentMEI?: string | Document;
 
 
-    initRect (ulx: number, uly: number): void {
+    initRect(ulx: number, uly: number): void {
         this.canvas.append('rect')
             .attr('x', ulx)
             .attr('y', uly)
@@ -149,16 +155,16 @@ class SelectionHandler implements Handler{
             .attr('fill', 'none')
     }
 
-    updateRect (newX: number, newY: number, currentWidth: number, currentHeight: number): void {
+    updateRect(newX: number, newY: number, currentWidth: number, currentHeight: number): void {
         d3.select('#selectRect')
-          .attr('x', newX)
-          .attr('y', newY)
-          .attr('width', currentWidth)
-          .attr('height', currentHeight);
-      }
+            .attr('x', newX)
+            .attr('y', newY)
+            .attr('width', currentWidth)
+            .attr('height', currentHeight);
+    }
 
-    removeListeners(): void{
-        d3.select("#"+this.containerId + " #interactionOverlay").on('mousedown.drag', null)
+    removeListeners(): void {
+        d3.select("#" + this.containerId + " #interactionOverlay").on('mousedown.drag', null)
         this.m2m.getNoteBBoxes().forEach(bb => {
             let note = this.rootSVG.querySelector("#" + bb.id)
             note.classList.remove(marked)
@@ -170,19 +176,19 @@ class SelectionHandler implements Handler{
         this.interactionOverlay.removeEventListener("keyup", this.shiftKeyHandler)
     }
 
-    setListeners():void{
+    setListeners(): void {
         this.canvas.call(this.dsa);
         this.interactionOverlay.querySelectorAll(".note, .rest, .mRest, .notehead").forEach(el => {
             el.addEventListener("click", this.markedHandler)
         })
     }
 
-    setKeyListeners(){
+    setKeyListeners() {
         this.interactionOverlay.addEventListener("keydown", this.shiftKeyHandler)
         this.interactionOverlay.addEventListener("keyup", this.shiftKeyHandler)
     }
 
-    resetListeners(){
+    resetListeners() {
         //this.removeListeners()
         this.setListeners()
     }
@@ -190,36 +196,45 @@ class SelectionHandler implements Handler{
     /**
      *  Mark clicked element
      */
-    markedHandler = (function markedHandler(e: MouseEvent){ 
-        if(!this.shiftPressed){
+    markedHandler = (function markedHandler(e: MouseEvent) {
+        if (!this.shiftPressed) {
             Array.from(this.container.querySelectorAll("." + marked)).forEach(n => {
                 (n as Element).classList.remove(marked)
             })
         }
         e.preventDefault()
         var target = e.target as Element
-        if(target.getAttribute("refId") === null){
+        if (target.getAttribute("refId") === null) {
             target = target.closest("[refId]")
             target = this.rootSVG.querySelector("#" + target.getAttribute("refId"))
         }
         target = target.closest(".note, .rest, .mRest") || target
         target.classList.add(marked)
-        
+
         // change the selected durations in the toolbar
         var firstMarkedNote = this.rootSVG.querySelector(".chord.marked, .note.marked, .rest.marked")?.id
         var meiNote = this.m2m.getCurrentMei().getElementById(firstMarkedNote)
-        if(firstMarkedNote?.length > 0){
-            document.getElementById(this.containerId)?.querySelectorAll("#noteGroup *, #dotGroup *").forEach(b => b.classList.remove("selected"))
-            document.getElementById(this.containerId)?.querySelector("#"+numToNoteButtonId.get(meiNote?.getAttribute("dur")))?.classList.add("selected")
-            document.getElementById(this.containerId)?.querySelector("#"+numToDotButtonId.get(meiNote?.getAttribute("dots")))?.classList.add("selected")
+        if(meiNote?.closest("chord") !== null){
+            meiNote = meiNote.closest("chord")
+        }
+        if (firstMarkedNote?.length > 0) {
+            document.getElementById(this.containerId)?.querySelectorAll("#noteGroup *, #dotGroup *, #modGroup *").forEach(b => b.classList.remove("selected"))
+            document.getElementById(this.containerId)?.querySelectorAll(".lastAdded")?.forEach(la => la.classList.remove("lastAdded"))
+            //select buttons for given note state
+            document.getElementById(this.containerId)?.querySelector("#" + accidToModButtonId.get(meiNote?.getAttribute("accid")))?.classList.add("selected")
+            if(meiNote?.closest("chord") !== null){
+                meiNote = meiNote.closest("chord")
+            }
+            document.getElementById(this.containerId)?.querySelector("#" + numToNoteButtonId.get(meiNote?.getAttribute("dur")))?.classList.add("selected")
+            document.getElementById(this.containerId)?.querySelector("#" + numToDotButtonId.get(meiNote?.getAttribute("dots")))?.classList.add("selected")
         }
     }).bind(this)
-    
-    shiftKeyHandler = (function shiftKeyHandler(e: KeyboardEvent){
-        if(e.key === "Shift"){
-            if(e.type === "keydown"){
+
+    shiftKeyHandler = (function shiftKeyHandler(e: KeyboardEvent) {
+        if (e.key === "Shift") {
+            if (e.type === "keydown") {
                 this.shiftPressed = true
-            }else if(e.type === "keyup"){
+            } else if (e.type === "keyup") {
                 this.shiftPressed = false
             }
         }
@@ -228,11 +243,11 @@ class SelectionHandler implements Handler{
 
     ///////// GETTER/ SETTER ////////
 
-    setM2M(m2m: Mouse2MEI){
+    setM2M(m2m: Mouse2MEI) {
         this.m2m = m2m
     }
 
-    setContainerId(id: string){
+    setContainerId(id: string) {
         this.containerId = id
         this.container = document.getElementById(id)
         this.interactionOverlay = cq.getInteractOverlay(id)

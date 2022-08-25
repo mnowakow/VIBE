@@ -14,7 +14,7 @@ import * as cq from "../utils/convenienceQueries"
 const labelClasses = ["harm", "tempo", "note", "chord", "fb"]
 const labelSelectors = "." + labelClasses.join(",.")
 
-class LabelHandler implements Handler{
+class LabelHandler implements Handler {
     m2m?: Mouse2MEI;
     musicPlayer?: MusicPlayer
     currentMEI?: Document;
@@ -31,7 +31,7 @@ class LabelHandler implements Handler{
 
     private loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>
 
-    constructor(containerId: string){
+    constructor(containerId: string) {
         this.setContainerId(containerId)
         this.addCanvas()
     }
@@ -39,12 +39,12 @@ class LabelHandler implements Handler{
     /**
      * Set own canvas for manipulating labels
      */
-    addCanvas(){
+    addCanvas() {
         this.rootBBox = this.interactionOverlay.getBoundingClientRect()
         var rootWidth = this.rootBBox.width.toString()
         var rootHeigth = this.rootBBox.height.toString()
-        
-        if(this.labelCanvas == undefined){
+
+        if (this.labelCanvas == undefined) {
             this.labelCanvas = document.createElementNS(c._SVGNS_, "svg")
             this.labelCanvas.setAttribute("id", "labelCanvas")
             this.labelCanvas.classList.add("canvas")
@@ -58,18 +58,18 @@ class LabelHandler implements Handler{
     /**
      * Create label instances for elements already present in the score.
      */
-    initLabels(){
+    initLabels() {
         this.labels = new Map()
         this.rootSVG.querySelectorAll(labelSelectors).forEach(el => {
-            var className = labelClasses.filter(l => this.rootSVG.querySelector("#"+el.id).classList.contains(l))[0]
-            var inputString: string 
-            switch(className){
+            var className = labelClasses.filter(l => this.rootSVG.querySelector("#" + el.id).classList.contains(l))[0]
+            var inputString: string
+            switch (className) {
                 case "harm":
-                    inputString = Array.from(this.rootSVG.querySelector("#"+el.id).querySelectorAll(".text")).filter(el => el.textContent !== null)[0]?.textContent.trim()
+                    inputString = Array.from(this.rootSVG.querySelector("#" + el.id).querySelectorAll(".text")).filter(el => el.textContent !== null)[0]?.textContent.trim()
                     this.labels.set(el.id, new HarmonyLabel(inputString, el.id, this.currentMEI))
                     break;
                 case "tempo":
-                    inputString = Array.from(this.rootSVG.querySelector("#"+el.id).querySelectorAll(".text")).filter(e => /\d+/.test(e.textContent))[0]?.textContent.match(/\d+/).join("") || ""
+                    inputString = Array.from(this.rootSVG.querySelector("#" + el.id).querySelectorAll(".text")).filter(e => /\d+/.test(e.textContent))[0]?.textContent.match(/\d+/).join("") || ""
                     this.labels.set(el.id, new TempoLabel(inputString, el.id, this.currentMEI))
                     break;
             }
@@ -82,10 +82,10 @@ class LabelHandler implements Handler{
         })
 
         // isGlobal = false: Editor is not in harmony mode
-        if(!this.isGlobal){
-           this.interactionOverlay.addEventListener("click", this.setHarmonyLabelHandlerClick, true)
-           this.interactionOverlay.addEventListener("mousemove", this.activateHarmonyHighlight)
-           this.interactionOverlay.addEventListener("keydown", this.closeModifyWindowHandler, true)
+        if (!this.isGlobal) {
+            this.interactionOverlay.addEventListener("click", this.setHarmonyLabelHandlerClick, true)
+            this.interactionOverlay.addEventListener("mousemove", this.activateHarmonyHighlight)
+            this.interactionOverlay.addEventListener("keydown", this.closeModifyWindowHandler, true)
         }
 
         this.interactionOverlay.addEventListener("click", this.closeModifyWindowHandler)
@@ -95,7 +95,9 @@ class LabelHandler implements Handler{
             h.addEventListener("mouseleave", this.activateHarmonyHighlight)
             h.addEventListener("dblclick", this.modifyLabelHandler)
         })
-        
+
+        this.interactionOverlay.querySelectorAll(".harm, .label, .manipulator").forEach(h => h.addEventListener("click", (e) => e.stopImmediatePropagation())) // prevent inseerting notes, wenn cursor is over a harm symbol
+
         return this
     }
 
@@ -114,34 +116,39 @@ class LabelHandler implements Handler{
         return this
     }
 
-    setHarmonyLabelHandlerClick = (function setHarmonyLabelHandler(e: MouseEvent){
-       if(this.container.classList.contains("harmonyMode")){
-           this.harmonyLabelHandler(e)
-       }
+    setHarmonyLabelHandlerClick = (function setHarmonyLabelHandler(e: MouseEvent) {
+        if (this.container.classList.contains("harmonyMode")) {
+            this.harmonyLabelHandler(e)
+        }
     }).bind(this)
 
-    setTempoLabelHandlerClick = (function setTempoLabelHandlerClick(e: MouseEvent){
+    setTempoLabelHandlerClick = (function setTempoLabelHandlerClick(e: MouseEvent) {
         this.tempoLabelHandler(e)
     }).bind(this)
 
-    setHarmonyLabelHandlerKey = (function setHarmonyLabelHandler(e: KeyboardEvent){
-        if(!cq.hasActiveElement(this.containerId)) return 
-        if(e.ctrlKey || e.metaKey){
-            if(e.key === "k" && Array.from(this.rootSVG.querySelectorAll(".note, .chord, .rest, .mrest")).some(el => (el as Element).classList.contains("marked"))){
+    setHarmonyLabelHandlerKey = (function setHarmonyLabelHandler(e: KeyboardEvent) {
+        if (!cq.hasActiveElement(this.containerId)) return
+        var isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+        var ctrl = e.ctrlKey
+        if (isMac) {
+            ctrl = e.metaKey
+        }
+        if (ctrl) {
+            if (e.key === "k" && Array.from(this.rootSVG.querySelectorAll(".note, .chord, .rest, .mrest")).some(el => (el as Element).classList.contains("marked"))) {
                 e.preventDefault()
                 this.harmonyLabelHandler(e)
             }
         }
-     }).bind(this)
+    }).bind(this)
 
     // HARMONY LABELS
 
     /**
      * Open Inputbox for (first) selected Note
      */
-    harmonyLabelHandler(e: Event){
+    harmonyLabelHandler(e: Event) {
         var nextNote = this.rootSVG.querySelector(".note.marked, .chord.marked")
-        if(nextNote === null){return}
+        if (nextNote === null) { return }
         var nextNoteBBox = nextNote.getBoundingClientRect()
         var staffBBox = nextNote.closest(".staff").getBoundingClientRect()
 
@@ -164,32 +171,32 @@ class LabelHandler implements Handler{
         var ptStaffWidth = Math.abs(ptStaffRB.x - ptStaffLT.x)
         var ptStaffHeight = Math.abs(ptStaffRB.y - ptStaffLT.y)
 
-        var posx = ptNoteLT.x - ptNoteWidth/2 //nextNoteBBox.left - nextNoteBBox.width/2 - window.scrollX - rootBBox.x - root.scrollLeft
+        var posx = ptNoteLT.x - ptNoteWidth / 2 //nextNoteBBox.left - nextNoteBBox.width/2 - window.scrollX - rootBBox.x - root.scrollLeft
         var posy = ptStaffRB.y //staffBBox.bottom - window.scrollY - rootBBox.y - root.scrollLeft
-        
+
         var tstamp = meiOperation.getElementTimestampById(nextNote.id, this.currentMEI)
         var existsTstamp = Array.from(this.currentMEI.getElementById(nextNote.id).closest("measure").querySelectorAll("harm")).some(h => {
-            if(h.getAttribute("tstamp") !== null){
+            if (h.getAttribute("tstamp") !== null) {
                 return parseFloat(h.getAttribute("tstamp")) === tstamp
-            }else{
+            } else {
                 return false
             }
         })
         var hasStartId = this.currentMEI.querySelector("harm[startid=\"" + nextNote.id + "\"]") !== null
         var isEmptyLabelCanvas = !this.labelCanvas.hasChildNodes()
-        
-        if(!hasStartId && isEmptyLabelCanvas && !existsTstamp){
-            this.createInputBox(posx, posy, nextNote.id, "harm") 
-        }else if(!isEmptyLabelCanvas){
+
+        if (!hasStartId && isEmptyLabelCanvas && !existsTstamp) {
+            this.createInputBox(posx, posy, nextNote.id, "harm")
+        } else if (!isEmptyLabelCanvas) {
             this.closeModifyWindow()
         }
     }
 
-    
-    setLabel(labelString: string, bboxId: string): Label{
-        var className = labelClasses.filter(l => this.rootSVG.querySelector("#"+bboxId).classList.contains(l))[0]
+
+    setLabel(labelString: string, bboxId: string): Label {
+        var className = labelClasses.filter(l => this.rootSVG.querySelector("#" + bboxId).classList.contains(l))[0]
         var label: Label
-        switch(className){
+        switch (className) {
             case "note":
             case "chord":
             case "harm":
@@ -201,48 +208,48 @@ class LabelHandler implements Handler{
             default:
                 return
         }
-        if(this.labels.get(label.getElement().id) == undefined){
-            this.labels.set(label.getElement().id, label)       
+        if (this.labels.get(label.getElement().id) == undefined) {
+            this.labels.set(label.getElement().id, label)
         }
 
         return label
     }
 
-    activateHarmonyHighlight = (function highlightNextHarmonyHandler(e: MouseEvent){
-        if(e.type === "mouseleave" && !this.isGlobal){
+    activateHarmonyHighlight = (function highlightNextHarmonyHandler(e: MouseEvent) {
+        if (e.type === "mouseleave" && !this.isGlobal) {
             this.interactionOverlay.addEventListener("mousemove", this.activateHarmonyHighlight)
         }
-        if(!this.isGlobal){
+        if (!this.isGlobal) {
             this.highlightNextHarmony(e)
         }
     }).bind(this)
 
-    deactivateHarmonyHighlight = (function deactivateHighlight(e: MouseEvent){
+    deactivateHarmonyHighlight = (function deactivateHighlight(e: MouseEvent) {
         // document.querySelectorAll(".marked").forEach(m => {
         //     m.classList.remove("marked")
         // })
         this.interactionOverlay.removeEventListener("mousemove", this.activateHarmonyHighlight)
     }).bind(this)
 
-    highlightNextHarmony(e: MouseEvent, active = true){
-        if(!active){return}
+    highlightNextHarmony(e: MouseEvent, active = true) {
+        if (!active) { return }
 
         var pt = new DOMPoint(e.clientX, e.clientY)
         var rootMatrix = (this.labelCanvas as unknown as SVGGraphicsElement).getScreenCTM().inverse()
         pt = pt.matrixTransform(rootMatrix)
         var posx = pt.x
-        var posy = pt.y 
+        var posy = pt.y
 
         var nextNoteBBox = this.m2m.findScoreTarget(posx, posy)
-        if(nextNoteBBox == undefined){return}
+        if (nextNoteBBox == undefined) { return }
 
-        var el = this.rootSVG.querySelector("#"+nextNoteBBox.id)
-        
-        if(el.closest(".chord") !== null){
+        var el = this.rootSVG.querySelector("#" + nextNoteBBox.id)
+
+        if (el.closest(".chord") !== null) {
             el = el.closest(".chord")
         }
-        
-        if(!el.classList.contains("marked")){
+
+        if (!el.classList.contains("marked")) {
             this.rootSVG.querySelectorAll(".marked").forEach(m => {
                 m.classList.remove("marked")
                 this.interactionOverlay.querySelector("[refId=" + m.id + "]")?.classList.remove("marked")
@@ -252,10 +259,11 @@ class LabelHandler implements Handler{
     }
 
 
-    modifyLabelHandler = (function modifyLabelHandler(e: MouseEvent){
+    modifyLabelHandler = (function modifyLabelHandler(e: MouseEvent) {
+        e.stopImmediatePropagation()
         this.rootSVG.querySelectorAll(".marked").forEach(m => {
             m.classList.remove("marked")
-            this.interactionOverlay.querySelector("*[refId=" + m.id +  "]")?.classList.remove("marked")
+            this.interactionOverlay.querySelector("*[refId=" + m.id + "]")?.classList.remove("marked")
         })
         this.modifyLabel(e)
     }).bind(this)
@@ -266,12 +274,12 @@ class LabelHandler implements Handler{
      * @param e 
      * @returns 
      */
-    modifyLabel(e: MouseEvent){
+    modifyLabel(e: MouseEvent) {
         this.closeModifyWindow()
         var target = e.target as Element
-        if(target.id === ""){
+        if (target.id === "") {
             var refId = target.closest("[refId]")?.getAttribute("refId")
-            if(refId === null) return
+            if (refId === null) return
             target = this.rootSVG.querySelector("#" + refId)?.closest(".harm")
         }
         target = target.closest(labelSelectors)
@@ -282,33 +290,43 @@ class LabelHandler implements Handler{
         var rootMatrix = (this.labelCanvas as unknown as SVGGraphicsElement).getScreenCTM().inverse()
         pt = pt.matrixTransform(rootMatrix)
 
-        var posx = pt.x //targetBBox.x - window.scrollX - rootBBox.left - root.scrollLeft //coordinates.adjustToPage(e.pageX, "x")
-        var posy = pt.y //targetBBox.y - window.scrollY - rootBBox.top - root.scrollTop //coordinates.adjustToPage(e.pageY, "y")
+        var posx = pt.x - 5 //targetBBox.x - window.scrollX - rootBBox.left - root.scrollLeft //coordinates.adjustToPage(e.pageX, "x")
+        var posy = pt.y - 5  //targetBBox.y - window.scrollY - rootBBox.top - root.scrollTop //coordinates.adjustToPage(e.pageY, "y")
 
 
         // prevent double input boxes for same Element
         this.elementId = target.id
-        if(this.container.querySelector("*[refElementId=\"" + target.id + "\"]") !== null){
+        if (this.container.querySelector("*[refElementId=\"" + target.id + "\"]") !== null) {
             return
         }
-        var className = labelClasses.filter(l =>  target.classList.contains(l))[0] //assume only one output, therefore alway return idx 0  
+        var className = labelClasses.filter(l => target.classList.contains(l))[0] //assume only one output, therefore alway return idx 0  
         this.createInputBox(posx, posy, target.id, className)
     }
 
-    submitLabelHandler = (function submitHandler(e: KeyboardEvent){
-        if(!cq.hasActiveElement(this.containerId)) return 
-        if(e.key === "Enter" && this.labelCanvas.hasChildNodes()){
+    submitLabelHandler = (function submitHandler(e: KeyboardEvent) {
+        if (!cq.hasActiveElement(this.containerId)) return
+        if (e.key === "Enter" && this.labelCanvas.hasChildNodes()) {
             this.submitLabel()
         }
     }).bind(this)
 
+    typeLabelHandler = function (e: KeyboardEvent) {
+        if (!cq.hasActiveElement(this.containerId)) return
+        var t = (e.target as HTMLElement)
+        var parent = t.parentElement
+        var tWidth = t.getBoundingClientRect().width.toString()
+        var tHeigth = t.getBoundingClientRect().height.toString()
+        parent.setAttribute("width", tWidth)
+        parent.setAttribute("height", tHeigth)
+    }.bind(this)
 
-    closeModifyWindowHandler = (function closeModifyWindow(e: Event){
-        if(e instanceof KeyboardEvent){
-            if(e.key === "Escape"){
+
+    closeModifyWindowHandler = (function closeModifyWindow(e: Event) {
+        if (e instanceof KeyboardEvent) {
+            if (e.key === "Escape") {
                 this.closeModifyWindow()
             }
-        }else if(e instanceof MouseEvent && (e.target as HTMLElement).id === c._ROOTSVGID_){
+        } else if (e instanceof MouseEvent && !(e.target as HTMLElement).classList.contains("labelFO")) {
             this.closeModifyWindow()
         }
     }).bind(this)
@@ -316,30 +334,30 @@ class LabelHandler implements Handler{
     /**
      * Close the modifier Window and make the hidden Element visible again
      */
-    closeModifyWindow(){
+    closeModifyWindow() {
         Array.from(this.labelCanvas.children).forEach(c => {
             c.remove()
         })
         // clean MEI from empty harm Elements
         this.currentMEI.querySelectorAll(labelClasses.join(",")).forEach(h => {
-            if(h.id === "") return
-            this.container.querySelector("#" + h.id)?.setAttribute("visibility", "visible")            
+            if (h.id === "") return
+            this.container.querySelector("#" + h.id)?.setAttribute("visibility", "visible")
         })
     }
-        
-    submitLabel(){
+
+    submitLabel() {
         var labelDiv = this.labelCanvas.getElementsByClassName("labelDiv")[0]
         var text = labelDiv.textContent
         var refElementClass = labelClasses.filter(l => this.container.querySelector("#" + labelDiv.closest("g").getAttribute("refElementId")).classList.contains(l))[0] // assume only one result
         var label = this.labels.get(labelDiv.closest("g").getAttribute("refElementId"))
-        if(refElementClass === "harm"){ // change existing harm
+        if (refElementClass === "harm") { // change existing harm
             let harmLabel = label as HarmonyLabel
             harmLabel.modifyLabel(text)
             //this.currentMEI.getElementById(harmLabel.getElement().id).replaceWith(harmLabel.getElement())
-        }else if(["note", "chord"].some(cn => refElementClass === cn )){ //create new harm
+        } else if (["note", "chord"].some(cn => refElementClass === cn)) { //create new harm
             let harmLabel = this.setLabel(labelDiv.textContent, labelDiv.closest("g").getAttribute("refElementId")) as HarmonyLabel
             this.currentMEI.getElementById(harmLabel.getStartId()).closest("measure").append(harmLabel.getElement())
-        }else if(refElementClass === "tempo"){ // change existing tempo
+        } else if (refElementClass === "tempo") { // change existing tempo
             var tempoLabel = label as TempoLabel
             tempoLabel.modifyLabel(text)
         }
@@ -352,7 +370,7 @@ class LabelHandler implements Handler{
         })
     }
 
-    createInputBox(posx: number, posy: number, targetId: string, targetClass: string){
+    createInputBox(posx: number, posy: number, targetId: string, targetClass: string) {
         var textGroup = document.createElementNS(c._SVGNS_, "g")
         textGroup.setAttribute("id", uuidv4())
         textGroup.setAttribute("refElementId", targetId)
@@ -364,18 +382,18 @@ class LabelHandler implements Handler{
         textForeignObject.classList.add("labelFO")
         var textDiv = document.createElement("div")
         textDiv.setAttribute("contenteditable", "true")
-        
-        switch(targetClass){
+
+        switch (targetClass) {
             case "harm":
                 textDiv.textContent = this.labels.get(targetId)?.getInput() || ""
                 break;
             case "tempo":
-                textDiv.textContent = Array.from(this.container.querySelector("#" + targetId).querySelectorAll(".text")).filter(el => /\d+/.test(el.textContent))[0].textContent.match(/\d+/).join("") || ""       
+                textDiv.textContent = Array.from(this.container.querySelector("#" + targetId).querySelectorAll(".text")).filter(el => /\d+/.test(el.textContent))[0].textContent.match(/\d+/).join("") || ""
                 break;
             default:
                 return
         }
-        
+
         textDiv.classList.add("labelDiv")
         text.append(textForeignObject)
 
@@ -388,8 +406,8 @@ class LabelHandler implements Handler{
 
         textForeignObject.setAttribute("x", "0")
         textForeignObject.setAttribute("y", "0")
-        textForeignObject.setAttribute("height", (textDiv.clientHeight + 2*rectPadding).toString())
-        textForeignObject.setAttribute("width", (100+2*rectPadding).toString())
+        textForeignObject.setAttribute("height", (textDiv.clientHeight + 2 * rectPadding).toString())
+        textForeignObject.setAttribute("width", (textDiv.clientHeight + 2 * rectPadding).toString())
 
         this.labelCanvas.appendChild(textGroup)
         textGroup.appendChild(text)
@@ -397,34 +415,35 @@ class LabelHandler implements Handler{
 
         // Special Listeners while Editing Harmonies
         var that = this
-        textDiv.addEventListener("focus", function(){
+        textDiv.addEventListener("focus", function () {
             that.removeListeners()
             that.musicPlayer.removePlayListener()
         })
 
-        textDiv.addEventListener("blur", function(){
+        textDiv.addEventListener("blur", function () {
             that.setListeners()
             that.musicPlayer.setPlayListener()
         })
 
         textDiv.addEventListener("keydown", this.submitLabelHandler)
+        textDiv.addEventListener("keydown", this.typeLabelHandler)
 
         textDiv.focus()
     }
 
-    getTimestamp(note: Element){
+    getTimestamp(note: Element) {
         var layer = note.closest("layer")
         var elements = Array.from(layer.querySelectorAll("*[dur]"))
         elements = elements.filter((v, i) => i <= elements.indexOf(note))
         var tstamp: number
         elements.forEach(e => {
             var dur = parseInt(e.getAttribute("dur"))
-            tstamp += 4/dur
+            tstamp += 4 / dur
             var dots = e.getAttribute("dots")
             var add = dur
-            if(dots !== null){
-                for(var i = 0; i < parseInt(dots) ; i++){
-                    add = add/2
+            if (dots !== null) {
+                for (var i = 0; i < parseInt(dots); i++) {
+                    add = add / 2
                     tstamp += add
                 }
             }
@@ -432,7 +451,8 @@ class LabelHandler implements Handler{
         return tstamp
     }
 
-    reset(){
+    reset() {
+        this.setContainerId(this.containerId)
         this.addCanvas()
         this.initLabels()
         this.removeListeners()
@@ -440,36 +460,36 @@ class LabelHandler implements Handler{
         return this
     }
 
-    setM2M(m2m: Mouse2MEI){
+    setM2M(m2m: Mouse2MEI) {
         this.m2m = m2m
         return this
     }
 
-    setCurrentMEI(mei: Document){
+    setCurrentMEI(mei: Document) {
         this.currentMEI = mei
         return this
     }
 
-    setMusicPlayer(musicPlayer: MusicPlayer){
+    setMusicPlayer(musicPlayer: MusicPlayer) {
         this.musicPlayer = musicPlayer
         return this
     }
 
-    setGlobal(global: boolean){
+    setGlobal(global: boolean) {
         this.isGlobal = global
         return this
     }
 
-    getGlobal(){
+    getGlobal() {
         return this.isGlobal
     }
 
-    setLoadDataCallback(loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>){
+    setLoadDataCallback(loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>) {
         this.loadDataCallback = loadDataCallback
         return this
-      }
+    }
 
-    setContainerId(id: string){
+    setContainerId(id: string) {
         this.containerId = id
         this.container = document.getElementById(id)
         this.rootSVG = cq.getRootSVG(id)
