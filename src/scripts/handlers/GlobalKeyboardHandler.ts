@@ -163,7 +163,6 @@ class GlobalKeyboardHandler implements Handler {
             })
         }
     }
-
     resetHandler(e: KeyboardEvent) {
         if (!this.hasContainerFocus()) return
         e.preventDefault()

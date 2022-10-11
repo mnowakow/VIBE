@@ -172,10 +172,10 @@ text{
     display: none;
 }
 
-#fileSelectGroup{
-  position: absolute;
+/* #fileSelectGroup{
+  position: unset;
   right: 0;
-}
+} */
 
 #importFile{
     display: none;
@@ -262,6 +262,10 @@ text{
 
 .list-group{
     display: block;
+}
+
+#btnToolbar{
+    display: flex;
 }
 
 .btn-toolbar:not(:empty){
@@ -525,4 +529,8 @@ text{
     font-size: xx-large;
     color:crimson;
     text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+}
+
+#pauseNote{
+    display: none;
 }

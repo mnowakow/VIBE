@@ -315,6 +315,10 @@ export class Mouse2MEI {
                     diffNote = tempDiff;
                     currentNearestNote = bb;
                     isLeftOfNote = zerocrossing <= 0 ? true : false;
+                    if(this.interactionOverlay.querySelector("#" + bb.id)?.classList.contains("rest")){
+                        isLeftOfNote = !isLeftOfNote
+                    }
+                        
                     //isRightOfNote = tempDiff > 0 ? true : false;
                 }
             })

@@ -619,7 +619,7 @@ class Toolbar {
             })
             if (!target.classList.contains(selectedFlag)) {
                 target.classList.add(selectedFlag)
-            }else if(target.parentElement.id === "modGroup" && target.classList.contains(selectedFlag)){
+            }else if(["modGroup", "dotGroup", "chordGroupKM"].some(id => id === target.parentElement.id) && target.classList.contains(selectedFlag)){
                 target.classList.remove(selectedFlag)
             }
 

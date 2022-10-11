@@ -368,7 +368,8 @@ class ScoreGraph {
      * @returns 
      */
     nextClass(classNames: string[], direction: string){
-        var currentId = this.currentNode.getId()
+        var currentId = this.currentNode?.getId()
+        if([null, undefined].some(id => id == currentId)) return 
         var nextIsNull = false
         do{
             switch(direction){

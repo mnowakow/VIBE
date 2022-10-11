@@ -111,7 +111,7 @@ class KeyModeHandler implements Handler{
           this.m2m.update();
           this.resetListeners()
           this.scoreGraph.setCurrentNodeById(newNote.chordElement.id)
-          this.cursor.definePosById(this.scoreGraph.getCurrentNode().getId())
+          this.cursor.definePosById(this.scoreGraph.getCurrentNode()?.getId())
         })
       }
 
