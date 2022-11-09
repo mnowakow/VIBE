@@ -40,15 +40,17 @@ class Annotations implements Handler{
         this.rootBBox = this.rootSVG.getBoundingClientRect()
         var rootWidth = this.rootBBox.width.toString()
         var rootHeigth = this.rootBBox.height.toString()
+        var vb = this.rootSVG.getAttribute("viewBox")
         
         if(this.annotationCanvas == undefined){
             this.annotationCanvas = document.createElementNS(c._SVGNS_, "svg")
             this.annotationCanvas.setAttribute("id", "annotationCanvas")
             this.annotationCanvas.classList.add("canvas")
-            this.annotationCanvas.classList.add("back")
-            this.annotationCanvas.setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))
+            //this.annotationCanvas.classList.add("back")
+            //this.annotationCanvas.setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))
+            
         }
-        
+        this.annotationCanvas.setAttribute("viewBox", vb)
         this.interactionOverlay = cq.getInteractOverlay(this.containerId)
         if(this.annotationCanvas.classList.contains("front")){
             this.interactionOverlay.insertBefore(this.annotationCanvas, this.interactionOverlay.lastChild.nextSibling)
@@ -58,7 +60,7 @@ class Annotations implements Handler{
     }
 
     setMenuClickHandler(){
-       this.container.querySelector("#activateAnnot").addEventListener("click", this.clickHandler)
+       this.container.querySelector("#activateAnnot")?.addEventListener("click", this.clickHandler)
         return this
     }
 
@@ -129,6 +131,7 @@ class Annotations implements Handler{
         this.setMenuClickHandler()
         this.interactionOverlay.removeEventListener("dblclick", this.createAnnotationHandler)
         this.interactionOverlay.querySelectorAll(".annotDiv").forEach(ad => {
+            ad.closest("svg")?.classList.remove("selected")
             ad.setAttribute("contenteditable", "false")
             ad.removeEventListener("click", this.selectHandler)
             ad.removeEventListener("dblclick", this.activateEditHandler)
@@ -234,7 +237,8 @@ class Annotations implements Handler{
                 break;
         }
 
-        var pt = coordinates.transformToDOMMatrixCoordinates(e.clientX, e.clientY, this.interactionOverlay) //new DOMPoint(e.clientX, e.clientY)
+        //var pt = coordinates.transformToDOMMatrixCoordinates(e.clientX, e.clientY, this.interactionOverlay) //new DOMPoint(e.clientX, e.clientY)
+        var pt = coordinates.transformToDOMMatrixCoordinates(e.clientX, e.clientY, cq.getInteractOverlay(this.containerId))
         //var rootMatrix = (this.interactionOverlay as unknown as SVGGraphicsElement).getScreenCTM().inverse()
         //rootMatrix = (this.annotationCanvas as unknown as SVGGraphicsElement).getScreenCTM().inverse()
 
@@ -270,8 +274,8 @@ class Annotations implements Handler{
 
         textForeignObject.setAttribute("x", (posx + rectPadding).toString())
         textForeignObject.setAttribute("y", posy.toString())
-        textForeignObject.setAttribute("height", (100+ 2*rectPadding + 10 ).toString())
-        textForeignObject.setAttribute("width", (100+2*rectPadding+50).toString())
+        textForeignObject.setAttribute("height", (50+ 2*rectPadding + 10 ).toString())
+        textForeignObject.setAttribute("width", (50+2*rectPadding+50).toString())
 
         if(isLinked){
             var line = document.createElementNS(c._SVGNS_, "line")
@@ -332,7 +336,6 @@ class Annotations implements Handler{
      * @param e 
      */
     select(e: MouseEvent){
-        console.log(e)
         e.stopPropagation() //do not trigger other events
         var t = e.target as Element
         if(t.classList.contains("annotDiv") && t.closest(".annotLinkedText") !== null){ // only apply for linked texts
@@ -358,7 +361,7 @@ class Annotations implements Handler{
             //this.AnnotationLineHandler.initDragRects()
         }
 
-        t.classList?.add("selected")
+        t?.closest("svg")?.classList?.add("selected")
         this.annotationChangeHandler.resetListeners()
     }
 
@@ -389,12 +392,13 @@ class Annotations implements Handler{
     deleteHandler = (function deleteHandler(e: KeyboardEvent){
         if(!cq.hasActiveElement(this.containerId)){return}
         var isValidKey = ["Delete", "Backspace"].some(code => e.code === code)
-        var isInAnnotMode = this.container.classList.contains("annotMode")
+        //var isInAnnotMode = this.container.classList.contains("annotMode")
         var hasEditableElement = this.interactionOverlay.querySelectorAll(".selected [contenteditable=true]").length > 0
         var listHasFocus = Array.from(this.container.querySelectorAll("#annotList > *")).some(le => le === document.activeElement)
 
-        if(isValidKey && isInAnnotMode && !hasEditableElement && !listHasFocus){
-            this.interactionOverlay.querySelectorAll(".selected").forEach(el => {
+        //if(isValidKey && isInAnnotMode && !hasEditableElement && !listHasFocus){
+        if(isValidKey && !hasEditableElement && !listHasFocus){
+            this.interactionOverlay.querySelectorAll("#annotationCanvas .selected").forEach(el => {
                 if(el.closest("g") !== null){
                     el.closest("g").remove()
                 }else{
@@ -431,8 +435,8 @@ class Annotations implements Handler{
      * Put annotationCanvas to Front for editing
      * @returns 
      */
-    setToFront(){
-        if( this.annotationCanvas.classList.contains("front")){return}
+    setToFront(): Annotations{
+        if( this.annotationCanvas.classList.contains("front")){return this}
         this.annotationCanvas.classList.remove("back")
         this.annotationCanvas.classList.add("front")
         this.interactionOverlay.insertBefore(this.getAnnotationCanvas(), this.interactionOverlay.lastChild.nextSibling)
@@ -452,14 +456,14 @@ class Annotations implements Handler{
      * @returns 
      */
     setToBack(){
-        if( this.annotationCanvas.classList.contains("back")){return}
-        this.annotationCanvas.classList.remove("front")
-        this.annotationCanvas.classList.add("back")
-        if((this.getAnnotationCanvas() !== (this.interactionOverlay.firstChild as SVGSVGElement) && this.getAnnotationCanvas() !== null)){
-            this.interactionOverlay.insertBefore(this.getAnnotationCanvas(), this.interactionOverlay.firstChild)
-        }
-        this.removeListeners()
-        this.container.classList.remove("annotMode")
+        // if( this.annotationCanvas.classList.contains("back")){return}
+        // this.annotationCanvas.classList.remove("front")
+        // this.annotationCanvas.classList.add("back")
+        // if((this.getAnnotationCanvas() !== (this.interactionOverlay.firstChild as SVGSVGElement) && this.getAnnotationCanvas() !== null)){
+        //     this.interactionOverlay.insertBefore(this.getAnnotationCanvas(), this.interactionOverlay.firstChild)
+        // }
+        // this.removeListeners()
+        // this.container.classList.remove("annotMode")
 
         return this
     }

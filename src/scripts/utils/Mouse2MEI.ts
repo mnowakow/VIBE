@@ -45,12 +45,15 @@ export class Mouse2MEI {
     }
 
 
+    /**
+     * Set Flags for current focused measure, staff, system and layer when mouse moves.
+     * @returns 
+     */
     setMouseEnterElementListeners() {
         var that = this;
         var mouseEventName = "mouseover"
         var enteredFlag = "lastEntered"
         var activeContainerFlag = "activeContainer"
-
         this.container.addEventListener("mouseenter", function (e) {
             Array.from(document.getElementsByClassName("vse-container")).forEach(ac => {
                 if (ac === that.container) {
@@ -87,6 +90,7 @@ export class Mouse2MEI {
                         s.classList.remove(enteredFlag)
                         that.getElementInRootSVG(s.getAttribute("refId")).classList.remove(enteredFlag)
                     })
+                    that.container.querySelectorAll(".onChord").forEach(oc => oc.classList.remove("onChord")) // reset onChord, so that only chords in the same staff are set
                     that.lastStaffMouseEnter.classList.add(enteredFlag)
                     that.getElementInRootSVG(that.lastStaffMouseEnter.getAttribute("refId")).classList.add(enteredFlag)
                 }

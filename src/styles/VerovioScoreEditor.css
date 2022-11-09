@@ -10,6 +10,10 @@
     src: url(../fonts/BravuraText.otf), format("opentype");
 }
 
+*{
+    font-size: small;
+}
+
 .dropdown button{
     height: 100%;
 }
@@ -23,12 +27,12 @@
 }
 
 body.waiting * {
-    cursor:wait !important;
+    cursor: wait !important;
 }
-
+/* 
 .textmode  * {
     cursor: text;
-}
+} */
 
 
 #scoreRects > :is(.notehead, .clef, .meterSig, .keySig, .rest, .harm, .manipulator, .slur, .tie):hover{
@@ -54,6 +58,16 @@ body.waiting * {
     z-index: 100;
 }
 
+/* This one is for Debugging. 
+Change fill-opacity and stroke-opacity to display boundsing boxes*/
+.debug #scoreRects *{
+    stroke-width: 1px;
+    stroke: black;
+    fill: gray;
+    fill-opacity: 0.1;
+    stroke-opacity: 1;
+}
+
 #scoreRects *{
     stroke-width: 1px;
     stroke: black;
@@ -61,6 +75,7 @@ body.waiting * {
     fill-opacity: 0;
     stroke-opacity: 0;
 }
+
 
 text{
     cursor: text;
@@ -109,7 +124,7 @@ text{
 
 .smufl{
     font-family: "BravuraText";
-    font-size: xx-large !important;
+    font-size: xx-large;
 }
 
 #playBtn{
@@ -132,15 +147,31 @@ text{
     background-position-x: center;
     background-position-y: center;
     outline: none;
-    background-size: 20% contain;
     font-family: Bravura;
+    font-size: small;
 }
 
-.btn:hover, .btn.selected {
+.btn-group-sm{
+    display: flex;
+}
+
+/* .btn:hover, .btn.selected {
     filter: invert();
     color: black;
     background-color: white;
-}
+} */
+
+.btn:hover{ 
+   background-color: lightgray;
+   color: #ffffff;
+   
+ }
+ 
+ .btn.selected {
+   background-color: black;
+   color: #ffffff;
+   
+ }
 
 #btnToolbar{
     top: 0px;
@@ -172,10 +203,15 @@ text{
     display: none;
 }
 
-/* #fileSelectGroup{
-  position: unset;
-  right: 0;
-} */
+#insertToggleDiv{
+    display: none;
+}
+
+#fileSelectGroup{
+  align-self: flex-end;
+  margin-left: auto;
+  display:flex
+}
 
 #importFile{
     display: none;
@@ -184,7 +220,6 @@ text{
 #sidebarContainer{
     position: absolute;
     left: 0;
-    /*z-index: 1;*/
     top: 0;
     height: 100%;
     border-color: black;
@@ -204,9 +239,9 @@ text{
     padding-left: 10px;
 }
 
-#sidebarContainer *{
+/* #sidebarContainer *{
     font-size: 10pt;
-}
+} */
 
 #sidebarContainer.closedSidebar{
     visibility: hidden;
@@ -215,12 +250,14 @@ text{
 
 #sidebarContainer.openSidebar{
     visibility: visible;
-    width: 20%;
+    width: 10%;
 }
 
 #sidebarContainer.openSidebar ~ div {
-    margin-left: 20%;
-    width: 80%;
+    margin-left: 10%;
+    width: 90%;
+    flex-wrap: wrap;
+    display: flex;
     transition: 0.5s;
 }
 
@@ -276,15 +313,15 @@ text{
 * ANNOTATIONS
 */
 
-
+/* 
 #annotationCanvas.back *{
    opacity: 0.5;
-}
+}*/
 
 #annotationCanvas.front *{
     opacity: 1;
- }
- 
+}
+
 .annotLinkedText .annotFO{
     background-color: rgba(255, 255, 153, 0.8);
     border-radius: 0px 10px 10px 10px;
@@ -369,6 +406,7 @@ text{
     border-width: 1;
     border-style: dashed;
 }
+
 
 [contentEditable=false]:empty:not(:focus):before{
     content:attr(data-text);
@@ -475,7 +513,7 @@ text{
     filter: invert();
 }
 
-.tooltiptext{
+/* .tooltiptext{
     width: 120px;
     background-color: #555;
     color: #fff;
@@ -509,12 +547,23 @@ text{
 .tooltiptext.show{
     visibility: visible;
     opacity: 1;
-}
+} */
 
-.debug{
-    fill: firebrick;
-    stroke: black;
-    stroke-width: 1px;
+.tooltip.show{
+    display: inline-block;
+    background: skyblue;
+    color: #643045;
+    font-weight: bold;
+    padding: 5px 10px;
+    font-size: 13px;
+    border-radius: 4px;
+    border-color: maroon;
+    display: block;
+    opacity: 1;
+  }
+
+.tooltip.hide{
+    display: none
 }
 
 

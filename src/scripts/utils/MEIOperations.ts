@@ -1343,7 +1343,7 @@ function reorganizeBeams(currentMEI : Document){
  * After manipulating elements in the score, some elements could be empty
  * @param currentMEI  
  */
- function removeEmptyElements(currentMEI : Document) {
+ function removeEmptyElements(currentMEI: Document) {
 
   Array.from(currentMEI .querySelectorAll("beam")).forEach(b => {
     if(b.childElementCount === 0){
@@ -1362,6 +1362,16 @@ function reorganizeBeams(currentMEI : Document){
       // b.remove()
       b.outerHTML = b.innerHTML
     }
+
+    // Avoids that unvalid rests will be displayed as double full notes
+    Array.from(currentMEI .querySelectorAll("rest")).forEach(r => {
+      if(r.getAttribute("dur") === "0" || r.getAttribute("dur") === null){
+        r.removeAttribute("dur")
+        r.removeAttribute("dots")
+        r.outerHTML = r.outerHTML.replace("rest>", "mRest>")
+      }
+    })
+
   })
 
   // allow no empty and rest-note element chord elements

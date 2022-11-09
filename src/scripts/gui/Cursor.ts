@@ -179,7 +179,7 @@ class Cursor{
         var ptHeight = ptRB.y - ptLT.y
 
         var drawChordRect: Boolean
-        if(this.container.querySelector("#chordButton").classList.contains("selected")){
+        if(this.container.querySelector("#chordButton")?.classList.contains("selected")){
             drawChordRect = true
         }else{
             drawChordRect = false

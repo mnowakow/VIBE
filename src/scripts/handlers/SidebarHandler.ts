@@ -7,6 +7,7 @@ import * as meiConverter from "../utils/MEIConverter"
 import * as meiOperation from "../utils/MEIOperations"
 import * as coordinates from "../utils/coordinates"
 import * as cq from "../utils/convenienceQueries"
+import MeiTemplate from "../assets/mei_template"
 
 /**
  * Handles all Events when interacting with the sidebar.
@@ -130,7 +131,8 @@ class SidebarHandler implements Handler{
     makeScoreElementsClickable(){
         var that = this
         // Clefs are clickable and will be filled red (see css)
-        this.interactionOverlay.querySelectorAll(".clef, .keySig, .meterSig").forEach(c => {
+        cq.getInteractOverlay(this.containerId).querySelectorAll(".clef, .keySig, .meterSig").forEach(c => {
+        //this.interactionOverlay.querySelectorAll(".clef, .keySig, .meterSig").forEach(c => {
         //this.interactionOverlay.querySelectorAll("*").forEach(c => {
             c.addEventListener("click", function(e){
                 if(c.classList.contains("marked")){
@@ -202,21 +204,40 @@ class SidebarHandler implements Handler{
         var markedTimes = Array.from(this.rootSVG.querySelectorAll(".meterSig.marked"))
         var reload = false
         markedTimes.forEach(mt => {
+            var meiMt = this.currentMEI.getElementById(mt.id)
             var isInStaffDef = this.currentMEI.querySelector("#" + mt.id) === null
             if(isInStaffDef){
-                var rowNum = parseInt(mt.closest(".staff").getAttribute("n")) - 1
-                var targetMeterSigDef = this.currentMEI.querySelectorAll("staffDef")[rowNum]
-                if(targetMeterSigDef.getAttribute("meter.count") !== count && changeCount){
-                    targetMeterSigDef.setAttribute("meter.count", count)
-                    reload = true
-                }
-                if(targetMeterSigDef.getAttribute("meter.unit") !== unit && changeUnit){
-                    targetMeterSigDef.setAttribute("meter.unit", unit)
-                    reload = true
-                }
+                //var myRownum = parseInt(mt.closest(".staff").getAttribute("n")) - 1
+                //var rowNums = new Array()
+                this.currentMEI.querySelector("measure").querySelectorAll("staff").forEach(s => {
+                    var rowNum = parseInt(s.getAttribute("n")) -1
+                    var targetMeterSigDef = this.currentMEI.querySelectorAll("staffDef")[rowNum]
+                    if(targetMeterSigDef.getAttribute("meter.count") !== count && changeCount){
+                        targetMeterSigDef.setAttribute("meter.count", count)
+                        reload = true
+                    }
+                    if(targetMeterSigDef.getAttribute("meter.unit") !== unit && changeUnit){
+                        targetMeterSigDef.setAttribute("meter.unit", unit)
+                        reload = true
+                    }
+                })
             }else{
                 this.currentMEI.querySelector("#" + mt.id).setAttribute("count", count)
                 this.currentMEI.querySelector("#" + mt.id).setAttribute("unit", unit)
+                var siblingLayers = meiMt.closest("measure")?.querySelectorAll("layer")
+                var myLayer = meiMt.closest("layer")
+                siblingLayers.forEach(sl => {
+                    if(sl.id !== myLayer.id){
+                        var ms = sl.querySelector("meterSig")
+                        if(ms === null){
+                            ms = new MeiTemplate().createMeterSig(count, unit) as Element
+                            sl.firstElementChild.prepend(ms)
+                        }else{
+                            ms.setAttribute("count", count)
+                            ms.setAttribute("unit", unit)
+                        }
+                    }
+                })
                 reload = true
             }
         })

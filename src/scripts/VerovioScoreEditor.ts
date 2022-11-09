@@ -5,7 +5,6 @@ import InsertHandler from './handlers/InsertModeHandler';
 import { Mouse2MEI } from './utils/Mouse2MEI';
 import * as dc from './utils/DOMCreator'
 import Toolbar from './gui/Toolbar'
-import { disconnect } from 'tone';
 
 /**
  * Main Class for the VerovioScoreEditor
@@ -109,7 +108,7 @@ class VerovioScoreEditor{
      */
     initGUI(): Promise<void>{
         return new Promise((resolve): void => {
-            var btnGrpClass = "btn-group me-2"
+            var btnGrpClass = "btn-group-sm me-2"
             // MAIN/ Permanent TOOLBAR
             // parentElement for dropdown
             this.container.append(dc.makeNewDiv("handlerGroup", btnGrpClass, {role: "group"})) //"me-2 h-100"))
@@ -130,7 +129,7 @@ class VerovioScoreEditor{
             this.container.append(dc.makeNewDiv("sideBarGroup", btnGrpClass, {role: "group"}))
 
             //parentElement for playback
-            this.container.append(dc.makeNewDiv("soundGroup", btnGrpClass, {role: "goup"}))
+            this.container.append(dc.makeNewDiv("soundGroup", btnGrpClass, {role: "group"}))
 
             //parentElement for fileselect group
             this.container.append(dc.makeNewDiv("fileSelectGroup", btnGrpClass, {role: "group"}))

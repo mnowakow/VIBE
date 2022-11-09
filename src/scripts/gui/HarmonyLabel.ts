@@ -50,7 +50,7 @@ class HarmonyLabel implements Label{
         
         this.element = this.currentMEI.createElement("harm")
         this.element.setAttribute("id", uuidv4())
-        this.element.setAttribute("place", "above")
+        this.element.setAttribute("place", "below")
         
         Array.from(this.element.children).forEach(c => {
             c.remove()
@@ -107,7 +107,7 @@ class HarmonyLabel implements Label{
     }
 
 
-    ////////////// GETTER/ SETTERT ////////////
+    ////////////// GETTER/ SETTER ////////////
     getElement(){
         return this.element
     }

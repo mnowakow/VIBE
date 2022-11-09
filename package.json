@@ -1,6 +1,6 @@
 {
     "name": "verovioscoreeditor",
-    "version": "1.2.14",
+    "version": "1.2.15",
     "main": "src/scripts/js/VerovioScoreEditor.js",
     "keywords": [],
     "author": "Matthias Nowakowski",
@@ -15,6 +15,7 @@
         "src/fonts/*"
     ],
     "dependencies": {
+        "@popperjs/core": "^2.11.6",
         "bootstrap": "^5.1.3",
         "d3": "^5.11.0",
         "interactjs": "^1.10.11",

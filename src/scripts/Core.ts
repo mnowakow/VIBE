@@ -21,6 +21,7 @@ import * as cq from "./utils/convenienceQueries"
 import * as coordinates from "./utils/coordinates"
 import * as ffbb from "./utils/firefoxBBoxes"
 import { ObjectFlags } from 'typescript';
+import TooltipHandler from './handlers/TooltipHandler';
 
 
 /**
@@ -43,6 +44,7 @@ class Core {
   private sidebarHandler: SidebarHandler
   private windowHandler: WindowHandler;
   private labelHandler: LabelHandler;
+  private tooltipHandler: TooltipHandler
   private modHandler: ModHandler;
   private currentMEI: string;
   private currentMEIDoc: Document
@@ -74,7 +76,6 @@ class Core {
 
     this.containerId = containerId
     this.container = document.getElementById(containerId)
-    this.verovioWrapper = new VerovioWrapper();
     this.undoMEIStacks = Array<string>();
     this.redoMEIStacks = new Array<string>();
     this.undoAnnotationStacks = new Array<Array<Element>>();
@@ -95,7 +96,7 @@ class Core {
    * Load data into the verovio toolkit and update the cache.
   */
   loadData(pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string): Promise<string> {
-
+    this.verovioWrapper = new VerovioWrapper();
     if (cq.getRootSVG(this.containerId) !== null) {
       this.svgFiller.cacheClasses()
       cq.getRootSVG(this.containerId).remove()
@@ -145,6 +146,7 @@ class Core {
 
       response = this.verovioWrapper.setMessage(message);
 
+
       svg = response.mei;
       svg = svg.replace("<svg", "<svg id=\"" + c._ROOTSVGID_ + "\"");
       try {
@@ -155,6 +157,12 @@ class Core {
       }
       this.svgFiller.distributeIds(this.container.querySelector("#rootSVG .definition-scale"))
       this.container.querySelector("#rootSVG").setAttribute("preserveAspectRatio", "xMidYMid meet")
+
+      /**
+       * some partial load things
+       */
+
+      this.currentMEIDoc
 
       var rootBBox = this.container.querySelector("#rootSVG").getBoundingClientRect()
       var rootWidth = rootBBox.width.toString()
@@ -249,6 +257,7 @@ class Core {
     this.sidebarHandler = this.sidebarHandler || new SidebarHandler()
     this.labelHandler = this.labelHandler || new LabelHandler(this.containerId)
     this.modHandler = this.modHandler || new ModHandler(this.containerId)
+    this.tooltipHandler = this.tooltipHandler || new TooltipHandler()
 
     this.dispatchFunctions()
   }
@@ -329,6 +338,12 @@ class Core {
       .setAnnotations(this.insertModeHandler.getAnnotations())
       .setInsertModeHandler(this.insertModeHandler)
       .resetListeners()
+
+    this.tooltipHandler
+      .setContainerId(this.containerId)
+      .removeListeners()
+      .setListeners()
+    
 
     if (this.doHideUI) {
       this.hideUI(this.hideOptions)
@@ -643,20 +658,6 @@ class Core {
             var that = this
             async function computeCoords() { // since order is not important, this block can be asynchronous
               return new Promise((resolve): void => {
-                // if(!sr.id.includes("bbox-") && sr.tagName.toLowerCase() === "g") return
-                // var parentsr: Element
-                // if(sr.tagName.toLowerCase() === "g"){
-                //   Array.from(sr.classList).forEach(c => {
-                //     var prefix = "bb"
-                //     if(c === "bounding-box") return
-                //     if(c.indexOf(prefix) === 0) return
-                //     sr.classList.add(prefix + c)
-                //     sr.classList.remove(c)
-                //   })
-                //   parentsr = sr.parentElement
-                // }else{
-                //   parentsr = sr
-                // }
                 var parentsr = sr
                 var g = document.createElementNS(c._SVGNS_, "g")
                 var refId: string = parentsr.id !== "" ? parentsr.id : parentsr.getAttribute("refId")

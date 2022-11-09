@@ -148,7 +148,7 @@ export function makeNewToggle(id: string, classNames: string, labelText: string,
     var input = <HTMLInputElement> makeNewInput(id, "checkBox", "btn-check")
     input.checked = true
     var label = document.createElement("label")
-    if(classNames.length > 0){
+    if(classNames?.length > 0){
         var classList = classNames.split(" ")
         classList.forEach(c =>  label.classList.add(c))
     }

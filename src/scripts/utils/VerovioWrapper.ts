@@ -13,7 +13,10 @@ export default class VerovioWrapper {
     constructor() {
       //@ts-ignore
       this.vrvToolkit = new verovio.toolkit() || null;
-      
+      var r = 1
+      if(this.isRetina()){
+        r = 2
+      }
       this.vrvToolkit.setOptions({
           // from: 'mei',
           footer: 'none',
@@ -25,12 +28,24 @@ export default class VerovioWrapper {
           //adjustPageWidth: 0,
           //adjustPageHeight: 0,
           noJustification: 1,
-          pageWidth: 1800,
+          pageWidth: (2500 / (window.devicePixelRatio / r)) / (screen.availHeight / window.innerWidth), // adjust size with window size
           svgRemoveXlink: true,
           svgViewBox: true, 
           //svgBoundingBoxes: true
           //pageHeight: 60000
       })
+    }
+
+    /**
+     * Detect, if retina display is used.
+     * This will be important to adjust the pagewith with the given zoom level
+     * @returns 
+     */
+    isRetina(){
+      if (window.matchMedia) {
+        var mq = window.matchMedia("only screen and (min--moz-device-pixel-ratio: 1.3), only screen and (-o-min-device-pixel-ratio: 2.6/2), only screen and (-webkit-min-device-pixel-ratio: 1.3), only screen  and (min-device-pixel-ratio: 1.3), only screen and (min-resolution: 1.3dppx)");
+        return (mq && mq.matches); 
+      }
     }
 
     setMessage(data: VerovioMessage): VerovioResponse{

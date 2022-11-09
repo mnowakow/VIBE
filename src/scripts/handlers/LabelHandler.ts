@@ -43,13 +43,15 @@ class LabelHandler implements Handler {
         this.rootBBox = this.interactionOverlay.getBoundingClientRect()
         var rootWidth = this.rootBBox.width.toString()
         var rootHeigth = this.rootBBox.height.toString()
+        var vb = this.interactionOverlay.getAttribute("viewBox")
 
         if (this.labelCanvas == undefined) {
             this.labelCanvas = document.createElementNS(c._SVGNS_, "svg")
             this.labelCanvas.setAttribute("id", "labelCanvas")
             this.labelCanvas.classList.add("canvas")
-            this.labelCanvas.setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))
+            //this.labelCanvas.setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))
         }
+        this.labelCanvas.setAttribute("viewBox", vb)
         this.interactionOverlay.insertBefore(this.labelCanvas, this.interactionOverlay.firstChild)
 
         return this
@@ -303,9 +305,13 @@ class LabelHandler implements Handler {
         this.createInputBox(posx, posy, target.id, className)
     }
 
+    /**
+     * Wrapper function for submitlabel()
+     */
     submitLabelHandler = (function submitHandler(e: KeyboardEvent) {
         if (!cq.hasActiveElement(this.containerId)) return
         if (e.key === "Enter" && this.labelCanvas.hasChildNodes()) {
+        //if (this.labelCanvas.hasChildNodes()) {
             this.submitLabel()
         }
     }).bind(this)
@@ -336,7 +342,7 @@ class LabelHandler implements Handler {
      */
     closeModifyWindow() {
         Array.from(this.labelCanvas.children).forEach(c => {
-            c.remove()
+            c?.remove()
         })
         // clean MEI from empty harm Elements
         this.currentMEI.querySelectorAll(labelClasses.join(",")).forEach(h => {
@@ -345,6 +351,9 @@ class LabelHandler implements Handler {
         })
     }
 
+    /**
+     * Save label information in current MEI
+     */
     submitLabel() {
         var labelDiv = this.labelCanvas.getElementsByClassName("labelDiv")[0]
         var text = labelDiv.textContent
@@ -421,8 +430,10 @@ class LabelHandler implements Handler {
         })
 
         textDiv.addEventListener("blur", function () {
+            textDiv.dispatchEvent(new KeyboardEvent("keydown", {"key": "Enter"})) // trigger submitLabel when bluring
             that.setListeners()
             that.musicPlayer.setPlayListener()
+             
         })
 
         textDiv.addEventListener("keydown", this.submitLabelHandler)

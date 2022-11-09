@@ -34,6 +34,11 @@ class ClickModeHandler implements Handler {
             }
         })
 
+        this.interactionOverlay.querySelectorAll("#manipulatorCanvas *, #annotationCanvas *").forEach(sr => {
+            sr.addEventListener("mouseover", this.hideCursor)
+            sr.addEventListener("mouseleave", this.showCursor)
+        })
+
         // Listener just for staves
         var staves = this.interactionOverlay.querySelectorAll(".staffLine")
         Array.from(staves).forEach(element => {

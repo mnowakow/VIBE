@@ -92,6 +92,7 @@ class ModHandler implements Handler{
     /**
      * Make slur or tie for 2 or more elements when tie button is clicked
      * Tie, only when there are two selected elemets which are the same pitch
+     * Delete otherwise
      * @param e 
      */
     connectNotes(e: MouseEvent){
@@ -99,9 +100,11 @@ class ModHandler implements Handler{
         markedElements = markedElements.filter(me => me.closest(".layer").getAttribute("n") === markedElements[0].closest(".layer").getAttribute("n"))
         if(markedElements.length <= 1){return}
         var makeSlur = markedElements.length > 2
-        if(!makeSlur && markedElements.length > 1){ // assert only 2 items
-            var leftMeiElement = this.currentMEI.getElementById(markedElements[0].id)
-            var rightMeiElement = this.currentMEI.getElementById(markedElements[1].id)
+        //if(!makeSlur && markedElements.length > 1){ // assert only 2 items
+            var leftId = markedElements[0].id
+            var rightId = markedElements.reverse()[0].id
+            var leftMeiElement = this.currentMEI.getElementById(leftId)
+            var rightMeiElement = this.currentMEI.getElementById(rightId)
             var leftpname = leftMeiElement.getAttribute("pname")
             var leftoct = leftMeiElement.getAttribute("oct")
             var leftAccid = leftMeiElement.getAttribute("accid") || leftMeiElement.getAttribute("accid.ges")
@@ -111,17 +114,29 @@ class ModHandler implements Handler{
             if(!(leftpname === rightpname && leftoct === rightoct && leftAccid === rightAccid)){
                 makeSlur = true
             }
+        //}
+        var connections = this.currentMEI.querySelectorAll("tie, slur")
+        var deleted = false
+        connections.forEach(c => {
+            var sid = c.getAttribute("startid").replace("#", "")
+            var eid = c.getAttribute("endid").replace("#", "")
+            if(sid === leftId &&  eid === rightId){
+                c.remove()
+                deleted = true
+            }
+        })
+       if(!deleted){
+            var tieElement: Element
+            if(makeSlur){
+                tieElement = this.currentMEI.createElementNS(c._MEINS_, "slur")
+            }else{
+                tieElement = this.currentMEI.createElementNS(c._MEINS_, "tie")
+            }
+            tieElement.setAttribute("startid", "#" + leftId)
+            tieElement.setAttribute("endid", "#" + rightId)
+            tieElement.setAttribute("id", uuidv4())
+            this.currentMEI.getElementById(leftId).closest("measure").append(tieElement)
         }
-        var tieElement: Element
-        if(makeSlur){
-            tieElement = this.currentMEI.createElementNS(c._MEINS_, "slur")
-        }else{
-            tieElement = this.currentMEI.createElementNS(c._MEINS_, "tie")
-        }
-        tieElement.setAttribute("startid", "#" + markedElements[0].id)
-        tieElement.setAttribute("endid", "#" + markedElements[markedElements.length-1].id)
-        tieElement.setAttribute("id", uuidv4())
-        this.currentMEI.getElementById(markedElements[0].id).closest("measure").append(tieElement)
         var mei = meiConverter.restoreXmlIdTags(this.currentMEI)
         this.loadDataCallback("", mei, false, c._TARGETDIVID_)
     }

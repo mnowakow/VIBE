@@ -10,6 +10,7 @@ interface Handler{
     setListeners(): void
     removeListeners(): void
     setListeners(): void
+    setContainerId(containerId): void
 }
 
 export default Handler;

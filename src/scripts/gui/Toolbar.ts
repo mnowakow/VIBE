@@ -1,13 +1,15 @@
 import * as dc from '../utils/DOMCreator'
 import * as customType from "../utils/Types"
-import { Dropdown, Collapse } from 'bootstrap'
+import { Dropdown, Collapse} from 'bootstrap'
+//import Toggle from  "bootstrap5-toggle"
 import interact from 'interactjs'
 import { constants as c } from '../constants'
 import * as meioperations from "../utils/MEIOperations"
 import * as cq from "../utils/convenienceQueries"
+import { isJSDocThisTag } from 'typescript'
 
 
-const buttonStyleDarkOutline = "btn btn-outline-dark btn-md"
+const buttonStyleDarkOutline = "btn btn-outline-dark btn-sm"
 const buttonStyleDark = "btn btn-dark btn-md"
 const smuflFont = "smufl"
 const alterBtn = "alterBtn"
@@ -254,7 +256,6 @@ class Toolbar {
             })
             annotList.appendChild(a)
         })
-
         this.sidebar.appendChild(annotList)
     }
 
@@ -266,6 +267,7 @@ class Toolbar {
     ).bind(this)
 
     private createButtonsMainToolbar() {
+        var that = this
         // Buttons können in eigenes package ausgelagert werden (Editor)
 
         var handlerDropdown = dc.makeNewDiv("insertDropdown", "dropdown-menu")
@@ -311,11 +313,47 @@ class Toolbar {
         this.fileSelectGroup.append(dc.makeNewInput("importFile", "file", ""))
         this.fileSelectGroup.append(dc.makeNewButton("Import File", "importFileBtn", buttonStyleDarkOutline))
         this.fileSelectGroup.append(dc.makeNewButton("Export MEI", "exportFileBtn", buttonStyleDarkOutline))
+        var showBBToggle = dc.makeNewToggle("showBB", buttonStyleDark, "BBoxes", "showBBDiv")
+        this.setToggleLogic(
+            showBBToggle,
+            function(){cq.getContainer(that.containerId).classList.add("debug")},
+            function(){cq.getContainer(that.containerId).classList.remove("debug")}
+        )
+        this.fileSelectGroup.append(showBBToggle)
+    }
+
+    /**
+     * 
+     * @param el element to set logic for
+     * @param callBackChecked additional code to execute when toggle is checked
+     * @param callBackUnchecked additional code to execute when toggle is unchecked
+     * @param switchPair pair of words to change between when toggled
+     */
+    setToggleLogic(el: Element, callbackChecked: () => void = null, callbackUnchecked: () => void = null, switchPair: Array<string> = new Array()){
+        if(switchPair.length > 2 || switchPair.length === 1){
+            throw new Error ("switchPair Array must have exaclty 2 strings")
+        }
+        el.addEventListener("click", function (e: MouseEvent) {
+            e.preventDefault()
+            var target = e.target as Element
+            if (target.tagName.toLowerCase() !== "label") return
+            var label = e.target as Element
+            var input = <HTMLInputElement>label.previousElementSibling
+            if (input.checked === true) {
+                if(switchPair.length > 0) label.textContent = switchPair[0]
+                input.checked = false
+                callbackUnchecked()
+            } else {
+                if(switchPair.length > 0) label.textContent = switchPair[1]
+                input.checked = true
+                callbackChecked()
+            }
+        })
     }
 
     createInsertSelect() {
         //InsertSelect DropdownMenu
-        this.insertSelectGroup = dc.makeNewDiv("insertGroup", "customGroup btn-group me-2 h-100", { role: "group" }) as HTMLElement
+        this.insertSelectGroup = dc.makeNewDiv("insertGroup", "customGroup btn-group-sm me-2 h-100", { role: "group" }) as HTMLElement
         var toggle = dc.makeNewToggle("insertToggle", buttonStyleDarkOutline, "Replace", "insertToggleDiv")
         toggle.addEventListener("click", function (e: MouseEvent) {
             e.preventDefault()
@@ -338,12 +376,12 @@ class Toolbar {
     createButtonsKeyMode() {
 
         //ChordGroup
-        this.chordGroupKM = dc.makeNewDiv("chordGroupKM", "customGroup btn-group me-2 h-100", { role: "group" }) as HTMLElement
+        this.chordGroupKM = dc.makeNewDiv("chordGroupKM", "customGroup btn-group-sm me-2 h-100", { role: "group" }) as HTMLElement
         this.chordGroupKM.append(dc.makeNewButton("CHORD", "chordButton", buttonStyleDarkOutline))
         this.chordGroupKM.addEventListener("click", this.exclusiveSelectHandler)
 
         //OctaveGroup
-        this.octaveGroupKM = dc.makeNewDiv("octaveGroupKM", "btn-group me-2 h-100", { role: "group" }) as HTMLElement
+        this.octaveGroupKM = dc.makeNewDiv("octaveGroupKM", "btn-group-sm me-2 h-100", { role: "group" }) as HTMLElement
         let oct = dc.makeNewButton("", "subkontraOct", buttonStyleDarkOutline)
         oct.innerHTML = "C" + "0".sub()
         this.octaveGroupKM.appendChild(oct)
@@ -387,7 +425,7 @@ class Toolbar {
     }
 
     createButtonsAnnotationMode() {
-        this.annotGroupKM = dc.makeNewDiv("annotGroupKM", "customGroup btn-group me-2 h-100", { role: "group" }) as HTMLElement
+        this.annotGroupKM = dc.makeNewDiv("annotGroupKM", "customGroup btn-group-sm me-2 h-100", { role: "group" }) as HTMLElement
         this.annotGroupKM.append(dc.makeNewButton("TEXT", "staticTextButton", buttonStyleDarkOutline))
         this.annotGroupKM.append(dc.makeNewButton("LINKED ANNOTATION", "linkedAnnotButton", buttonStyleDarkOutline + " selected"))
         this.annotGroupKM.append(dc.makeNewButton("HARMONY", "harmonyAnnotButton", buttonStyleDarkOutline))
@@ -434,6 +472,10 @@ class Toolbar {
         Array.from(cq.getContainer(this.containerId).querySelectorAll(".collapsed")).forEach(c => {
             new Collapse(c)
         })
+
+        // Array.from(cq.getContainer(this.containerId).querySelectorAll("*[type=\"checkbox\"][data-toggle=\"toggle\"]")).forEach(t => {
+        //     new Toggle(t)
+        // })
     }
 
     setListeners() {
@@ -538,7 +580,7 @@ class Toolbar {
 
         //document.getElementsByClassName("vse-container")[0].removeEventListener("click", this.closeHandlerMouse)
 
-        cq.getContainer(this.containerId).querySelectorAll(".btn-group button").forEach(el => {
+        cq.getContainer(this.containerId).querySelectorAll(".btn-group-sm button").forEach(el => {
             el.removeEventListener("click", this.exclusiveSelectHandler)
         })
 

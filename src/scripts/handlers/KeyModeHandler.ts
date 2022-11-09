@@ -147,7 +147,7 @@ class KeyModeHandler implements Handler{
     }
 
     var targetChord: Element
-    if(this.container.querySelector("#chordButton").classList.contains("selected")){
+    if(this.container.querySelector("#chordButton")?.classList.contains("selected")){
       targetChord = this.rootSVG.querySelector("#"+nearestNodeId)
       if(targetChord?.closest(".chord") !== null){
         targetChord = targetChord.closest(".chord")
@@ -206,7 +206,7 @@ class KeyModeHandler implements Handler{
   navigateCursor(direction: string){
    
     var container = document.getElementById(this.containerId)
-    var cbs = container.querySelector("#chordButton").classList.contains("selected")
+    var cbs = container.querySelector("#chordButton")?.classList.contains("selected")
     if(cbs){
       this.scoreGraph.nextClass(["chord", "note"], direction)
     }else{
@@ -347,7 +347,7 @@ class KeyModeHandler implements Handler{
   deleteByKey(key: string){
     var elementToDelete: Element
     var currNodeId: string
-    var isFocusedChord = this.container.querySelector("#chordButton").classList.contains("selected") ? true : false
+    var isFocusedChord = this.container.querySelector("#chordButton")?.classList.contains("selected") ? true : false
     if(isFocusedChord){key = "Backspace"}
     switch(key){
       case "Delete":

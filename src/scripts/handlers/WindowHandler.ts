@@ -25,13 +25,13 @@ class WindowHandler implements Handler{
 
     setListeners(){
         window.addEventListener("scroll", this.update)
-        window.addEventListener("resize", this.update)
+        //window.addEventListener("resize", this.update)
         window.addEventListener("resize", this.updateSVG)
         window.addEventListener("deviceorientation", this.update)
         document.querySelector("#"+ this.containerId + " #sidebarContainer").addEventListener("transitionend", this.update)
         document.querySelector("#"+ this.containerId + " #sidebarContainer").addEventListener("transitionend", this.updateSVG)
         this.rootSVG.addEventListener("scroll", this.update)
-        this.rootSVG.addEventListener("resize", this.update)
+        //this.rootSVG.addEventListener("resize", this.update)
         this.rootSVG.addEventListener("deviceorientation", this.update)
 
         document.addEventListener("fullscreenchange", this.update)
@@ -61,7 +61,7 @@ class WindowHandler implements Handler{
     update = (function update(e: Event){
         // special rule for transition events since so much with different propertynames are fired
         if(e instanceof TransitionEvent){ 
-            if(e.propertyName !== "width") return
+            if(!e.propertyName.includes("width")) return
         }
         var that = this
         window.clearTimeout(isScrolling)
@@ -78,9 +78,17 @@ class WindowHandler implements Handler{
      */
     updateSVG = (function updateSVG(e: Event){
         var t = e.target as HTMLElement
-        if(t.id === "sidebarContainer" && ((e as TransitionEvent).propertyName !== "width") || e.type === "resize"){
-            var mei = meiConverter.restoreXmlIdTags(this.currentMEI)
-            this.loadDataCallback("", mei, false, "svg_output")
+        var that = this
+        if(t.id === "sidebarContainer" && !((e as TransitionEvent).propertyName.includes("width"))){
+            // Timeout is needed to ensure, that transition has been completed and in eventphase 0
+            // Must be a slighty longer than transitiontime
+            setTimeout(function(){
+                var mei = meiConverter.restoreXmlIdTags(that.currentMEI)
+                that.loadDataCallback("", mei, false, "svg_output")
+            }, (e as TransitionEvent).elapsedTime * 1000 + 10)
+        }else if(e.type === "resize"){
+            var mei = meiConverter.restoreXmlIdTags(that.currentMEI)
+            that.loadDataCallback("", mei, false, "svg_output")
         }
     }).bind(this)
 
