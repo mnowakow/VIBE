@@ -27,7 +27,7 @@ class ModHandler implements Handler{
     private alterDDownButton: Element
     private alterDUpButton: Element
     private alterButtons: Array<Element>
-    private loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>;
+    private loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean) => Promise<string>;
     containerId: string;
     interactionOverlay: Element
     container: Element
@@ -138,7 +138,7 @@ class ModHandler implements Handler{
             this.currentMEI.getElementById(leftId).closest("measure").append(tieElement)
         }
         var mei = meiConverter.restoreXmlIdTags(this.currentMEI)
-        this.loadDataCallback("", mei, false, c._TARGETDIVID_)
+        this.loadDataCallback("", mei, false)
     }
 
     /**
@@ -210,7 +210,7 @@ class ModHandler implements Handler{
             
             var mei = meiConverter.restoreXmlIdTags(this.currentMEI)
             meiOperation.cleanUp(mei)
-            this.loadDataCallback("", mei, false, c._TARGETDIVID_)
+            this.loadDataCallback("", mei, false)
         }
     } 
 
@@ -252,7 +252,7 @@ class ModHandler implements Handler{
 
         var mei = meiConverter.restoreXmlIdTags(this.currentMEI)
         meiOperation.adjustAccids(mei)
-        this.loadDataCallback("", mei, false, c._TARGETDIVID_)
+        this.loadDataCallback("", mei, false)
     }
 
     /**
@@ -282,7 +282,7 @@ class ModHandler implements Handler{
         return this
     }
 
-    setLoadDataCallback(loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>){
+    setLoadDataCallback(loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean) => Promise<string>){
         this.loadDataCallback = loadDataCallback
         return this
     }

@@ -17,6 +17,8 @@ import { restoreXmlIdTags } from '../utils/MEIConverter';
 import ScoreManipulatorHandler from './ScoreManipulatorHandler';
 import { cleanUp } from '../utils/MEIOperations';
 import * as cq from "../utils/convenienceQueries"
+import MeasureMatrix from '../datastructures/MeasureMatrix';
+import { MidSideMerge } from 'tone';
 
 /**
  * Class that handles insert mode, events, and actions.
@@ -53,7 +55,7 @@ class InsertModeHandler implements Handler{
 
   private insertCallback: (newNote: NewNote, replace: Boolean) => Promise<any> 
   private deleteCallback: (notes: Array<Element>) => Promise<any>;
-  private loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>;
+  private loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean) => Promise<string>;
   
 
   constructor (containerId) {
@@ -61,17 +63,19 @@ class InsertModeHandler implements Handler{
     this.annotations = new Annotations(containerId)
   }
 
-  activateClickMode(clicked: Boolean = false){
-    if(this.keyMode || this.annotationMode || this.harmonyMode){
+  //activateClickMode(clicked: Boolean = false){
+  activateInsertMode(clicked: Boolean = false){
+    if(this.annotationMode || this.harmonyMode){
       this.insertDeactivate()
     }
     if(clicked){
       if(this.unselectMenuItem("clickInsert")){return}
     }
     this.container.classList.add("clickmode")
-    this.keyMode = false;
+    this.container.classList.add("textmode")
+    this.keyMode = true;
     this.clickInsertMode = true;
-    this.annotationMode = false;
+    this.annotationMode = false; 
     this.harmonyMode = false;
 
     this.phantomNoteHandler = new PhantomElementHandler(this.containerId)
@@ -87,34 +91,9 @@ class InsertModeHandler implements Handler{
       .setMusicPlayer(this.musicPlayer)
       .setPhantomCursor(this.phantomNoteHandler)
       .resetListeners()
-    // if(typeof this.selectionHandler !== "undefined"){
-    //   this.selectionHandler.removeListeners()
-    // }
-    this.deleteHandler.setListeners()
-  }
-
-  activateKeyMode(clicked = false){
-    if(this.clickInsertMode || this.annotationMode || this.harmonyMode){
-      this.insertDeactivate()
-    }
-    if(clicked){
-      if(this.unselectMenuItem("keyMode")){return}
-    }
-    this.container.classList.add("textmode")
-    this.keyMode = true;
-    this.clickInsertMode = false;
-    this.annotationMode = false;
-    this.harmonyMode = false;
-
-    var cursor = null
-    if(this.keyModeHandler != undefined){
-      cursor = this.keyModeHandler.cursor
-    }
+    
+    
     this.keyModeHandler = this.keyModeHandler || new KeyModeHandler(this.containerId)
-    var currNodeId: string
-    if(this.keyModeHandler.scoreGraph?.getCurrentNode() != undefined){
-      currNodeId = this.keyModeHandler.scoreGraph.getCurrentNode().getId()
-    } 
     this.keyModeHandler
       .setContainerId(this.containerId)
       .setInsertCallback(this.insertCallback)
@@ -124,20 +103,57 @@ class InsertModeHandler implements Handler{
       .setMusicPlayer(this.musicPlayer)
       .resetListeners()
 
-    if(currNodeId !=  undefined){
-      this.keyModeHandler.setCurrentNodeScoreGraph(currNodeId)
-    }
-    // if(typeof this.selectionHandler !== "undefined"){
-    //   this.selectionHandler.removeListeners()
-    // }
     this.deleteHandler.setListeners()
   }
+
+  // activateKeyMode(clicked = false){
+  //   if(this.annotationMode || this.harmonyMode){
+  //     this.insertDeactivate()
+  //   }
+  //   if(clicked){
+  //     if(this.unselectMenuItem("keyMode")){return}
+  //   }
+  //   this.container.classList.add("textmode")
+  //   this.keyMode = true;
+  //   this.clickInsertMode = false;
+  //   this.annotationMode = false;
+  //   this.harmonyMode = false;
+
+  //   var cursor = null
+  //   if(this.keyModeHandler != undefined){
+  //     cursor = this.keyModeHandler.cursor
+  //   }
+  //   this.keyModeHandler = this.keyModeHandler || new KeyModeHandler(this.containerId)
+  //   var currNodeId: string
+  //   if(this.keyModeHandler.scoreGraph?.getCurrentNode() != undefined){
+  //     currNodeId = this.keyModeHandler.scoreGraph.getCurrentNode().getId()
+  //   } 
+  //   this.keyModeHandler
+  //     .setContainerId(this.containerId)
+  //     .setInsertCallback(this.insertCallback)
+  //     .setDeleteCallback(this.deleteCallback)
+  //     .setScoreGraph(this.scoreGraph)
+  //     .setM2M(this.m2m)
+  //     .setMusicPlayer(this.musicPlayer)
+  //     .resetListeners()
+
+  //   if(currNodeId !=  undefined){
+  //     this.keyModeHandler.setCurrentNodeScoreGraph(currNodeId)
+  //   }
+  //   // if(typeof this.selectionHandler !== "undefined"){
+  //   //   this.selectionHandler.removeListeners()
+  //   // }
+  //   this.deleteHandler.setListeners()
+  // }
 
   activateSelectionMode(){
     //this.insertDeactivate()
     
     this.selectionHandler = new SelectionHandler(this.containerId)
-    this.selectionHandler.setM2M(this.m2m)
+    this.selectionHandler
+      .setM2M(this.m2m)
+      .setScoreGraph(this.scoreGraph)
+      .resetListeners()
     
     //this.selectionHandler.setHarmonyHandler(this.harmonyHandler)
     //this.deleteHandler.setListeners()
@@ -286,10 +302,12 @@ class InsertModeHandler implements Handler{
           e.preventDefault()
           switch(this.id){
               case "clickInsert":
-                  that.activateClickMode(true);
+                  //that.activateClickMode(true);
+                  that.activateInsertMode(true)
                   break;
               case "keyMode":
-                 that.activateKeyMode(true);
+                 //that.activateKeyMode(true);
+                 that.activateInsertMode(true)
                   break;
               case "activateAnnot":
                 that.activateAnnotationMode(true);
@@ -340,7 +358,7 @@ class InsertModeHandler implements Handler{
         if(that.m2m.setMarkedNoteDurations(dur)){
           cleanUp(that.m2m.getCurrentMei())
           var mei = restoreXmlIdTags(that.m2m.getCurrentMei())
-          that.loadDataCallback("", mei, false, c._TARGETDIVID_)
+          that.loadDataCallback("", mei, false)
         }
       })
     })
@@ -361,7 +379,7 @@ class InsertModeHandler implements Handler{
         if(that.m2m.setMarkedNoteDots(dots)){
           cleanUp(that.m2m.getCurrentMei())
           var mei = restoreXmlIdTags(that.m2m.getCurrentMei())
-          that.loadDataCallback("", mei, false, c._TARGETDIVID_)
+          that.loadDataCallback("", mei, false)
         }
       })
     })
@@ -377,8 +395,8 @@ class InsertModeHandler implements Handler{
   resetModes(){
      //reset  
      if(!this.navBarLoaded) this.setListeners();
-     if(this.keyMode) this.activateKeyMode();
-     if(this.clickInsertMode) this.activateClickMode();
+     //if(this.keyMode) this.activateKeyMode();
+     if(this.clickInsertMode || this.keyMode) this.activateInsertMode(); //this.activateClickMode();
      if(this.annotationMode) this.activateAnnotationMode();
      if(this.harmonyMode) this.activateHarmonyMode();
      this.setSMHandler()
@@ -456,7 +474,7 @@ class InsertModeHandler implements Handler{
     return this
   }
 
-  setLoadDataCallback(loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>){
+  setLoadDataCallback(loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean) => Promise<string>){
     this.loadDataCallback = loadDataCallback
     return this
   }

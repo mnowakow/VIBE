@@ -19,7 +19,7 @@ class SidebarHandler implements Handler{
     m2m?: Mouse2MEI;
     musicPlayer?: MusicPlayer;
     currentMEI?: Document;
-    loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>;
+    loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean) => Promise<string>;
     containerId: string;
     container: Element
     interactionOverlay: Element
@@ -244,7 +244,7 @@ class SidebarHandler implements Handler{
 
         if(reload){
             meiOperation.cleanUp(this.currentMEI)
-            this.loadDataCallback("", meiConverter.restoreXmlIdTags(this.currentMEI), false, c._TARGETDIVID_)
+            this.loadDataCallback("", meiConverter.restoreXmlIdTags(this.currentMEI), false)
         }
     }
 
@@ -262,7 +262,7 @@ class SidebarHandler implements Handler{
         var mei = meiOperation.adjustAccids(this.currentMEI)
         meiOperation.cleanUp(mei)
         mei = meiConverter.restoreXmlIdTags(mei)
-        this.loadDataCallback("", mei, false, c._TARGETDIVID_)
+        this.loadDataCallback("", mei, false)
 
         return this
     }
@@ -292,7 +292,7 @@ class SidebarHandler implements Handler{
         })
         if(reload){
             meiOperation.cleanUp(this.currentMEI)
-            this.loadDataCallback("", meiConverter.restoreXmlIdTags(this.currentMEI), false, c._TARGETDIVID_)
+            this.loadDataCallback("", meiConverter.restoreXmlIdTags(this.currentMEI), false)
         }
     }
 
@@ -327,7 +327,7 @@ class SidebarHandler implements Handler{
         var mei = meiOperation.changeMeter(this.currentMEI)
         if(mei !== null){
             mei = meiConverter.restoreXmlIdTags(mei)
-            this.loadDataCallback("", mei, false, c._TARGETDIVID_)
+            this.loadDataCallback("", mei, false)
         }
     }).bind(this)
 
@@ -363,7 +363,7 @@ class SidebarHandler implements Handler{
         
         if(reload){
             meiOperation.cleanUp(this.currentMEI)
-            this.loadDataCallback("", meiConverter.restoreXmlIdTags(this.currentMEI), false, c._TARGETDIVID_)
+            this.loadDataCallback("", meiConverter.restoreXmlIdTags(this.currentMEI), false)
         }
     }
 
@@ -473,7 +473,7 @@ class SidebarHandler implements Handler{
             return
         }
 
-        this.loadDataCallback("", mei, false, c._TARGETDIVID_)
+        this.loadDataCallback("", mei, false)
     }
 
     dropOnTargetFunction =(function dropOnBarline(e: MouseEvent){
@@ -504,7 +504,7 @@ class SidebarHandler implements Handler{
         return this
     }
 
-    setLoadDataCallback(loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>){
+    setLoadDataCallback(loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean) => Promise<string>){
         this.loadDataCallback = loadDataCallback
         return this
     }

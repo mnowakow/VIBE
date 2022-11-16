@@ -283,6 +283,14 @@ numToNoteButtonId.set("8","eigthNote")
 numToNoteButtonId.set("16","sixteenthNote")
 numToNoteButtonId.set("32","thirtysecondNote")
 
+export const NoteButtonIdToNum: Map<string, number> = new Map;
+NoteButtonIdToNum.set("fullNote", 1)
+NoteButtonIdToNum.set("halfNote", 2)
+NoteButtonIdToNum.set("quarterNote", 4)
+NoteButtonIdToNum.set("eigthNote", 8)
+NoteButtonIdToNum.set("sixteenthNote", 16)
+NoteButtonIdToNum.set("thirtysecondNote", 32)
+
 export const numToDotButtonId: Map<string, string> = new Map;
 numToDotButtonId.set("1", "oneDot")
 numToDotButtonId.set("2", "twoDot")

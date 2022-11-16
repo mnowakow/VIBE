@@ -807,8 +807,11 @@ export function adjustAccids(currentMEI : Document): Document{
  * @returns 
  */
 export function transposeByStep(currentMEI : Document, direction: string): Document{
-  document.querySelectorAll(".activeContainer #rootSVG :is(.note.marked, .note.lastAdded)").forEach(nm => {
-    var noteMEI = currentMEI.getElementById(nm.id)
+  //document.querySelectorAll(".activeContainer #rootSVG :is(.note.marked, .note.lastAdded)").forEach(nm => {
+  document.querySelectorAll(".activeContainer :is(.note.marked, .note.lastAdded)").forEach(nm => {
+    if(nm.id === null || nm.id == undefined || nm.id === "") return // make shure that only the id is taken from the verovio svg so that the element will only be effected once
+    var id = nm.id
+    var noteMEI = currentMEI.getElementById(id)
     var pname = noteMEI.getAttribute("pname")
     var oct = parseInt(noteMEI.getAttribute("oct"))
     var accid = noteMEI.getAttribute("accid") || noteMEI.getAttribute("accid.ges")
@@ -839,7 +842,6 @@ export function transposeByStep(currentMEI : Document, direction: string): Docum
       noteMEI.setAttribute("oct", (oct+1).toString())
     }
   })
-
   return adjustAccids(currentMEI )
 }
 
@@ -1460,12 +1462,17 @@ export function addMeasure(currentMEI : Document){
   var layerCounts: number[] = Array.from(lastMeasure.querySelectorAll("layer")).map(s => {return parseInt(s.getAttribute("n"))})
   var layerCount = Math.max.apply(Math, layerCounts)
   var newMeasure: Element = new MeiTemplate().createMeasure(1, staffCount, layerCount) as Element
-  newMeasure.setAttribute("id", uuidv4())
   lastMeasure.parentElement.append(newMeasure)
   var i = 1
-  currentMEI .querySelectorAll("measure").forEach(m => {
+  currentMEI.querySelectorAll("measure").forEach(m => {
     m.setAttribute("n", i.toString())
     i++
+  })
+  newMeasure.setAttribute("id", uuidv4())
+  newMeasure.querySelectorAll("*").forEach(el => {
+    if(el.id === null || el.id === ""){
+      el.setAttribute("id", uuidv4())
+    }
   })
   cleanUp(currentMEI )
 }

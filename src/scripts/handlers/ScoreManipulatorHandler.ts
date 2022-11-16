@@ -20,7 +20,7 @@ class ScoreManipulatorHandler implements Handler{
     private interactionOverlay: Element
 
     private sm: ScoreManipulator;
-    loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>;
+    loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean) => Promise<string>;
     manipulatorCanvas: SVGSVGElement;
     private manipulateEvent: Event
 
@@ -90,7 +90,7 @@ class ScoreManipulatorHandler implements Handler{
         e.preventDefault()
         e.stopPropagation()
         meiOperation.addMeasure(this.currentMEI as Document)
-        this.loadDataCallback("", meiConverter.restoreXmlIdTags(this.currentMEI), false, c._TARGETDIVID_)
+        this.loadDataCallback("", meiConverter.restoreXmlIdTags(this.currentMEI), false)
     }).bind(this)
 
     removeMeasure = (function handler(e: MouseEvent){
@@ -98,7 +98,7 @@ class ScoreManipulatorHandler implements Handler{
         e.preventDefault()
         e.stopPropagation()
         meiOperation.removeMeasure(this.currentMEI as Document)
-        this.loadDataCallback("", meiConverter.restoreXmlIdTags(this.currentMEI), false, c._TARGETDIVID_)
+        this.loadDataCallback("", meiConverter.restoreXmlIdTags(this.currentMEI), false)
     }).bind(this)
 
     addStaff = (function handler(e: MouseEvent){
@@ -109,7 +109,7 @@ class ScoreManipulatorHandler implements Handler{
         var relpos = target.classList.contains("below") ? "below" : "above"
         meiOperation.addStaff(this.currentMEI as Document, document.getElementById(target.getAttribute("refId")), relpos)
         this.musicPlayer.resetInstruments()
-        this.loadDataCallback("", meiConverter.restoreXmlIdTags(this.currentMEI), false, c._TARGETDIVID_)
+        this.loadDataCallback("", meiConverter.restoreXmlIdTags(this.currentMEI), false)
       
     }).bind(this)
 
@@ -121,7 +121,7 @@ class ScoreManipulatorHandler implements Handler{
         var relpos = target.classList.contains("below") ? "below" : "above"
         meiOperation.removeStaff(this.currentMEI as Document, document.getElementById(target.getAttribute("refId")), relpos)
         this.musicPlayer.resetInstruments()
-        this.loadDataCallback("", meiConverter.restoreXmlIdTags(this.currentMEI), false, c._TARGETDIVID_)
+        this.loadDataCallback("", meiConverter.restoreXmlIdTags(this.currentMEI), false)
         e.target.dispatchEvent(this.manipulateEvent)
     }).bind(this)
 
@@ -151,7 +151,7 @@ class ScoreManipulatorHandler implements Handler{
         return this
     }
 
-    setLoadDataCallback(loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>){
+    setLoadDataCallback(loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean) => Promise<string>){
         this.loadDataCallback = loadDataCallback
         return this
     }

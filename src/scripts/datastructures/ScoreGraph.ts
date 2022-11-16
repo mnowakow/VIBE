@@ -4,8 +4,8 @@ import { constants as c } from "../constants"
 import * as cq from "../utils/convenienceQueries"
 
 const meiNodeSelector = "note, rest, mRest, chord, layer"
-const documentNodeSelector = ".clef, .meterSig, .keySig, .note, .rest, .mRest, .chord, .layer"
-const documentNodeSelector2 = ".clef, .meterSig, .keySig, .layer .note, .layer .rest, .layer .mRest, .layer .chord, :scope > .layer"
+const documentNodeSelector = ".clef, .meterSig, .keySig, .note, .rest, .mRest, .chord" //, .layer"
+const documentNodeSelector2 = ".clef, .meterSig, .keySig, .layer .note, .layer .rest, .layer .mRest, .layer .chord" //, :scope > .layer"
 
 class ScoreGraph {
 
@@ -316,16 +316,18 @@ class ScoreGraph {
         return isRight
     }
 
-    flatten() {
-        //TODO
-    }
-
     getCurrentNode() {
         return this.currentNode
     }
 
     setCurrentNodeById(id: string) {
-        this.currentNode = this.graph.get(id)
+        if(id == undefined) return
+        var lastNode = this.currentNode
+        this.currentNode = this.graph.get(id) || this.graph.get(document.getElementById(id)?.closest(".chord")?.id) || lastNode
+        if(this.currentNode == undefined){
+            console.log(lastNode)
+            throw new Error("CurrentNode undefined although id is given: " + id)
+        }
     }
 
     setContainerId(containerId: string){

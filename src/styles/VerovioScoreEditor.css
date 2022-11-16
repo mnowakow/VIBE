@@ -213,6 +213,10 @@ text{
   display:flex
 }
 
+#handlerGroup{
+    display: none
+}
+
 #importFile{
     display: none;
 }
@@ -276,6 +280,10 @@ text{
 .dropKey, .dropClef, .dropTime, .dropTempo{
     fill: orange;
     color: orange;
+}
+
+#timeDiv{
+    cursor:pointer !important;
 }
 
 #annotList{
@@ -424,13 +432,13 @@ text{
     outline-style: none;
 }
 
-.marked{
+.marked, .lastAdded{
     fill: red
 }
 
-.lastAdded{
+/* .lastAdded{
     fill: rgb(16, 100, 16)
-}
+} */
 
 .playing{
     fill: red
@@ -459,15 +467,19 @@ text{
     fill-opacity: 0.4;
 }
 
+/* #manipulatorCanvas > #cursor{
+    display: none
+} */
+
 /* CLICK MODE */
 
-/*
-#phantomNote{
-    transform: skew(-20deg);
-}
-*/
 
-.phantomLine{
+/* #phantomNote{
+    transform: skew(-20deg);
+} */
+
+
+.phantomLine, .phantomMarker{
     stroke-width: 2px;
     stroke:black;
     opacity: 0.5;
@@ -513,41 +525,6 @@ text{
     filter: invert();
 }
 
-/* .tooltiptext{
-    width: 120px;
-    background-color: #555;
-    color: #fff;
-    text-align: center;
-    border-radius: 6px;
-    padding: 5px 0;
-    position: absolute;
-    z-index: 200;
-    bottom: 125%;
-    left: 50%;
-    margin-left: -60px;
-    transition: opacity 0.3s;
-  }
-
-.tooltiptext.hide{
-    visibility: hidden;
-    opacity: 0;
-}
-  
-.tooltiptext::after {
-    content: "";
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    margin-left: -5px;
-    border-width: 5px;
-    border-style: solid;
-    border-color: #555 transparent transparent transparent;
-  }
-  
-.tooltiptext.show{
-    visibility: visible;
-    opacity: 1;
-} */
 
 .tooltip.show{
     display: inline-block;

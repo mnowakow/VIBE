@@ -131,6 +131,7 @@ class ClickModeHandler implements Handler {
         }
 
         if (!pitchExists) {
+            console.log(newNote)
             var replace = (this.container.querySelector("#insertToggle") as HTMLInputElement).checked && newNote.chordElement == undefined
             this.insertCallback(this.m2m.getNewNote(), replace).then(() => {
                 this.musicPlayer.generateTone(this.m2m.getNewNote())

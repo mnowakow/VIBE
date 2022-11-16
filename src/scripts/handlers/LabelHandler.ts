@@ -29,7 +29,7 @@ class LabelHandler implements Handler {
     private rootSVG: Element
     private interactionOverlay: Element
 
-    private loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>
+    private loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean) => Promise<string>
 
     constructor(containerId: string) {
         this.setContainerId(containerId)
@@ -374,7 +374,7 @@ class LabelHandler implements Handler {
         this.closeModifyWindow()
         meiOperation.cleanUp(this.currentMEI)
         var mei = meiConverter.restoreXmlIdTags(this.currentMEI)
-        this.loadDataCallback("", mei, false, c._TARGETDIVID_).then(() => {
+        this.loadDataCallback("", mei, false).then(() => {
             this.reset()
         })
     }
@@ -495,7 +495,7 @@ class LabelHandler implements Handler {
         return this.isGlobal
     }
 
-    setLoadDataCallback(loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>) {
+    setLoadDataCallback(loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean) => Promise<string>) {
         this.loadDataCallback = loadDataCallback
         return this
     }

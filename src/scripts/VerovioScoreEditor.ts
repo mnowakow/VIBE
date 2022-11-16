@@ -162,17 +162,17 @@ class VerovioScoreEditor{
             this.coreInstance = new Core(this.container.id);
             this.container.append(dc.makeNewDiv(c._TARGETDIVID_, ""))
             if(this.options?.meiURL != undefined){
-                this.coreInstance.loadData('', this.options.meiURL, true, c._TARGETDIVID_).then((mei) => {
+                this.coreInstance.loadData('', this.options.meiURL, true).then((mei) => {
                     this.currentMEI = mei;
                     resolve()
                 });
             }else if(this.options?.data != undefined){
-                this.coreInstance.loadData('', this.options.data, false, c._TARGETDIVID_).then((mei) => {
+                this.coreInstance.loadData('', this.options.data, false).then((mei) => {
                     this.currentMEI = mei;
                     resolve()
                 });
             }else if(this.options === null){
-                this.coreInstance.loadData('', null, false, c._TARGETDIVID_).then((mei) => {
+                this.coreInstance.loadData('', null, false).then((mei) => {
                     this.currentMEI = mei;
                     resolve()
                 });

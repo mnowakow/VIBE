@@ -6,6 +6,8 @@ import { Mouse2MEI } from "../utils/Mouse2MEI";
 import Handler from "./Handler";
 import * as coordinates from "../utils/coordinates"
 import * as  cq from "../utils/convenienceQueries"
+import {Staff} from "../utils/Types"
+import MeasureMatrix from "../datastructures/MeasureMatrix";
 
 
 class PhantomElementHandler implements Handler{
@@ -50,7 +52,9 @@ class PhantomElementHandler implements Handler{
         this.interactionOverlay.querySelectorAll(".staffLine").forEach(element => {
             element.addEventListener('click', this.trackMouseHandler)
         })
-
+        this.interactionOverlay.querySelectorAll(".staff").forEach(s => {
+            s.addEventListener("currStaffChanged", this.timeMarkerHandler)
+        })
         return this
     }
 
@@ -62,6 +66,9 @@ class PhantomElementHandler implements Handler{
 
     removeListeners() {
         this.interactionOverlay.removeEventListener("mousemove", this.trackMouseHandler)
+        this.interactionOverlay.querySelectorAll(".staff").forEach(s => {
+            s.removeEventListener("currStaffChanged", this.timeMarkerHandler)
+        })
         this.interactionOverlay.querySelectorAll(".staffLine").forEach(element => {
             element.removeEventListener('click', this.trackMouseHandler)
             clearInterval(this.trackMouseHandler)
@@ -142,6 +149,19 @@ class PhantomElementHandler implements Handler{
             })
         }
         return this
+    }
+
+    timeMarkerHandler = (function timeMarkerHandler(e: MouseEvent){
+        this.drawMarkers(e)
+    }).bind(this)
+
+    drawMarkers(e: MouseEvent){
+        this.container.querySelectorAll(".phantomMarker").forEach(pm => pm.remove())
+        var pm = new PhantomElement("timeMarkers", 
+            this.containerId, 
+            {lastStaffEnteredId: (e.target as Element).getAttribute("refId"),
+            measureMatrix: this.m2m.getMeasureMatrix()
+        })
     }
 
     resetCanvas(){

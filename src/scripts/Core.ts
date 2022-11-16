@@ -1,5 +1,5 @@
 import VerovioWrapper from './utils/VerovioWrapper';
-import { NewNote, VerovioMessage, VerovioResponse, EditorAction, Attributes, NoteTime } from './utils/Types';
+import { NewNote, VerovioMessage, VerovioResponse, EditorAction, Attributes, LoadOptions } from './utils/Types';
 import { uuidv4 } from './utils/random';
 import { constants as c } from './constants';
 import InsertModeHandler from './handlers/InsertModeHandler';
@@ -84,18 +84,19 @@ class Core {
     //this.redoAnnotationStacks.push(new Array<Element>())
     this.windowHandler = new WindowHandler()
     this.svgFiller = new SVGFiller()
-
-    // window.addEventListener("error", (function(e){
-    //     console.error("Emergency Undo", e)
-    //     this.reloadDataFunction()
-    //   }).bind(this)
-    // )// emergency reload if some error occurs
   }
 
   /**
    * Load data into the verovio toolkit and update the cache.
   */
-  loadData(pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string): Promise<string> {
+  loadData(pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, options: LoadOptions = null): Promise<string> {
+
+    // if(options !== null){
+    //   if(options.deleteLastNoteInserted){
+    //     this.lastInsertedNoteId = undefined
+    //   }
+    // }
+
     this.verovioWrapper = new VerovioWrapper();
     if (cq.getRootSVG(this.containerId) !== null) {
       this.svgFiller.cacheClasses()
@@ -150,7 +151,6 @@ class Core {
       svg = response.mei;
       svg = svg.replace("<svg", "<svg id=\"" + c._ROOTSVGID_ + "\"");
       try {
-        //cq.getBySelector(this.containerId, "#", targetDivID, "#", ">").innerHTML = svg
         document.querySelector("#" + this.containerId + "> #svg_output").innerHTML = svg
       } catch (ignore) {
         console.log("Error inserting SVG")
@@ -193,15 +193,17 @@ class Core {
         // document.querySelectorAll(".marked").forEach(m => {
         //   m.classList.remove("marked")
         // })
+        //if(document.querySelectorAll(".marked").length === 0){
+          var lastAddedClass = "lastAdded"
+          document.querySelectorAll("." + lastAddedClass).forEach(m => {
+            m.classList.remove(lastAddedClass)
+          })
 
-        var lastAddedClass = "lastAdded"
-        document.querySelectorAll("." + lastAddedClass).forEach(m => {
-          m.classList.remove(lastAddedClass)
-        })
-
-        if (this.lastInsertedNoteId != undefined && ["textmode", "clickmode"].some(mode => this.container.classList.contains(mode))) {
-          this.container.querySelector("#" + this.lastInsertedNoteId)?.classList.add(lastAddedClass)
-        }
+          if (this.lastInsertedNoteId != undefined && ["textmode", "clickmode"].some(mode => this.container.classList.contains(mode))) {
+            this.container.querySelector("#" + this.lastInsertedNoteId)?.classList.add(lastAddedClass)
+          }
+        //}
+        
 
         if (this.meiChangedCallback != undefined) {
           this.meiChangedCallback(this.currentMEI)
@@ -215,6 +217,12 @@ class Core {
             this.musicplayer.setMidiTimes(md)
             this.musicplayer.update()
             this.scoreGraph = new ScoreGraph(this.currentMEIDoc, this.containerId, md)
+            //the first condition should only occur at first starting the score editor
+            if(this.container.querySelector(".lastAdded") === null && this.scoreGraph.getCurrentNode() == undefined){
+              this.scoreGraph.setCurrentNodeById(this.container.querySelector(".staff > .layer").firstElementChild.id)
+            }else{ //second condition always sets lastAdded Note
+              this.scoreGraph.setCurrentNodeById(this.container.querySelector(".lastAdded")?.id)
+            }
             this.musicplayer.setScoreGraph(this.scoreGraph)
             this.initializeHandlers()
             resolve(svg);
@@ -227,11 +235,11 @@ class Core {
 
 
   reloadDataFunction = (function reloadData(): Promise<boolean> {
-    return this.loadData("", this.currentMEIDoc, false, c._TARGETDIVID_)
+    return this.loadData("", this.currentMEIDoc, false)
   }).bind(this)
 
-  loadDataFunction = (function loadDataFunction(pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) {
-    return this.loadData(pageURI, data, isUrl, targetDivID)
+  loadDataFunction = (function loadDataFunction(pageURI: string, data: string | Document | HTMLElement, isUrl: boolean) {
+    return this.loadData(pageURI, data, isUrl)
   }).bind(this)
 
   /**
@@ -374,7 +382,7 @@ class Core {
       this.getMEI("").then(mei => {
         meiOperation.removeFromMEI(notes, this.currentMEIDoc).then(updatedMEI => {
           if (updatedMEI != undefined) {
-            this.loadData("", updatedMEI, false, c._TARGETDIVID_).then(() => {
+            this.loadData("", updatedMEI, false).then(() => {
               resolve(true);
             })
           } else {
@@ -390,6 +398,7 @@ class Core {
    */
   insert = (function insert(newNote: NewNote, replace: Boolean = false): Promise<boolean> {
     this.lastInsertedNoteId = newNote.id
+    this.container.querySelectorAll(".marked").forEach(m => m.classList.remove("marked"))
 
     return new Promise((resolve, reject): void => {
       this.getMEI("").then(mei => {
@@ -398,7 +407,7 @@ class Core {
           reject()
         }
         if (updatedMEI != undefined) {
-          this.loadData("", updatedMEI, false, c._TARGETDIVID_).then(() => {
+          this.loadData("", updatedMEI, false).then(() => {
             resolve(true)
           })
         } else {
@@ -435,7 +444,7 @@ class Core {
       const meistate = this.undoMEIStacks.pop()
       if (meistate != undefined) {
         this.redoMEIStacks.push(this.currentMEI)
-        this.loadData(pageURI, meistate, false, c._TARGETDIVID_).then(() => resolve(true))
+        this.loadData(pageURI, meistate, false).then(() => resolve(true))
       } else {
         resolve(false)
       }
@@ -465,7 +474,7 @@ class Core {
       const meistate = this.redoMEIStacks.pop()
       if (meistate !== undefined) {
         this.undoMEIStacks.push(this.currentMEI);
-        this.loadData(pageURI, meistate, false, c._TARGETDIVID_).then(() => resolve(true))
+        this.loadData(pageURI, meistate, false).then(() => resolve(true))
       } else {
         resolve(false)
       }
@@ -492,7 +501,7 @@ class Core {
         response = this.verovioWrapper.setMessage(message)
         // MEI ist already updated after edit (setMessage)
         this.getMEI("").then(mei => {
-          this.loadData("", mei, false, c._TARGETDIVID_).then(() => {
+          this.loadData("", mei, false).then(() => {
 
             message = {
               action: "getElementAttr",
@@ -508,7 +517,7 @@ class Core {
         var editNote = this.currentMEIDoc.getElementById(nn.nearestNoteId)
         editNote.setAttribute("oct", nn.oct)
         editNote.setAttribute("pname", nn.pname)
-        this.loadData("", meiConverter.restoreXmlIdTags(this.currentMEIDoc), false, c._TARGETDIVID_).then(() => {
+        this.loadData("", meiConverter.restoreXmlIdTags(this.currentMEIDoc), false).then(() => {
           resolve(true);
 
         })

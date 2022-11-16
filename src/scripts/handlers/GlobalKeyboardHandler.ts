@@ -18,7 +18,7 @@ class GlobalKeyboardHandler implements Handler {
 
     private undoCallback: () => Promise<any>
     private redoCallback: () => Promise<any>
-    private loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>;
+    private loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean) => Promise<string>;
 
     currentMEI: Document
     musicPlayer: MusicPlayer
@@ -156,7 +156,7 @@ class GlobalKeyboardHandler implements Handler {
         if (this.copiedIds != undefined && pastePosition != undefined) {
             var lastId = meiOperation.paste(this.copiedIds, pastePosition, this.currentMEI)
             var mei = meiConverter.restoreXmlIdTags(this.currentMEI)
-            this.loadDataCallback("", mei, false, c._TARGETDIVID_).then(mei => {
+            this.loadDataCallback("", mei, false).then(mei => {
                 //Tell everyone that a past just occured to readjust certain elements e.g.
                 var pastedEvent = new CustomEvent("pasted", { detail: lastId })
                 document.dispatchEvent(pastedEvent)
@@ -192,11 +192,12 @@ class GlobalKeyboardHandler implements Handler {
                 mei = meiOperation.transposeByStep(this.currentMEI, "down")
                 break;
             default:
-                console.log(this, "Sorry, wrong turn")
+                //console.log(this, "Sorry, wrong turn")
         }
         if (mei != undefined) {
+            if(cq.getContainer(this.containerId).querySelector(".marked") !== null) this.resetLastInsertedNoteId()
             mei = meiConverter.restoreXmlIdTags(mei)
-            this.loadDataCallback("", mei, false, c._TARGETDIVID_)
+            this.loadDataCallback("", mei, false)
         }
     }
 
@@ -212,7 +213,7 @@ class GlobalKeyboardHandler implements Handler {
         //meiOperation.changeDuration(this.currentMEI, "reduce", additionalElements)
         meiOperation.changeDuration(this.currentMEI, additionalElements)
         var mei = meiConverter.restoreXmlIdTags(this.currentMEI)
-        this.loadDataCallback("", mei, false, c._TARGETDIVID_)
+        this.loadDataCallback("", mei, false)
     }
 
     prolongDur() {
@@ -221,7 +222,7 @@ class GlobalKeyboardHandler implements Handler {
         //meiOperation.changeDuration(this.currentMEI, "prolong", additionalElements)
         meiOperation.changeDuration(this.currentMEI, additionalElements)
         var mei = meiConverter.restoreXmlIdTags(this.currentMEI)
-        this.loadDataCallback("", mei, false, c._TARGETDIVID_)
+        this.loadDataCallback("", mei, false)
     }
 
     resetListeners() {
@@ -271,7 +272,7 @@ class GlobalKeyboardHandler implements Handler {
         return this
     }
 
-    setLoadDataCallback(loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>) {
+    setLoadDataCallback(loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean) => Promise<string>) {
         this.loadDataCallback = loadDataCallback
         return this
     }

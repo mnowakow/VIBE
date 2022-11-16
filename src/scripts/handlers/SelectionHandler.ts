@@ -8,6 +8,7 @@ import LabelHandler from './LabelHandler';
 import * as coordinates from "../utils/coordinates"
 import * as cq from "../utils/convenienceQueries"
 import { idText } from 'typescript';
+import ScoreGraph from '../datastructures/ScoreGraph';
 
 const marked = "marked"
 
@@ -25,6 +26,7 @@ class SelectionHandler implements Handler {
     private container: Element
     private interactionOverlay: Element
     private rootSVG: Element
+    private scoreGraph: ScoreGraph
 
     constructor(containerId: string) {
         this.setContainerId(containerId)
@@ -165,10 +167,6 @@ class SelectionHandler implements Handler {
 
     removeListeners(): void {
         d3.select("#" + this.containerId + " #interactionOverlay").on('mousedown.drag', null)
-        this.m2m.getNoteBBoxes().forEach(bb => {
-            let note = this.rootSVG.querySelector("#" + bb.id)
-            note.classList.remove(marked)
-        })
         this.interactionOverlay.querySelectorAll(".note, .rest, .mRest, .notehead").forEach(el => {
             el.removeEventListener("click", this.markedHandler)
         })
@@ -178,7 +176,7 @@ class SelectionHandler implements Handler {
 
     setListeners(): void {
         this.canvas.call(this.dsa);
-        this.interactionOverlay.querySelectorAll(".note, .rest, .mRest, .notehead").forEach(el => {
+        cq.getInteractOverlay(this.containerId).querySelectorAll(".note, .rest, .mRest, .notehead").forEach(el => {
             el.addEventListener("click", this.markedHandler)
         })
     }
@@ -189,7 +187,7 @@ class SelectionHandler implements Handler {
     }
 
     resetListeners() {
-        //this.removeListeners()
+        this.removeListeners()
         this.setListeners()
     }
 
@@ -208,8 +206,9 @@ class SelectionHandler implements Handler {
             target = target.closest("[refId]")
             target = this.rootSVG.querySelector("#" + target.getAttribute("refId"))
         }
-        target = target.closest(".note, .rest, .mRest") || target
+        target = target.closest(".note, .rest, .mRest, .chord") || target
         target.classList.add(marked)
+        this.scoreGraph.setCurrentNodeById(target.id)
 
         // change the selected durations in the toolbar
         var firstMarkedNote = this.rootSVG.querySelector(".chord.marked, .note.marked, .rest.marked")?.id
@@ -238,6 +237,7 @@ class SelectionHandler implements Handler {
                 this.shiftPressed = false
             }
         }
+        console.log("shiftPressed ", this.shiftPressed)
     }).bind(this)
 
 
@@ -245,6 +245,12 @@ class SelectionHandler implements Handler {
 
     setM2M(m2m: Mouse2MEI) {
         this.m2m = m2m
+        return this
+    }
+
+    setScoreGraph(sg: ScoreGraph){
+        this.scoreGraph = sg
+        return this
     }
 
     setContainerId(id: string) {

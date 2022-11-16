@@ -104,7 +104,9 @@ class SVGFiller{
             if(el !== null){
                 //el.removeAttribute("class")
                 value.forEach(v => {
-                    el.classList.add(v)
+                    if(v !== ""){
+                        el.classList.add(v)
+                    }
                 })
             }
         }

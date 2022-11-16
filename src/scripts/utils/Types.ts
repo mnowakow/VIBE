@@ -78,18 +78,18 @@ export type NewNote = {
   oct?: string,
   keysig?: string,
   accid?: string,
-  relPosX?: string, //left right
-  nearestNoteId?: string
+  relPosX?: string, //left right; relative to nearestNoteId
+  nearestNoteId?: string //nearest element for referece
   staffId?: string,
-  chordElement?: Element,
-  rest: boolean
+  chordElement?: Element, // to what chord will it be attached?
+  rest: boolean //will it be a rest?
 }
 
 export type NewChord = {
   id?: string,
   dur?: string,
   dots?: string,
-  relPosX?: string, //left right
+  relPosX?: string, //left right; relative to nearestNoteId
   nearestNoteId?: string
   staffId?: string,
   noteElements: Array<NewNote>
@@ -119,4 +119,8 @@ export type Coord = {
 export type NoteTime = {
   noteId: string,
   onset: number
+}
+
+export type LoadOptions = {
+  deleteLastNoteInserted?: Boolean
 }

@@ -15,7 +15,7 @@ class WindowHandler implements Handler{
     musicPlayer?: MusicPlayer;
     currentMEI?: string | Document;
     annotations: Annotations;
-    loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>;
+    loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean) => Promise<string>;
     insertModeHandler: InsertModeHandler;
     containerId: string;
     rootSVG: Element
@@ -84,11 +84,11 @@ class WindowHandler implements Handler{
             // Must be a slighty longer than transitiontime
             setTimeout(function(){
                 var mei = meiConverter.restoreXmlIdTags(that.currentMEI)
-                that.loadDataCallback("", mei, false, "svg_output")
+                that.loadDataCallback("", mei, false)
             }, (e as TransitionEvent).elapsedTime * 1000 + 10)
         }else if(e.type === "resize"){
             var mei = meiConverter.restoreXmlIdTags(that.currentMEI)
-            that.loadDataCallback("", mei, false, "svg_output")
+            that.loadDataCallback("", mei, false)
         }
     }).bind(this)
 
@@ -131,7 +131,7 @@ class WindowHandler implements Handler{
         return this
     }
 
-    setLoadDataCallback(loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>){
+    setLoadDataCallback(loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean) => Promise<string>){
         this.loadDataCallback = loadDataCallback
         return this
     }

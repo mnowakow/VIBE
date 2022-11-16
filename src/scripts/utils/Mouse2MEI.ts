@@ -85,6 +85,7 @@ export class Mouse2MEI {
                 e.preventDefault()
                 var target = e.target as HTMLElement
                 that.lastStaffMouseEnter = target.closest(".staff")
+                that.lastStaffMouseEnter?.dispatchEvent(new Event("currStaffChanged"))
                 if (!that.lastStaffMouseEnter.classList.contains(enteredFlag)) {
                     cq.getInteractOverlay(that.containerId).querySelectorAll(".staff").forEach(s => {
                         s.classList.remove(enteredFlag)
@@ -359,8 +360,8 @@ export class Mouse2MEI {
                     belowMap = idxNotePhantomMapBelowF
                     break;
                 case "ClefC":
-                    aboveMap = idxNotePhantomMapAboveF
-                    belowMap = idxNotePhantomMapBelowF
+                    aboveMap = idxNotePhantomMapAboveC
+                    belowMap = idxNotePhantomMapBelowC
                     break;
                 default:
                     console.log("NO CLEF FOUND")

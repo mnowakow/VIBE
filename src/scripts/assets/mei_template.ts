@@ -121,7 +121,7 @@ class MeiTemplate{
         newElem.setAttribute("n", n.toString());
         for(let i=0; i<staffCount; i++){
             newElem.appendChild(this.createStaff(i+1, layerCount));
-        }        
+        }     
         return newElem;
     }
 

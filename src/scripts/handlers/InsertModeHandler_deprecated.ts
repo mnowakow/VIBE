@@ -53,7 +53,7 @@ class InsertModeHandler implements Handler{
 
   private insertCallback: (newNote: NewNote, replace: Boolean) => Promise<any> 
   private deleteCallback: (notes: Array<Element>) => Promise<any>;
-  private loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>;
+  private loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean) => Promise<string>;
   
 
   constructor (containerId) {
@@ -108,7 +108,7 @@ class InsertModeHandler implements Handler{
 
     var cursor = null
     if(this.keyModeHandler != undefined){
-      cursor = this.keyModeHandler.cursor
+      //cursor = this.keyModeHandler.cursor
     }
     this.keyModeHandler = this.keyModeHandler || new KeyModeHandler(this.containerId)
     var currNodeId: string
@@ -340,7 +340,7 @@ class InsertModeHandler implements Handler{
         if(that.m2m.setMarkedNoteDurations(dur)){
           cleanUp(that.m2m.getCurrentMei())
           var mei = restoreXmlIdTags(that.m2m.getCurrentMei())
-          that.loadDataCallback("", mei, false, c._TARGETDIVID_)
+          that.loadDataCallback("", mei, false)
         }
       })
     })
@@ -361,7 +361,7 @@ class InsertModeHandler implements Handler{
         if(that.m2m.setMarkedNoteDots(dots)){
           cleanUp(that.m2m.getCurrentMei())
           var mei = restoreXmlIdTags(that.m2m.getCurrentMei())
-          that.loadDataCallback("", mei, false, c._TARGETDIVID_)
+          that.loadDataCallback("", mei, false)
         }
       })
     })
@@ -456,7 +456,7 @@ class InsertModeHandler implements Handler{
     return this
   }
 
-  setLoadDataCallback(loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>){
+  setLoadDataCallback(loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean) => Promise<string>){
     this.loadDataCallback = loadDataCallback
     return this
   }
