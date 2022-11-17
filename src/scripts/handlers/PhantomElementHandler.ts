@@ -48,6 +48,7 @@ class PhantomElementHandler implements Handler{
 
     setListeners() {
         this.interactionOverlay.addEventListener("mousemove", this.trackMouseHandler)
+        this.interactionOverlay.querySelectorAll(".notehead rect").forEach(n => n.addEventListener("draggingNote", this.trackMouseHandler))
          // Listener just for staves
         this.interactionOverlay.querySelectorAll(".staffLine").forEach(element => {
             element.addEventListener('click', this.trackMouseHandler)
@@ -66,6 +67,7 @@ class PhantomElementHandler implements Handler{
 
     removeListeners() {
         this.interactionOverlay.removeEventListener("mousemove", this.trackMouseHandler)
+        this.interactionOverlay.querySelectorAll(".notehead rect").forEach(n => n.removeEventListener("draggingNote", this.trackMouseHandler))
         this.interactionOverlay.querySelectorAll(".staff").forEach(s => {
             s.removeEventListener("currStaffChanged", this.timeMarkerHandler)
         })
@@ -98,12 +100,11 @@ class PhantomElementHandler implements Handler{
      * @param e 
      */
     trackMouse(e: MouseEvent){
-
         var pt = coordinates.transformToDOMMatrixCoordinates(e.clientX, e.clientY, this.interactionOverlay)
         var relX = pt.x
         var relY = pt.y
 
-        var definitionScale = this.rootSVG.querySelector(".definition-scale")
+        var definitionScale = cq.getRootSVG(this.containerId).querySelector(".definition-scale")
         var dsCoords = coordinates.getDOMMatrixCoordinates(definitionScale, this.rootSVG)
         if(relX < dsCoords.left || relX > dsCoords.right){
             this.isTrackingMouse = false
@@ -138,6 +139,9 @@ class PhantomElementHandler implements Handler{
             })
             this.setPhantomLineListeners()
         }
+        // if(e.type === "draggingNote"){
+        //     console.log(phantomNoteElement, this.phantomLines)
+        // }
     }
 
     removeLines(){

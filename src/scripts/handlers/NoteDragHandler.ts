@@ -1,13 +1,14 @@
 import { Attributes, EditorAction, NewNote } from '../utils/Types'
 import { constants as c } from '../constants';
 import MeasureMatrix from '../datastructures/MeasureMatrix'
-import * as d3 from 'd3';
 import MusicPlayer from '../MusicPlayer';
 import DeleteHandler from './DeleteHandler';
 import Handler from './Handler';
 import { Mouse2MEI } from '../utils/Mouse2MEI';
 import * as coordinates from "../utils/coordinates"
 import * as cq from "../utils/convenienceQueries"
+import interact from "interactjs"
+import { uuidv4 } from '../utils/random';
 
 //@ts-ignore
 //const $ = H5P.jQuery;
@@ -16,155 +17,90 @@ import * as cq from "../utils/convenienceQueries"
  * Class that handles insert mode, events, and actions.
  */
 class NoteDragHandler implements Handler{
-  private containerId: string;
-  private container : Element
-  private interactionOverlay: Element
-  private rootSVG: Element
-  private dragStartCoords: {x:number, y:number}
-  private dx: number;
-  private dy: number;
-  private notes;
-  private draggedOverlayElement: Element;
-  private draggedRootSVGElement: Element
-  private draggedUseChild: Element
+  private containerId: string
+
   musicPlayer: MusicPlayer;
   m2m?: Mouse2MEI;
   currentMEI: Document
-  private wasDragged: boolean = false;
-  private oldNote: Array<string>
 
-  private noteDraggedEvent: Event
 
-  private editCallback: (action: EditorAction) => Promise<any>
-  private elementAttrCallback: (id: string) => Attributes
-
-  private deleteHandler: DeleteHandler
-  private scaleY: number
-  private scaleX: number
+  private noteDragEvent: MouseEvent
+  private noteDragListener: Interact.Interactable
+  loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean) => Promise<string>;
+  private newNote: NewNote
+  insertCallback: (newNote: NewNote, replace: Boolean) => Promise<any>;
 
 
   constructor(containerId: string){
     this.setContainerId(containerId)
-    this.dragInit();
-    this.noteDraggedEvent = new Event("noteDragged")
   }
 
 
   setListeners() {
-
+    var that = this
+    this.noteDragListener = interact("#"+ this.containerId + " #interactionOverlay .notehead rect")
+    .draggable({
+      startAxis: "y",
+      lockAxis: "y",
+      listeners:{
+        move: this.dragNote.bind(this),
+        end(event){
+          that.deleteTempDistances()
+          that.insertCallback(that.newNote, true)
+        }
+      },
+      modifiers: [
+        interact.modifiers.restrictRect({
+            endOnly: true
+        })
+    ]
+    })
   }
 
   removeListeners(): void {
-   
+    this.noteDragListener?.unset()
   }
 
   resetListeners(){
     this.removeListeners()
     this.setListeners()
-  }
-  
-
-  /**
-   * Initialize the dragging action and handler for selected elements.
-   */
-  dragInit (): void {
-    // Adding listeners
-    
-    const dragBehaviour = d3.drag()
-      .on('start', dragStarted.bind(this))
-      .on('drag', this.dragging.bind(this))
-      .on('end', this.dragEnded.bind(this));
-
-    this.notes = d3.select("#" + this.containerId + " #interactionOverlay").selectAll(".note"); 
-    this.draggedOverlayElement = null;
-    this.notes.call(dragBehaviour);
-
-      // Drag effects
-    function dragStarted (): void {      
-      this.draggedOverlayElement =  d3.event.sourceEvent.currentTarget
-      this.draggedRootSVGElement = this.rootSVG.querySelector("#" + this.draggedOverlayElement.getAttribute("refId"))?.closest(".note")
-      this.dragStartCoords = [d3.event.x, d3.event.y]//coordinates.transformToDOMMatrixCoordinates(d3.event.sourceEvent.clientX, d3.event.sourceEvent.clientY, document.getElementById(c._ROOTSVGID_))
-      this.dx = 0; //this.dragStartCoords[0]
-      this.dy = 0; //this.dragStartCoords[1]
-    }
+    return this
   }
 
-  dragging(): void{
-    if(this.draggedOverlayElement === null || this.draggedRootSVGElement === null) return
-    this.dx = d3.event.x
-    this.dy = d3.event.y
-    var overlayCoords = coordinates.transformToDOMMatrixCoordinates(d3.event.sourceEvent.clientX, d3.event.sourceEvent.clientY, this.interactionOverlay)
+  deleteTempDistances(){
+    cq.getInteractOverlay(this.containerId)?.querySelectorAll("*[distY]").forEach(d => {
+         d.removeAttribute("distY")
+         d.classList.remove("moving")
+     })
+ }
 
-    var diffY = Math.abs(this.dy - this.dragStartCoords[1])
-    if(diffY > 15){
-      this.wasDragged = true;
-    }
+  dragNote(e: MouseEvent): void{
+    var noteHeadBBox = e.target as Element
+    this.noteDragEvent = new MouseEvent("draggingNote", e)
+    noteHeadBBox.dispatchEvent(this.noteDragEvent)
+    var refNote = cq.getRootSVG(this.containerId).querySelector("#" + noteHeadBBox.parentElement.getAttribute("refId")).closest(".note")
+    var note = cq.getInteractOverlay(this.containerId).querySelector("*[refId=\"" + refNote.id + "\"] rect")
 
-    //snap while dragging
-    this.m2m.defineNote(overlayCoords.x, overlayCoords.y, {})
-    var newNote = [this.m2m.getNewNote().pname, this.m2m.getNewNote().oct]
-    if(this.oldNote == undefined){
-      this.oldNote = newNote
-    }
-
-    const relativeY = d3.event.y - this.dragStartCoords[1] //d3.event.y - this.dragStartCoords[1]
-    const relativeX = 0//d3.event.x - this.dragStartCoords[0];
-
-    //overlay and defscale have completely different viewbox dimensions
-    var defScaleVBox = (this.rootSVG.querySelector(".definition-scale") as SVGSVGElement).viewBox.baseVal
-    var overlayVBox = (this.interactionOverlay as SVGSVGElement).viewBox.baseVal
-    this.scaleX = defScaleVBox.width/ overlayVBox.width
-    this.scaleY = defScaleVBox.height/ overlayVBox.height
-    
-  
-    var shiftY = 10
-    shiftY = relativeY < 0 ? -shiftY : shiftY
-    if(!this.oldNote.every((v, i) => v === newNote[i])){
-      this.draggedOverlayElement.setAttribute('transform', 'translate(' + [relativeX, relativeY + shiftY] + ')')
-      this.draggedRootSVGElement.setAttribute('transform', 'translate(' + [relativeX * this.scaleX, (relativeY + shiftY) * this.scaleY] + ')')
-      this.oldNote = newNote
-    }
+    if(!noteHeadBBox.classList.contains("moving")) noteHeadBBox.classList.add("moving")
+    //if(!note.classList.contains("moving")) note.classList.add("moving")
+    //this.newPos(note, e)
+    var headPos = this.newPos(noteHeadBBox, e)
+    this.m2m.defineNote(headPos.x, headPos.y, {})
+    this.newNote = this.m2m.getNewNote()
   }
 
-  dragEnded (): void {
-    if(this.draggedOverlayElement === null || this.draggedRootSVGElement === null) return
-    if(this.wasDragged){
-      this.notes.on("drag", null);
-      this.wasDragged = false;
 
-      this.draggedOverlayElement.dispatchEvent(this.noteDraggedEvent)
+  newPos(target: Element, e: MouseEvent){
+    var pt = coordinates.transformToDOMMatrixCoordinates(e.clientX, e.clientY, target.closest("*[viewBox]"))
+    var edy = pt.y 
 
-      this.container.querySelector("#" + this.draggedRootSVGElement.id).classList.remove(this.deleteHandler.getDeleteFlag()) //remove flag to delete after dragging
-      const action: EditorAction = {
-        action: "drag",
-        param: { elementId: this.draggedRootSVGElement.id,
-          //x: this.dx,
-          //y: this.dy
-        }
-      }
-      this.editCallback(action).then(() => {
+    var ptDist = coordinates.transformToDOMMatrixCoordinates(target.getBoundingClientRect().x, target.getBoundingClientRect().y, target.closest("*[viewBox]"))
+    var distY = (parseFloat(target.getAttribute('distY'))) || edy - ptDist.y 
 
-        var attr = this.elementAttrCallback(this.draggedRootSVGElement.id);
-        var mm = new MeasureMatrix();
-        //mm.populateFromSVG(svg)
-        mm.populateFromMEI(this.currentMEI)
-        var staff = this.currentMEI.getElementById(this.draggedRootSVGElement.id).closest("staff")
-        var measure = staff.closest("measure")
-        var staffIdx = parseInt(staff.getAttribute("n")) - 1
-        var measureIdx = parseInt(measure.getAttribute("n")) - 1
-        var dur = this.currentMEI.getElementById(this.draggedRootSVGElement.id).closest("chord") !== null ? this.currentMEI.getElementById(this.draggedRootSVGElement.id).closest("chord").getAttribute("dur") : attr.dur
-        
-        let newNote: NewNote = {
-          pname: attr.pname,
-          oct: attr.oct.toString(),
-          dur: dur,
-          keysig: mm.get(measureIdx, staffIdx).keysig,
-          rest: false,
-        }
+    target.setAttribute("distY", distY.toString())
+    target.setAttribute("y", (edy - distY).toString())
 
-        this.musicPlayer.generateTone(newNote)
-      });
-    }
+    return {x: pt.x, y: pt.y}
   }
 
   //////////////// GETTER/ SETTER ////////////
@@ -184,26 +120,13 @@ class NoteDragHandler implements Handler{
     return this
   }
 
-  setDeleteHandler(deleteHandler: DeleteHandler){
-    this.deleteHandler = deleteHandler
+  setInsertCallback(insertCallback: (newNote: NewNote, replace: Boolean) => Promise<any>){
+    this.insertCallback = insertCallback
     return this
   }
   
-  setEditCallback(editCallback: (action: EditorAction) => Promise<any>){
-    this.editCallback = editCallback
-    return this
-  }
-
-  setElementAttrCallback(elementAttrCallback: (id: string) => Attributes ){
-    this.elementAttrCallback = elementAttrCallback
-    return this
-  }
-
   setContainerId(id: string) {
     this.containerId = id
-    this.container = document.getElementById(id)
-    this.interactionOverlay = cq.getInteractOverlay(id)
-    this.rootSVG = cq.getRootSVG(id)
     return this
   }
 }

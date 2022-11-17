@@ -84,10 +84,13 @@ class ClickModeHandler implements Handler {
      * Event handler for inserting Notes
      */
     clickHandler = (function clickHandler(e: MouseEvent): void {
-        if (["clef", "meterSig", "keySig", "rest", "notehead"].some(c => (e.target as Element).parentElement.classList.contains(c))) { 
+        var t = (e.target as Element)
+        if(this.interactionOverlay.querySelector(".moving") !== null) return
+        if (["clef", "meterSig", "keySig", "rest", "notehead"].some(c => t.parentElement.classList.contains(c))) {
             this.hideCursor()
             return 
-        } // when over other interactable elements discard event
+        }
+        // when over other interactable elements discard event
         if (!this.phantomElementHandler.getIsTrackingMouse()) { return }
         if (this.musicPlayer.getIsPlaying() === true) { return } // getIsPlaying could also be undefined
 
@@ -131,7 +134,6 @@ class ClickModeHandler implements Handler {
         }
 
         if (!pitchExists) {
-            console.log(newNote)
             var replace = (this.container.querySelector("#insertToggle") as HTMLInputElement).checked && newNote.chordElement == undefined
             this.insertCallback(this.m2m.getNewNote(), replace).then(() => {
                 this.musicPlayer.generateTone(this.m2m.getNewNote())
@@ -142,7 +144,10 @@ class ClickModeHandler implements Handler {
     }).bind(this)
 
     hideCursor = function(){
-        this.container.querySelectorAll("#phantomCanvas > *").forEach(ph => ph.setAttribute("visibility", "hidden")) // make phantoms invisible
+        if(this.interactionOverlay.querySelector(".moving") !== null) return
+        this.container.querySelectorAll("#phantomCanvas > *").forEach(ph => {
+            ph.setAttribute("visibility", "hidden")
+        }) // make phantoms invisible
     }.bind(this)
 
     showCursor = function(){

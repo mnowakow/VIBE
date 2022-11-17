@@ -106,46 +106,6 @@ class InsertModeHandler implements Handler{
     this.deleteHandler.setListeners()
   }
 
-  // activateKeyMode(clicked = false){
-  //   if(this.annotationMode || this.harmonyMode){
-  //     this.insertDeactivate()
-  //   }
-  //   if(clicked){
-  //     if(this.unselectMenuItem("keyMode")){return}
-  //   }
-  //   this.container.classList.add("textmode")
-  //   this.keyMode = true;
-  //   this.clickInsertMode = false;
-  //   this.annotationMode = false;
-  //   this.harmonyMode = false;
-
-  //   var cursor = null
-  //   if(this.keyModeHandler != undefined){
-  //     cursor = this.keyModeHandler.cursor
-  //   }
-  //   this.keyModeHandler = this.keyModeHandler || new KeyModeHandler(this.containerId)
-  //   var currNodeId: string
-  //   if(this.keyModeHandler.scoreGraph?.getCurrentNode() != undefined){
-  //     currNodeId = this.keyModeHandler.scoreGraph.getCurrentNode().getId()
-  //   } 
-  //   this.keyModeHandler
-  //     .setContainerId(this.containerId)
-  //     .setInsertCallback(this.insertCallback)
-  //     .setDeleteCallback(this.deleteCallback)
-  //     .setScoreGraph(this.scoreGraph)
-  //     .setM2M(this.m2m)
-  //     .setMusicPlayer(this.musicPlayer)
-  //     .resetListeners()
-
-  //   if(currNodeId !=  undefined){
-  //     this.keyModeHandler.setCurrentNodeScoreGraph(currNodeId)
-  //   }
-  //   // if(typeof this.selectionHandler !== "undefined"){
-  //   //   this.selectionHandler.removeListeners()
-  //   // }
-  //   this.deleteHandler.setListeners()
-  // }
-
   activateSelectionMode(){
     //this.insertDeactivate()
     

@@ -7,7 +7,7 @@ import { idxNoteMapFClef } from "../utils/mappings";
 import { Annotation, Coord } from "../utils/Types";
 import * as cq from "../utils/convenienceQueries"
 import * as coordinates from "../utils/coordinates"
-import { collapseTextChangeRangesAcrossMultipleVersions, isConditionalExpression } from "typescript";
+
 
 class AnnotationChangeHandler implements Handler{
     m2m?: Mouse2MEI;

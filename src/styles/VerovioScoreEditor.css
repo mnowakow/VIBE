@@ -39,6 +39,10 @@ body.waiting * {
     cursor: pointer;
 }
 
+#scoreRects .notehead:hover{
+    cursor: ns-resize !important;
+}
+
 .clickmode{
     cursor: crosshair
 }
@@ -60,7 +64,7 @@ body.waiting * {
 
 /* This one is for Debugging. 
 Change fill-opacity and stroke-opacity to display boundsing boxes*/
-.debug #scoreRects *{
+.debug #scoreRects *, #scoreRects .moving{
     stroke-width: 1px;
     stroke: black;
     fill: gray;

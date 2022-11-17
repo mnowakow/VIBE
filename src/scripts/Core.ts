@@ -304,11 +304,10 @@ class Core {
     this.noteDragHandler
       .setContainerId(this.containerId)
       .setCurrentMEI(this.currentMEIDoc)
-      .setDeleteHandler(this.deleteHandler)
-      .setEditCallback(this.edit)
-      .setElementAttrCallback(this.getElementAttr)
+      .setInsertCallback(this.insert)
       .setMusicPlayer(this.musicplayer)
       .setM2M(this.m2m)
+      .resetListeners()
 
     this.keyboardHandler
       .setContainerId(this.containerId)

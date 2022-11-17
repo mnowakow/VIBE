@@ -7,6 +7,7 @@ import * as meiOperation from "../utils/MEIOperations"
 import * as coordinates from "./coordinates"
 import * as cq from "./convenienceQueries"
 import * as ffbb from "./firefoxBBoxes"
+import { collapseTextChangeRangesAcrossMultipleVersions } from 'typescript';
 export class Mouse2MEI {
 
     private noteBBoxes: Array<NoteBBox>;
@@ -175,7 +176,7 @@ export class Mouse2MEI {
                 parentMeasure: element.closest(".measure"),
                 //x: element.getBoundingClientRect().x + window.pageXOffset,
                 //y: element.getBoundingClientRect().y + window.pageYOffset
-                x: relpt.x,
+                x: relpt.right, //relpt.x,
                 y: relpt.y
             }
             this.noteBBoxes.push(bb);
@@ -306,6 +307,7 @@ export class Mouse2MEI {
         }
 
         // Define relative position for click insert
+        // position should also consider right border of bounding box. Position should be 
         if (!staffIsEmpty) {
             let nbb = []
             this.noteBBoxes.forEach(bb => {
@@ -320,10 +322,10 @@ export class Mouse2MEI {
                     diffNote = tempDiff;
                     currentNearestNote = bb;
                     isLeftOfNote = zerocrossing <= 0 ? true : false;
-                    if(this.interactionOverlay.querySelector("#" + bb.id)?.classList.contains("rest")){
-                        isLeftOfNote = !isLeftOfNote
-                    }
+                    // if(cq.getRootSVG(this.containerId).querySelector("#" + bb.id)?.classList.contains("rest")){
+                    //     isLeftOfNote = !isLeftOfNote
                         
+                    // }
                     //isRightOfNote = tempDiff > 0 ? true : false;
                 }
             })
@@ -502,7 +504,6 @@ export class Mouse2MEI {
             chordElement: options.targetChord,
             rest: this.container.querySelector("#pauseNote").classList.contains("selected")
         }
-
         this.newNote = newNote
     }
 
