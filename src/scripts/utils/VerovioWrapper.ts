@@ -29,7 +29,7 @@ export default class VerovioWrapper {
           //adjustPageHeight: 0,
           noJustification: 1,
           pageWidth: (2500 / (window.devicePixelRatio / r)) / (screen.availHeight / window.innerWidth), // adjust size with window size
-          svgRemoveXlink: true,
+          //svgRemoveXlink: true,
           svgViewBox: true, 
           //svgBoundingBoxes: true
           //pageHeight: 60000

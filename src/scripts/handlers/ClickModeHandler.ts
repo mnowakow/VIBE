@@ -27,7 +27,7 @@ class ClickModeHandler implements Handler {
         this.interactionOverlay.addEventListener('click', this.clickHandler)
         this.interactionOverlay.addEventListener("mousemove", this.mouseOverChordHandler)
         this.interactionOverlay.querySelectorAll("#scoreRects > *").forEach(sr => {
-            if (["clef", "meterSig", "keySig", "rest", "notehead", "harm"].some(c => sr.classList.contains(c))) { 
+            if (["clef", "meterSig", "keySig", "rest", "notehead", "harm", ].some(c => sr.classList.contains(c))) { 
                 sr.addEventListener("mouseover", this.hideCursor)
             }else{
                 sr.addEventListener("mouseover", this.showCursor)
@@ -153,6 +153,8 @@ class ClickModeHandler implements Handler {
     showCursor = function(){
         this.container.querySelectorAll("#phantomCanvas > *").forEach(ph => ph.setAttribute("visibility", "visible")) // make phantoms invisible
     }.bind(this)
+
+
 
 
     mouseOverChordHandler = (function mouseOverHandler(e: MouseEvent): void {

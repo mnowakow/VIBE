@@ -143,7 +143,9 @@ class Annotations implements Handler{
         })
         document.removeEventListener("keydown", this.deleteHandler)
         this.customAnnotationDrawer?.removeListeners()
-        this.annotationChangeHandler?.removeListeners()
+        
+        // interaction with all the annotations should always be possible
+        //this.annotationChangeHandler?.removeListeners()
 
         return this
     }
@@ -173,6 +175,8 @@ class Annotations implements Handler{
     }).bind(this)
 
     createAnnotationHandler = (function createAnnotationHandler (e: MouseEvent){
+        var t = e.target as Element
+        if(t.closest(".vseContainer")?.classList.contains("clickmode")) return // creation should only be possible when annotation tab is on
        var selectedAnnotations = this.interactionOverlay.querySelectorAll("#annotationCanvas .selected")
        if(selectedAnnotations.length === 0){
            this.createAnnotation(e)
@@ -481,6 +485,10 @@ class Annotations implements Handler{
 
     getAnnotationCanvas(): SVGSVGElement{
         return this.interactionOverlay.querySelector("#annotationCanvas") || this.annotationCanvas
+    }
+
+    getAnnotationChangeHandler(): AnnotationChangeHandler{
+        return this.annotationChangeHandler
     }
 
     setUndoStacks(arr: Array<Array<Element>>){

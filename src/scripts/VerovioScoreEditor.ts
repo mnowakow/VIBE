@@ -5,6 +5,7 @@ import InsertHandler from './handlers/InsertModeHandler';
 import { Mouse2MEI } from './utils/Mouse2MEI';
 import * as dc from './utils/DOMCreator'
 import Toolbar from './gui/Toolbar'
+import Tabbar from './gui/Tabbar'
 
 /**
  * Main Class for the VerovioScoreEditor
@@ -143,6 +144,12 @@ class VerovioScoreEditor{
             // parentElement for customToolbar
             this.container.append(dc.makeNewDiv("customToolbar", "btn-toolbar align-items-stretch", {role: "toolbar"}))
 
+            // and now the tabs
+            this.container.append(dc.makeNewDiv("notationTabGroup", btnGrpClass, {role: "group"}))
+            this.container.append(dc.makeNewDiv("annotationTabGroup", btnGrpClass, {role: "group"}))
+            this.container.append(dc.makeNewDiv("articulationTabGroup", btnGrpClass, {role: "group"}))
+            this.container.append(dc.makeNewDiv("melismaTabGroup", btnGrpClass, {role: "group"}))
+
             //textTest
             // var tt = dc.makeNewDiv("textTest", "")
             // tt.innerHTML = "&#xE014;";
@@ -156,7 +163,7 @@ class VerovioScoreEditor{
             // this.container.append(statusBar)
             // test
 
-            var tb = new Toolbar(this.options, this.container.id)
+            var tb = new Tabbar(this.options, this.container.id)//new Toolbar(this.options, this.container.id)
             tb.createToolbars()
             //attach mei first time
             this.coreInstance = new Core(this.container.id);

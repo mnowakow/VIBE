@@ -66,6 +66,7 @@ class KeyModeHandler implements Handler{
   }).bind(this)
 
   noteInput(e: KeyboardEvent){
+    if(document.querySelector("#annotationCanvas *[contenteditable=true]")) return 
     var currentNode = this.scoreGraph.getCurrentNode()
     if(!cq.hasActiveElement(this.containerId)) return
     if(this.musicPlayer.getIsPlaying() === true){return} // getIsPlaying could also be undefined

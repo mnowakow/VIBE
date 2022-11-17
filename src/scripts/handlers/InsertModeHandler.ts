@@ -63,7 +63,6 @@ class InsertModeHandler implements Handler{
     this.annotations = new Annotations(containerId)
   }
 
-  //activateClickMode(clicked: Boolean = false){
   activateInsertMode(clicked: Boolean = false){
     if(this.annotationMode || this.harmonyMode){
       this.insertDeactivate()
@@ -104,6 +103,7 @@ class InsertModeHandler implements Handler{
       .resetListeners()
 
     this.deleteHandler.setListeners()
+    this.annotations?.resetListeners() // annotations should also be interactable when in notation mode
   }
 
   activateSelectionMode(){
@@ -257,10 +257,11 @@ class InsertModeHandler implements Handler{
 
   setListeners(){
     var that = this
-    Array.from(this.container.querySelectorAll(".dropdown-item")).forEach(n => {
+    Array.from(this.container.querySelectorAll(".dropdown-item, .tabBtn")).forEach(n => {
       n.addEventListener("click", function(e){
           e.preventDefault()
           switch(this.id){
+              case "notationTabBtn":
               case "clickInsert":
                   //that.activateClickMode(true);
                   that.activateInsertMode(true)
@@ -269,6 +270,7 @@ class InsertModeHandler implements Handler{
                  //that.activateKeyMode(true);
                  that.activateInsertMode(true)
                   break;
+              case "annotationTabBtn":
               case "activateAnnot":
                 that.activateAnnotationMode(true);
                 break;

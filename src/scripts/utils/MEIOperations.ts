@@ -1374,6 +1374,13 @@ function reorganizeBeams(currentMEI : Document){
       }
     })
 
+    Array.from(currentMEI.querySelectorAll("*[xmlns]")).forEach(x =>{
+      var attr = x.getAttribute("xmlns")
+      if( attr === "" || attr === null || attr == undefined ){
+        x.removeAttribute("xmlns")
+      }
+    })
+
   })
 
   // allow no empty and rest-note element chord elements

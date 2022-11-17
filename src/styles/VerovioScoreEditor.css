@@ -10,9 +10,9 @@
     src: url(../fonts/BravuraText.otf), format("opentype");
 }
 
-*{
+/* *{
     font-size: small;
-}
+} */
 
 .dropdown button{
     height: 100%;

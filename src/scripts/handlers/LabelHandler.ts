@@ -341,9 +341,12 @@ class LabelHandler implements Handler {
      * Close the modifier Window and make the hidden Element visible again
      */
     closeModifyWindow() {
-        Array.from(this.labelCanvas.children).forEach(c => {
-            c?.remove()
-        })
+        try{
+            Array.from(this.labelCanvas.children).forEach(c => {
+                c?.remove()
+            })
+        }catch{}
+
         // clean MEI from empty harm Elements
         this.currentMEI.querySelectorAll(labelClasses.join(",")).forEach(h => {
             if (h.id === "") return
@@ -433,7 +436,6 @@ class LabelHandler implements Handler {
             textDiv.dispatchEvent(new KeyboardEvent("keydown", {"key": "Enter"})) // trigger submitLabel when bluring
             that.setListeners()
             that.musicPlayer.setPlayListener()
-             
         })
 
         textDiv.addEventListener("keydown", this.submitLabelHandler)
