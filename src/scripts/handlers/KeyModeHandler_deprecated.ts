@@ -11,6 +11,9 @@ import * as cq from "../utils/convenienceQueries"
 
 const marked = "marked"
 
+/**
+ * @deprecated
+ */
 class KeyModeHandler implements Handler{
     m2m?: Mouse2MEI;
     musicPlayer?: MusicPlayer;

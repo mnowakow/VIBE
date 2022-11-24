@@ -81,7 +81,7 @@ export type NewNote = {
   relPosX?: string, //left right; relative to nearestNoteId
   nearestNoteId?: string //nearest element for referece
   staffId?: string,
-  chordElement?: Element, // to what chord will it be attached?
+  chordElement?: Element, // to what chord will it be attached? must be from svg (not mei)
   rest: boolean //will it be a rest?
 }
 

@@ -16,7 +16,7 @@ import { uuidv4 } from '../utils/random';
 /**
  * Class that handles insert mode, events, and actions.
  */
-class NoteDragHandler implements Handler{
+class NoteDragHandler implements Handler {
   private containerId: string
 
   musicPlayer: MusicPlayer;
@@ -31,100 +31,102 @@ class NoteDragHandler implements Handler{
   insertCallback: (newNote: NewNote, replace: Boolean) => Promise<any>;
 
 
-  constructor(containerId: string){
+  constructor(containerId: string) {
     this.setContainerId(containerId)
   }
 
 
   setListeners() {
     var that = this
-    this.noteDragListener = interact("#"+ this.containerId + " #interactionOverlay .notehead rect")
-    .draggable({
-      startAxis: "y",
-      lockAxis: "y",
-      listeners:{
-        move: this.dragNote.bind(this),
-        end(event){
-          that.deleteTempDistances()
-          that.insertCallback(that.newNote, true)
-        }
-      },
-      modifiers: [
-        interact.modifiers.restrictRect({
+    this.noteDragListener = interact("#" + this.containerId + " #interactionOverlay .notehead rect")
+      .draggable({
+        startAxis: "y",
+        lockAxis: "y",
+        listeners: {
+          move: this.dragNote.bind(this),
+          end(event) {
+            that.deleteTempDistances()
+            that.insertCallback(that.newNote, true)
+          }
+        },
+        modifiers: [
+          interact.modifiers.restrictRect({
             endOnly: true
-        })
-    ]
-    })
+          })
+        ]
+      })
   }
 
   removeListeners(): void {
     this.noteDragListener?.unset()
   }
 
-  resetListeners(){
+  resetListeners() {
     this.removeListeners()
     this.setListeners()
     return this
   }
 
-  deleteTempDistances(){
+  deleteTempDistances() {
     cq.getInteractOverlay(this.containerId)?.querySelectorAll("*[distY]").forEach(d => {
-         d.removeAttribute("distY")
-         d.classList.remove("moving")
-     })
- }
+      d.removeAttribute("distY")
+      d.classList.remove("moving")
+    })
+  }
 
-  dragNote(e: MouseEvent): void{
+  dragNote(e: MouseEvent): void {
     var noteHeadBBox = e.target as Element
     this.noteDragEvent = new MouseEvent("draggingNote", e)
     noteHeadBBox.dispatchEvent(this.noteDragEvent)
     var refNote = cq.getRootSVG(this.containerId).querySelector("#" + noteHeadBBox.parentElement.getAttribute("refId")).closest(".note")
     var note = cq.getInteractOverlay(this.containerId).querySelector("*[refId=\"" + refNote.id + "\"] rect")
 
-    if(!noteHeadBBox.classList.contains("moving")) noteHeadBBox.classList.add("moving")
-    //if(!note.classList.contains("moving")) note.classList.add("moving")
-    //this.newPos(note, e)
+    if (!noteHeadBBox.classList.contains("moving")) noteHeadBBox.classList.add("moving")
     var headPos = this.newPos(noteHeadBBox, e)
     this.m2m.defineNote(headPos.x, headPos.y, {})
     this.newNote = this.m2m.getNewNote()
+    if (refNote.closest(".chord") !== null) {
+      this.newNote.chordElement = refNote.closest(".chord")
+      this.currentMEI.querySelector("#" + refNote.id)?.remove()
+    }
   }
 
 
-  newPos(target: Element, e: MouseEvent){
+  newPos(target: Element, e: MouseEvent) {
     var pt = coordinates.transformToDOMMatrixCoordinates(e.clientX, e.clientY, target.closest("*[viewBox]"))
-    var edy = pt.y 
+    var edy = pt.y
 
     var ptDist = coordinates.transformToDOMMatrixCoordinates(target.getBoundingClientRect().x, target.getBoundingClientRect().y, target.closest("*[viewBox]"))
-    var distY = (parseFloat(target.getAttribute('distY'))) || edy - ptDist.y 
+    var distY = (parseFloat(target.getAttribute('distY'))) || edy - ptDist.y
 
     target.setAttribute("distY", distY.toString())
     target.setAttribute("y", (edy - distY).toString())
 
-    return {x: pt.x, y: pt.y}
+    return { x: pt.x, y: pt.y }
   }
 
   //////////////// GETTER/ SETTER ////////////
 
-  setMusicPlayer(musicPlayer: MusicPlayer){
+  setMusicPlayer(musicPlayer: MusicPlayer) {
     this.musicPlayer = musicPlayer
     return this
   }
 
-  setCurrentMEI(xmlDoc: Document){
+  setCurrentMEI(xmlDoc: Document) {
     this.currentMEI = xmlDoc
     return this
   }
 
-  setM2M(m2m: Mouse2MEI){
+  setM2M(m2m: Mouse2MEI) {
     this.m2m = m2m
     return this
   }
 
-  setInsertCallback(insertCallback: (newNote: NewNote, replace: Boolean) => Promise<any>){
+  setInsertCallback(insertCallback: (newNote: NewNote, replace: Boolean) => Promise<any>) {
     this.insertCallback = insertCallback
     return this
   }
-  
+
   setContainerId(id: string) {
     this.containerId = id
     return this

@@ -20,6 +20,7 @@ import * as cq from "../utils/convenienceQueries"
 
 /**
  * Class that handles insert mode, events, and actions.
+ * @deprecated
  */
 class InsertModeHandler implements Handler{
   containerId: string;

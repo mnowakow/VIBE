@@ -13,6 +13,7 @@ import * as cq from "../utils/convenienceQueries"
 //const $ = H5P.jQuery;
 
 /**
+ * @deprecated
  * Class that handles insert mode, events, and actions.
  */
 class NoteDragHandler implements Handler{
