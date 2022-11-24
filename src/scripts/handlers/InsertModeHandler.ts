@@ -103,7 +103,9 @@ class InsertModeHandler implements Handler{
       .resetListeners()
 
     this.deleteHandler.setListeners()
-    this.annotations?.resetTextListeners() // annotations should also be interactable when in notation mode
+     
+    this.annotations?.update()
+    //this.annotations?.resetTextListeners() // annotations should also be interactable when in notation mode
     this.activateSelectionMode()
   }
 
