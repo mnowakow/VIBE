@@ -103,7 +103,8 @@ class InsertModeHandler implements Handler{
       .resetListeners()
 
     this.deleteHandler.setListeners()
-    this.annotations?.resetListeners() // annotations should also be interactable when in notation mode
+    this.annotations?.resetTextListeners() // annotations should also be interactable when in notation mode
+    this.activateSelectionMode()
   }
 
   activateSelectionMode(){
@@ -239,7 +240,7 @@ class InsertModeHandler implements Handler{
 
     //selectionnmode should be always active. 
     //Listeners will overwritten if another mode listen same behaviour on same element (d3.js), e.g. annotation
-    this.activateSelectionMode()
+    //this.activateSelectionMode()
 
   }
 

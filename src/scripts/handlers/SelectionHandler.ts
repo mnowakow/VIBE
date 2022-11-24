@@ -73,10 +73,6 @@ class SelectionHandler implements Handler {
 
             var rect = that.interactionOverlay.querySelector("#selectRect");
             var rectpt = coordinates.getDOMMatrixCoordinates(rect, that.rootSVG)
-            // var ptRight = new DOMPoint(rectBBox.right, 0)
-            // var ptBottom = new DOMPoint(0, rectBBox.bottom)
-            // var rootMatrix = root as unknown as SVGGraphicsElement
-            // var rectpt = pt.matrixTransform(rootMatrix.getScreenCTM().inverse())
             var rectHeightpt = rectpt.height //Math.abs(rectpt.y - ptBottom.matrixTransform(rootMatrix.getScreenCTM().inverse()).y) 
             var rectWidthpt = rectpt.width //Math.abs(rectpt.x - ptRight.matrixTransform(rootMatrix.getScreenCTM().inverse()).x)
 

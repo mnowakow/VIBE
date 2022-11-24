@@ -66,6 +66,8 @@ class Annotations implements Handler{
 
     setListeners(){
         this.resetTextListeners()
+        this.customAnnotationDrawer = new CustomAnnotationShapeDrawer(this.containerId)
+        this.customAnnotationDrawer.setUpdateCallback(this.resetTextListeners.bind(this))
         var harmonyButton = this.container.querySelector("#harmonyAnnotButton")
         var that = this 
         this.container.querySelectorAll("#staticTextButton, #linkedAnnotButton").forEach(b => {
@@ -88,8 +90,8 @@ class Annotations implements Handler{
     }
     
     setTextListeners() {
-        this.customAnnotationDrawer = new CustomAnnotationShapeDrawer(this.containerId)
-        this.customAnnotationDrawer.setUpdateCallback(this.resetTextListeners.bind(this))
+        // this.customAnnotationDrawer = new CustomAnnotationShapeDrawer(this.containerId)
+        // this.customAnnotationDrawer.setUpdateCallback(this.resetTextListeners.bind(this))
 
         this.annotationChangeHandler = new AnnotationChangeHandler(this.containerId)
         this.annotationChangeHandler

@@ -43,8 +43,6 @@ class CustomAnnotationShapeDrawer implements Handler{
         var that = this;
         function drawStart(){
             var pt = coordinates.transformToDOMMatrixCoordinates(d3.event.sourceEvent.clientX, d3.event.sourceEvent.clientY, that.interactionOverlay)
-            //var canvasMatrix = (document.getElementById("rootSVG") as unknown as SVGGraphicsElement).getScreenCTM().inverse()
-            //pt = pt.matrixTransform(canvasMatrix)
             that.initialX = pt.x //d3.event.x
             that.initialY = pt.y //d3.event.y
             if(d3.event.sourceEvent.srcElement.id === that.interactionOverlay.id){
