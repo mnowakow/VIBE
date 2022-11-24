@@ -311,7 +311,7 @@ class LabelHandler implements Handler {
     submitLabelHandler = (function submitHandler(e: KeyboardEvent) {
         if (!cq.hasActiveElement(this.containerId)) return
         if (e.key === "Enter" && this.labelCanvas.hasChildNodes()) {
-        //if (this.labelCanvas.hasChildNodes()) {
+            e.target.removeEventListener("keydown", this.submitLabelHandler)
             this.submitLabel()
         }
     }).bind(this)
@@ -442,6 +442,7 @@ class LabelHandler implements Handler {
         textDiv.addEventListener("keydown", this.typeLabelHandler)
 
         textDiv.focus()
+        console.log(textDiv)
     }
 
     getTimestamp(note: Element) {
