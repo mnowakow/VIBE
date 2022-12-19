@@ -351,6 +351,11 @@ class Core {
       .removeListeners()
       .setListeners()
     
+      // always start from click mode
+    if (this.firstStart) {
+      document.getElementById("clickInsert").click()
+      this.firstStart = false
+    }
 
     if (this.doHideUI) {
       this.hideUI(this.hideOptions)
@@ -364,12 +369,6 @@ class Core {
 
     if (Object.entries(this.attributeOptions).length > 0) {
       this.setAttributes(this.attributeOptions)
-    }
-
-    // always start from click mode
-    if (this.firstStart) {
-      document.getElementById("clickInsert").click()
-      this.firstStart = false
     }
   }
 
@@ -751,12 +750,17 @@ class Core {
    */
   hideUI(options = {}) {
     if (Object.entries(options).length === 0) {
-      options = { annotationCanvas: true, labelCanvas: true, canvasMusicPlayer: true, scoreRects: true, manipulatorCanvas: true, sidebarContainer: true, btnToolbar: true, customToolbar: true }
+      options = { annotationCanvas: true, labelCanvas: true, canvasMusicPlayer: true, scoreRects: true, manipulatorCanvas: true, sidebarContainer: true, btnToolbar: true, customToolbar: true, groups: true }
     }
 
     for (const [key, value] of Object.entries(options)) {
       if (value) {
-        (this.container.querySelector("#" + key) as HTMLElement)?.style.setProperty("display", "none", "important")
+        if(key === "groups"){
+          (this.container.querySelectorAll("[role=\"group\"]")).forEach(g => (g as HTMLElement).style.setProperty("display", "none", "important"))
+        }else{
+          (this.container.querySelector("#" + key) as HTMLElement)?.style.setProperty("display", "none", "important")
+        }
+
       }
     }
   }

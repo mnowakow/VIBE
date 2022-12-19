@@ -278,7 +278,7 @@ class Tabbar {
         this.articulationTab.append(dc.makeNewButton("Articulation", "articulationTabBtn", buttonStyleDarkOutline + " " + tabFlag))
 
         this.melismaTab = cq.getContainer(this.containerId).querySelector("#melismaTabGroup")
-        this.melismaTab.append(dc.makeNewButton("Melisma", "melismaTabBtn", buttonStyleDarkOutline + " " + tabFlag))
+        //this.melismaTab.append(dc.makeNewButton("Melisma", "melismaTabBtn", buttonStyleDarkOutline + " " + tabFlag))
 
         var handlerDropdown = dc.makeNewDiv("insertDropdown", "dropdown-menu")
         handlerDropdown.append(dc.makeNewAElement("Mouse Input", "clickInsert", "dropdown-item", "#"))
@@ -385,9 +385,9 @@ class Tabbar {
 
     createButtonsAnnotationMode() {
         this.annotGroupKM = dc.makeNewDiv("annotGroupKM", "customGroup btn-group-sm me-2 h-100", { role: "group" }) as HTMLElement
-        this.annotGroupKM.append(dc.makeNewButton("TEXT", "staticTextButton", buttonStyleDarkOutline))
-        this.annotGroupKM.append(dc.makeNewButton("LINKED ANNOTATION", "linkedAnnotButton", buttonStyleDarkOutline + " selected"))
-        this.annotGroupKM.append(dc.makeNewButton("HARMONY", "harmonyAnnotButton", buttonStyleDarkOutline))
+        this.annotGroupKM.append(dc.makeNewButton("Text", "staticTextButton", buttonStyleDarkOutline))
+        this.annotGroupKM.append(dc.makeNewButton("Linked Text", "linkedAnnotButton", buttonStyleDarkOutline + " selected"))
+        this.annotGroupKM.append(dc.makeNewButton("Harmony", "harmonyAnnotButton", buttonStyleDarkOutline))
         this.annotGroupKM.addEventListener("click", this.exclusiveSelectHandler)
     }
 
@@ -403,7 +403,7 @@ class Tabbar {
         btnToolbar.appendChild(this.notationTab)
         btnToolbar.appendChild(this.annotationTab)
         btnToolbar.appendChild(this.articulationTab)
-        btnToolbar.appendChild(this.melismaTab)
+        //btnToolbar.appendChild(this.melismaTab)
         
         //further utils
         btnToolbar.appendChild(this.soundGroup)

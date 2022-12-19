@@ -10,9 +10,6 @@ import * as cq from "../utils/convenienceQueries"
 import interact from "interactjs"
 import { uuidv4 } from '../utils/random';
 
-//@ts-ignore
-//const $ = H5P.jQuery;
-
 /**
  * Class that handles insert mode, events, and actions.
  */
