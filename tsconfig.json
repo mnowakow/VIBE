@@ -5,8 +5,7 @@
         "target": "es2017",
         "module": "commonjs",
         "allowSyntheticDefaultImports": true,
-        "experimentalDecorators": true,
-        "noImplicitUseStrict": true
+        "experimentalDecorators": true
     },
     "include": [
         "./src/**/*.ts",

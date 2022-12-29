@@ -20,14 +20,22 @@ class WindowHandler implements Handler{
     containerId: string;
     rootSVG: Element
     interactionOverlay: Element
+    w: Window
+
+    constructor(){
+        this.w = window
+        while(this.w !== window){
+            this.w = this.w.parent
+        }
+    }
 
     svgReloadCallback: () => void
 
     setListeners(){
         window.addEventListener("scroll", this.update)
         //window.addEventListener("resize", this.update)
-        window.addEventListener("resize", this.updateSVG)
-        window.addEventListener("deviceorientation", this.update)
+        this.w.addEventListener("resize", this.updateSVG)
+        this.w.addEventListener("deviceorientation", this.update)
         document.querySelector("#"+ this.containerId + " #sidebarContainer").addEventListener("transitionend", this.update)
         document.querySelector("#"+ this.containerId + " #sidebarContainer").addEventListener("transitionend", this.updateSVG)
         this.rootSVG.addEventListener("scroll", this.update)
@@ -41,13 +49,13 @@ class WindowHandler implements Handler{
 
     removeListeners() {
         window.removeEventListener("scroll", this.update)
-        window.removeEventListener("resize", this.update)
-        window.removeEventListener("resize", this.updateSVG)
-        window.removeEventListener("deviceorientation", this.update)
+        this.w.removeEventListener("resize", this.update)
+        this.w.removeEventListener("resize", this.updateSVG)
+        this.w.removeEventListener("deviceorientation", this.update)
         document.querySelector("#"+ this.containerId + " #sidebarContainer").removeEventListener("transitionend", this.update)
         document.querySelector("#"+ this.containerId + " #sidebarContainer").removeEventListener("transitionend", this.updateSVG)
         this.rootSVG.removeEventListener("scroll", this.update)
-        this.rootSVG.removeEventListener("resize", this.update)
+        //this.rootSVG.removeEventListener("resize", this.update)
         this.rootSVG.removeEventListener("deviceorientation", this.update)
 
         document.removeEventListener("fullscreenchange", this.update)
