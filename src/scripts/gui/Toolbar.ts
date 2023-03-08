@@ -15,6 +15,10 @@ const smuflFont = "smufl"
 const alterBtn = "alterBtn"
 const selectedFlag = "selected"
 
+/**
+ * Actually this class is deprecated due to different approaches in toggling between symbols and mods.
+ * use Tabbar instead.
+ */
 class Toolbar {
 
     private handlerGroup: HTMLElement
@@ -670,8 +674,6 @@ class Toolbar {
 
     sidebarHandler = (function sidebarHandler(e: MouseEvent): void {
         //toggle
-        var sidebarWidthRatio = "30%"
-        var btnToolbar = cq.getContainer(this.containerId).querySelector("#btnToolbar")
         if (this.sidebar.classList.contains("closedSidebar")) {
             //document.getElementById("sidebarContainer").style.width = sidebarWidthRatio
             Array.from(cq.getContainer(this.containerId).querySelectorAll(".closedSidebar")).forEach(el => {
@@ -683,6 +685,7 @@ class Toolbar {
         } else {
             //document.getElementById("sidebarContainer").style.width = "0"
             Array.from(cq.getContainer(this.containerId).querySelectorAll(".openSidebar")).forEach(el => {
+                el.removeAttribute("style")
                 el.classList.add("closedSidebar")
                 el.classList.remove("openSidebar")
             })

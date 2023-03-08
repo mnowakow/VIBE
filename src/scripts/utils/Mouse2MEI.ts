@@ -557,6 +557,10 @@ export class Mouse2MEI {
 
     ///// GETTER/ SETTER ///////
 
+    getLastMouseEnter(){
+        return {layer: this.lastLayerMouseEnter,staff: this.lastStaffMouseEnter, measure: this.lastMeasureMouseEnter, system: this.lastSystemMouseEnter}
+    }
+
     getNewNote(): NewNote {
         return this.newNote;
     }
@@ -773,7 +777,7 @@ export class Mouse2MEI {
     update() {
         this.noteBBoxes.length = 0;
         this.staffLineBBoxes.length = 0;
-        this.updateOverlayCallback()
+        //this.updateOverlayCallback()
         this.findBBoxes();
         this.setMouseEnterElementListeners();
         return this

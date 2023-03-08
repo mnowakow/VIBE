@@ -14,14 +14,14 @@ import MeiTemplate from './assets/mei_template';
 import SVGFiller from "./utils/SVGFiller"
 import ScoreGraph from './datastructures/ScoreGraph';
 import WindowHandler from "./handlers/WindowHandler"
-import SidebarHandler from './handlers/SideBarHandler';
+import SidebarHandler from './handlers/SidebarHandler';
 import LabelHandler from './handlers/LabelHandler';
 import ModHandler from './handlers/ModHandler';
 import * as cq from "./utils/convenienceQueries"
 import * as coordinates from "./utils/coordinates"
 import * as ffbb from "./utils/firefoxBBoxes"
-import { ObjectFlags } from 'typescript';
 import TooltipHandler from './handlers/TooltipHandler';
+import { textChangeRangeIsUnchanged } from 'typescript';
 
 
 /**
@@ -48,6 +48,7 @@ class Core {
   private modHandler: ModHandler;
   private currentMEI: string;
   private currentMEIDoc: Document
+  private svg: string
   private currentMidi: string;
   private keyboardHandler: GlobalKeyboardHandler;
   private musicplayer: MusicPlayer;
@@ -65,9 +66,6 @@ class Core {
 
   private firstStart = true
 
-  /**
-   * Constructor for NeonCore
-   */
   constructor(containerId: string) {
     this.doHideUI = false
     this.hideOptions = {}
@@ -97,15 +95,18 @@ class Core {
     //   }
     // }
 
-    this.verovioWrapper = new VerovioWrapper();
+    this.verovioWrapper = this.verovioWrapper || new VerovioWrapper();
     if (cq.getRootSVG(this.containerId) !== null) {
-      this.svgFiller.cacheClasses()
+      this.svgFiller.cacheClasses().cacheScales()
       cq.getRootSVG(this.containerId).remove()
     }
     var waitingFlag = "waiting"
     if (cq.getRootSVG(this.containerId) !== null) {
       document.body.classList.add(waitingFlag)
     }
+
+    document.getElementById(this.containerId).dispatchEvent(new Event("loadingStart"))
+
     return new Promise((resolve, reject): void => {
       var d: string;
       var u: boolean;
@@ -142,8 +143,8 @@ class Core {
         isUrl: u
       };
 
-      var response
-      var svg
+      var response: VerovioResponse
+      var svg: string
 
       response = this.verovioWrapper.setMessage(message);
 
@@ -172,9 +173,9 @@ class Core {
       this.container.querySelector("#rootSVG").removeAttribute("height")
       this.container.querySelector("#rootSVG").removeAttribute("width")
 
-      this.createSVGOverlay(true)
-
       document.body.classList.remove(waitingFlag)
+      this.createSVGOverlay(true)
+      this.svgFiller.setXY(this.windowHandler?.getX(), this.windowHandler?.getY())
 
       this.getMEI("").then(mei => {
         this.currentMEI = mei
@@ -183,6 +184,7 @@ class Core {
         this.svgFiller
           .setContainerId(this.containerId)
           .loadClasses()
+          .loadScales()
           .fillSVG(this.currentMEIDoc)
         this.musicplayer = this.musicplayer || new MusicPlayer(this.containerId)
         this.musicplayer
@@ -203,11 +205,6 @@ class Core {
             this.container.querySelector("#" + this.lastInsertedNoteId)?.classList.add(lastAddedClass)
           }
         //}
-        
-
-        if (this.meiChangedCallback != undefined) {
-          this.meiChangedCallback(this.currentMEI)
-        }
 
         // MusicPlayer stuff
         this.getMidi().then(midi => {
@@ -225,6 +222,11 @@ class Core {
             }
             this.musicplayer.setScoreGraph(this.scoreGraph)
             this.initializeHandlers()
+            document.getElementById(this.containerId).dispatchEvent(new Event("loadingEnd"))
+            this.svg = new XMLSerializer().serializeToString(this.container.querySelector("#svg_output"))
+            if (this.meiChangedCallback != undefined) {
+              this.meiChangedCallback(this.currentMEI)
+            }
             resolve(svg);
           })
         })
@@ -235,7 +237,7 @@ class Core {
 
 
   reloadDataFunction = (function reloadData(): Promise<boolean> {
-    return this.loadData("", this.currentMEIDoc, false)
+    return this.loadData("", this.currentMEI, false)
   }).bind(this)
 
   loadDataFunction = (function loadDataFunction(pageURI: string, data: string | Document | HTMLElement, isUrl: boolean) {
@@ -615,9 +617,9 @@ class Core {
 
       var root = cq.getRootSVG(this.containerId)
       var rootBBox = root.getBoundingClientRect()
-      var rootWidth = rootBBox.width.toString()
-      var rootHeigth = rootBBox.height.toString()
-
+      var rootWidth = (rootBBox.width).toString()
+      var rootHeigth = (rootBBox.height).toString()
+      
       if (this.interactionOverlay.getAttribute("viewBox") === null) {
         this.interactionOverlay.setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))
       }
@@ -756,9 +758,9 @@ class Core {
     for (const [key, value] of Object.entries(options)) {
       if (value) {
         if(key === "groups"){
-          (this.container.querySelectorAll("[role=\"group\"]")).forEach(g => (g as HTMLElement).style.setProperty("display", "none", "important"))
+          (document.getElementById(this.containerId)?.querySelectorAll("[role=\"group\"]")).forEach(g => (g as HTMLElement).classList.add("hideUI")) // style.setProperty("display", "none", "important"))
         }else{
-          (this.container.querySelector("#" + key) as HTMLElement)?.style.setProperty("display", "none", "important")
+          (document.getElementById(this.containerId)?.querySelector("#" + key) as HTMLElement)?.classList.add("hideUI")//style.setProperty("display", "none", "important")
         }
 
       }
@@ -770,11 +772,17 @@ class Core {
    */
   viewUI(options = {}) {
     if (Object.entries(options).length === 0) {
-      options = { annotationCanvas: true, labelCanvas: true, canvasMusicPlayer: true, scoreRects: true, manipulatorCanvas: true, sidebarContainer: true, btnToolbar: true, customToolbar: true }
+      options = { annotationCanvas: true, labelCanvas: true, canvasMusicPlayer: true, scoreRects: true, manipulatorCanvas: true, sidebarContainer: true, btnToolbar: true, customToolbar: true, groups: true }
     }
+
     for (const [key, value] of Object.entries(options)) {
       if (value) {
-        (this.container.querySelector("#" + key) as HTMLElement)?.style.removeProperty("display")
+        if(key === "groups"){
+          (document.getElementById(this.containerId)?.querySelectorAll("[role=\"group\"]")).forEach(g => (g as HTMLElement).classList.remove("hideUI")) // style.setProperty("display", "none", "important"))
+        }else{
+          (document.getElementById(this.containerId)?.querySelector("#" + key) as HTMLElement)?.classList.remove("hideUI")//style.setProperty("display", "none", "important")
+        }
+
       }
     }
   }
@@ -803,6 +811,10 @@ class Core {
       return meiDoc
     }
     return this.currentMEI;
+  }
+
+  getSVG(): string{
+    return this.svg
   }
 
   getNoteDragHandler() {
@@ -860,7 +872,7 @@ class Core {
   }
 
   setHideUI(hide: boolean) {
-    this.doHideUI = true
+    this.doHideUI = hide
   }
 
   setHideOptions(options: {}) {

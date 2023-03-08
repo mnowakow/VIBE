@@ -103,8 +103,9 @@ class InsertModeHandler implements Handler{
       .resetListeners()
 
     this.deleteHandler.setListeners()
-     
-    this.annotations?.update()
+    
+    this.annotations?.setM2M(this.m2m)
+    this.annotations?.updateCanvas()
     //this.annotations?.resetTextListeners() // annotations should also be interactable when in notation mode
     this.activateSelectionMode()
   }
@@ -132,7 +133,7 @@ class InsertModeHandler implements Handler{
     if(this.annotations == undefined){
       this.annotations = new Annotations(this.containerId)
     }else{
-      this.annotations.update()
+      this.annotations.updateCanvas()
     }
     this.annotations
       .setContainerId(this.containerId)

@@ -243,18 +243,15 @@ class Annotations implements Handler{
                 break;
         }
 
-        //var pt = coordinates.transformToDOMMatrixCoordinates(e.clientX, e.clientY, this.interactionOverlay) //new DOMPoint(e.clientX, e.clientY)
         var pt = coordinates.transformToDOMMatrixCoordinates(e.clientX, e.clientY, cq.getInteractOverlay(this.containerId))
-        //var rootMatrix = (this.interactionOverlay as unknown as SVGGraphicsElement).getScreenCTM().inverse()
-        //rootMatrix = (this.annotationCanvas as unknown as SVGGraphicsElement).getScreenCTM().inverse()
-
-
+    
         var posx = pt.x //matrixTransform(rootMatrix).x //e.pageX - this.rootBBox.x - window.pageXOffset
         var posy = pt.y //matrixTransform(rootMatrix).y //e.pageY - this.rootBBox.y - window.pageYOffset
         var annotationTarget = this.m2m.findScoreTarget(posx, posy, false)
 
         var textGroup = document.createElementNS(c._SVGNS_, "g")
         textGroup.setAttribute("id", uuidv4())
+        textGroup.setAttribute("targetId", annotationTarget.id)
 
         var text = document.createElementNS(c._SVGNS_, "svg")
     
@@ -425,7 +422,7 @@ class Annotations implements Handler{
         }
     }).bind(this)
 
-    update(){
+    updateCanvas(){
         this.addCanvas()
         this.annotationChangeHandler?.update()
         if(this.annotationCanvas.classList.contains("back")){
@@ -433,6 +430,21 @@ class Annotations implements Handler{
         }else{
             this.resetTextListeners()
         }
+    }
+
+    updateAnnotationList(annotionCanvs: SVGSVGElement){
+        //TODO: Aktuallsieren des Datenmodells aus den Informarionen in der SVG: übersetzen der SVG in Annotation-Objekte
+        var that = this
+        this.annotationCanvas = annotionCanvs
+        this.annotationCanvas.querySelectorAll(":scope > g").forEach(g => {
+            var a: Annotation = {
+                sourceID: g.id,
+                targetID: g.getAttribute("targetId")
+            }                     
+            that.annotations.push(a)
+        })
+        this.interactionOverlay.dispatchEvent(new Event("annotChanged"))
+        this.resetTextListeners()
     }
 
     /////////// UTILITIES //////////////
@@ -487,6 +499,10 @@ class Annotations implements Handler{
 
     getAnnotationCanvas(): SVGSVGElement{
         return this.interactionOverlay.querySelector("#annotationCanvas") || this.annotationCanvas
+    }
+
+    setAnnotationCanvas(annotationCanvas: SVGSVGElement){
+        this.updateAnnotationList(annotationCanvas)
     }
 
     getAnnotationChangeHandler(): AnnotationChangeHandler{

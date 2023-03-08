@@ -208,8 +208,8 @@ class ModHandler implements Handler{
                 oldBeam.remove()
             }
             
+            meiOperation.cleanUp(this.currentMEI)
             var mei = meiConverter.restoreXmlIdTags(this.currentMEI)
-            meiOperation.cleanUp(mei)
             this.loadDataCallback("", mei, false)
         }
     } 

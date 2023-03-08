@@ -155,6 +155,7 @@ export function addToMEI(newSound: NewNote | NewChord, currentMEI: Document, rep
   //return new Promise<Document>((resolve): void => {
     var currMeiClone = currentMEI.cloneNode(true)
     var newElem: Element
+    var nearestNoteIsSameDurRest: Boolean = false
     if(newSound.hasOwnProperty("pname")){
       var newNote = newSound as NewNote
       if(newNote.rest){
@@ -202,7 +203,7 @@ export function addToMEI(newSound: NewNote | NewChord, currentMEI: Document, rep
         
       }else if(newNote.nearestNoteId !== null){
         var sibling: HTMLElement = currentMEI.getElementById(newNote.nearestNoteId);
-        //console.log(currentMEI, newNote)
+        nearestNoteIsSameDurRest = sibling.tagName === "rest" && sibling.getAttribute("dur") === newElem.getAttribute("dur") && sibling.getAttribute("dots") === newElem.getAttribute("dots")
         //special rule for first element in layer
         if(sibling.tagName === "layer"){
           if(scoreGraph !== null){
@@ -1140,7 +1141,7 @@ function _changeDuration(currentMEI : Document, additionalElements: Array<Elemen
 
   //clean up after changing durations
   currentMEI.querySelectorAll(".changed").forEach(c => c.classList.remove(changedFlag))
-  cleanUp(currentMEI )
+  cleanUp(currentMEI)
   return currentMEI 
 }
 
@@ -1201,6 +1202,8 @@ export function changeDuration(currentMEI : Document, additionalElements: Array<
     var nextNote = additionalElements.shift()
     var nnRatio = getAbsoluteRatio(nextNote)
     remainRatio = remainRatio || refElementRatio 
+    var currEl: Element
+    var harm: Element
     
     if(remainRatio < nnRatio){
       var diffRatio = nnRatio - remainRatio
@@ -1209,11 +1212,28 @@ export function changeDuration(currentMEI : Document, additionalElements: Array<
       if(dur.length > 0){
         currentMEI.getElementById(nextNote.id).setAttribute("dots", dur.shift().toString())
       }
+      harm = currentMEI.querySelector('harm[startid="' + nextNote.id + '"]')
+      if(harm !== null){
+        harm.setAttribute("startid", refElement.id)
+      }
     }else if(remainRatio === nnRatio){
-      currentMEI.getElementById(nextNote.id).remove()
+      currEl = currentMEI.getElementById(nextNote.id)
+      harm = currentMEI.querySelector('harm[startid="' + nextNote.id + '"]')
+      //if(currEl.tagName === "rest" && harm !== null){
+      if(harm !== null){
+        harm.setAttribute("startid", refElement.id)
+      }
+      currEl.remove()
+
     }else{
+      currEl = currentMEI.getElementById(nextNote.id)
+      harm = currentMEI.querySelector('harm[startid="' + nextNote.id + '"]')
+      //if(currEl.tagName === "rest" && harm !== null){
+        if(harm !== null){
+        harm.setAttribute("startid", refElement.id)
+      }
       remainRatio = remainRatio - nnRatio
-      currentMEI.getElementById(nextNote.id).remove()
+      currEl.remove()
       changeDuration(currentMEI, additionalElements, refElement, remainRatio, meiCopy)
     }
   }
@@ -1251,6 +1271,7 @@ export function cleanUp(currentMEI : Document){
   removeEmptyElements(currentMEI)
   //fillWithRests(currentMEI)
   adjustRests(currentMEI)
+  redistributeHarms(currentMEI)
 }
 
 
@@ -1442,6 +1463,20 @@ function reorganizeBeams(currentMEI : Document){
     }
   })
 
+}
+
+/**
+ * Give harm new start id if related note was included in chord during process
+ * @param currentMEI 
+ */
+function redistributeHarms(currentMEI: Document){
+  currentMEI.querySelectorAll("harm").forEach(h => {
+    var startid = h.getAttribute("startid")
+    if(startid !== null){
+      var note = currentMEI.getElementById(startid)
+      if(note.parentElement.tagName === "chord") h.setAttribute("startid", note.parentElement.id)
+    }
+  })
 }
 
 /**
@@ -1852,7 +1887,30 @@ export function getElementTimestampById(id: string, currentMEI: Document): numbe
   return parseFloat(timestamp)
 }
 
-
+/**
+ * Get Timestamp in specific layer
+ * @param note 
+ * @returns 
+ */
+export function getTimestamp(note: Element) {
+  var layer = note.closest("layer")
+  var elements = Array.from(layer.querySelectorAll("*[dur]"))
+  elements = elements.filter((v, i) => i <= elements.indexOf(note))
+  var tstamp: number
+  elements.forEach(e => {
+      var dur = parseInt(e.getAttribute("dur"))
+      tstamp += 4 / dur
+      var dots = e.getAttribute("dots")
+      var add = dur
+      if (dots !== null) {
+          for (var i = 0; i < parseInt(dots); i++) {
+              add = add / 2
+              tstamp += add
+          }
+      }
+  })
+  return tstamp
+}
 
 
 

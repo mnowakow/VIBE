@@ -25,6 +25,7 @@ class Tabbar {
     private sidebar: HTMLElement
     private sideBarGroup: HTMLElement;
     private soundGroup: HTMLElement;
+    private zoomGroup: HTMLElement;
     private fileSelectGroup: HTMLElement;
 
     private notationTab: HTMLElement
@@ -319,6 +320,11 @@ class Tabbar {
         //this.soundGroup.appendChild(dc.makeNewButton("", "pauseBtn", buttonStyleDarkOutline))
         this.soundGroup.appendChild(dc.makeNewButton("", "rewindBtn", buttonStyleDarkOutline))
 
+        this.zoomGroup = cq.getContainer(this.containerId).querySelector("#zoomGroup")
+        this.zoomGroup.append(dc.makeNewButton("", "zoomOutBtn", buttonStyleDarkOutline))
+        this.zoomGroup.append(dc.makeNewButton("", "zoomInBtn", buttonStyleDarkOutline))
+        
+        
         this.fileSelectGroup = cq.getContainer(this.containerId).querySelector("#fileSelectGroup")
         this.fileSelectGroup.append(dc.makeNewInput("importFile", "file", ""))
         this.fileSelectGroup.append(dc.makeNewButton("Import File", "importFileBtn", buttonStyleDarkOutline))
@@ -407,6 +413,7 @@ class Tabbar {
         
         //further utils
         btnToolbar.appendChild(this.soundGroup)
+        btnToolbar.appendChild(this.zoomGroup)
         btnToolbar.appendChild(this.fileSelectGroup)
         
     }
@@ -610,25 +617,35 @@ class Tabbar {
         }
     }
 
+    private styleCache = new Map<string, string>()
     sidebarHandler = (function sidebarHandler(e: MouseEvent): void {
         //toggle
-        var sidebarWidthRatio = "30%"
-        var btnToolbar = cq.getContainer(this.containerId).querySelector("#btnToolbar")
+        var that = this
+        var elParent: Element
         if (this.sidebar.classList.contains("closedSidebar")) {
-            //document.getElementById("sidebarContainer").style.width = sidebarWidthRatio
             Array.from(cq.getContainer(this.containerId).querySelectorAll(".closedSidebar")).forEach(el => {
+                elParent = el.parentElement
                 el.classList.remove("closedSidebar")
                 el.classList.add("openSidebar")
             })
-            //btnToolbar.style.marginLeft = sidebarWidthRatio
+            if(that.styleCache.size > 0){
+                for(const [key, value] of that.styleCache.entries()){
+                  document.getElementById(that.containerId)?.querySelector("#" + key)?.setAttribute("style", value)  
+                }
+            }
+            that.styleCache = new Map<string, string>()
 
         } else {
             //document.getElementById("sidebarContainer").style.width = "0"
             Array.from(cq.getContainer(this.containerId).querySelectorAll(".openSidebar")).forEach(el => {
+                elParent = el.parentElement
+                elParent.querySelectorAll(":scope > div").forEach(d => {
+                    that.styleCache.set(d.id, d.getAttribute("style"))
+                    d.removeAttribute("style")
+                })
                 el.classList.add("closedSidebar")
                 el.classList.remove("openSidebar")
             })
-            //btnToolbar.style.marginLeft = "0"
         }
     }).bind(this)
 

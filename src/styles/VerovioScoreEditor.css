@@ -146,6 +146,16 @@ text{
     background-size: 80%;
 }
 
+#zoomInBtn{
+    background-image: url(../images/GUI/zoomin.svg);
+    background-size: 80%;
+}
+
+#zoomOutBtn{
+    background-image: url(../images/GUI/zoomout.svg);
+    background-size: 80%;
+}
+
 .btn{
     background-repeat: no-repeat;
     background-position-x: center;
@@ -279,6 +289,7 @@ text{
     position: relative;
     overflow: scroll;
     width: 100%;
+    resize: vertical;
 }
 
 .dropKey, .dropClef, .dropTime, .dropTempo{
@@ -301,6 +312,7 @@ text{
     border-style: double;
     overflow: scroll;
     order: 2;
+    resize: vertical;
 }
 
 #annotList > a{
@@ -561,6 +573,14 @@ text{
     text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
 }
 
+.hideUI{
+    display: none !important;
+}
+
 #pauseNote{
     display: none;
+}
+
+#interactionOverlay, #rootSVG{
+    transform-origin: top left
 }

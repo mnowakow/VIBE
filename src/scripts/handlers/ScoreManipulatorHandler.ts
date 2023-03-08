@@ -10,7 +10,7 @@ import * as cq from "../utils/convenienceQueries"
 const manipSelector = ".manipulator"
 
 /**
- * Handler for all options which could modulate the given score from within the score. These functions are related to all seen inside a score
+ * Handler for all options which could modulate the given score from within the score. These functions are related to all elements seen inside a score
  */
 class ScoreManipulatorHandler implements Handler{
     m2m?: Mouse2MEI;

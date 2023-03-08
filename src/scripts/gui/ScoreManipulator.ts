@@ -95,8 +95,13 @@ class ScoreManipulator{
         var ptBlineWidth = Math.abs(ptBlineRB.x - ptBlineLT.x)
         var ptBlineHeight= Math.abs(ptBlineRB.y - ptBlineLT.y)
 
-        var blineTop = ptBlineLT.y //lastBlineRect.top - rootBBox.y - root.scrollTop
-        var blineRight = ptBlineRB.x + ptRootHeight*0.007 //lastBlineRect.right + rootBBox.height*0.007 - rootBBox.x + root.scrollLeft
+
+        var blineTop = lastBlineRect.top - rootBBox.y// - root.scrollTop
+        var blineRight = lastBlineRect.right + rootBBox.height*0.007 - rootBBox.x //+ root.scrollLeft
+
+
+        // var blineTop = ptBlineLT.y //lastBlineRect.top - rootBBox.y - root.scrollTop
+        // var blineRight = ptBlineRB.x + ptRootHeight*0.007 //lastBlineRect.right + rootBBox.height*0.007 - rootBBox.x + root.scrollLeft
 
         var containerSize = ptBlineHeight * 0.1 //(lastBlineRect.height * 0.1)
 
@@ -104,7 +109,7 @@ class ScoreManipulator{
     }
 
     drawMeasureRemover(){
-        this.lastBline = Array.from(this.container.querySelectorAll(".barLine")).reverse()[0] as HTMLElement
+        this.lastBline = Array.from(document.getElementById(this.containerId)?.querySelectorAll(".barLine")).reverse()[0] as HTMLElement
         var lastBlineRect = this.lastBline.getBoundingClientRect()
         var rootBBox = this.rootSVG.getBoundingClientRect()
 
@@ -126,11 +131,11 @@ class ScoreManipulator{
         var ptBlineWidth = Math.abs(ptBlineRB.x - ptBlineLT.x)
         var ptBlineHeight= Math.abs(ptBlineRB.y - ptBlineLT.y)
 
-        // var blineTop = lastBlineRect.top + rootBBox.height*0.01 - rootBBox.y + root.scrollTop 
-        // var blineRight = lastBlineRect.right + rootBBox.height*0.007 - rootBBox.x + root.scrollLeft 
+        var blineTop = lastBlineRect.top + rootBBox.height*0.01 - rootBBox.y //+ root.scrollTop 
+        var blineRight = lastBlineRect.right + rootBBox.height*0.007 - rootBBox.x //+ root.scrollLeft 
 
-        var blineTop = ptBlineLT.y + ptRootHeight * 0.01
-        var blineRight = ptBlineRB.x + ptRootHeight*0.007
+        // var blineTop = ptBlineLT.y + ptRootHeight * 0.01
+        // var blineRight = ptBlineRB.x + ptRootHeight * 0.007
 
         var containerSize = ptBlineHeight * 0.1 //(lastBlineRect.height * 0.1)
 

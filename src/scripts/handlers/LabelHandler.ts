@@ -270,7 +270,6 @@ class LabelHandler implements Handler {
         this.modifyLabel(e)
     }).bind(this)
 
-
     /**
      * modify existing label
      * @param e 
@@ -316,7 +315,7 @@ class LabelHandler implements Handler {
         }
     }).bind(this)
 
-    typeLabelHandler = function (e: KeyboardEvent) {
+    typeLabelHandler = (function (e: KeyboardEvent) {
         if (!cq.hasActiveElement(this.containerId)) return
         var t = (e.target as HTMLElement)
         var parent = t.parentElement
@@ -324,7 +323,7 @@ class LabelHandler implements Handler {
         var tHeigth = t.getBoundingClientRect().height.toString()
         parent.setAttribute("width", tWidth)
         parent.setAttribute("height", tHeigth)
-    }.bind(this)
+    }).bind(this)
 
 
     closeModifyWindowHandler = (function closeModifyWindow(e: Event) {
@@ -442,14 +441,13 @@ class LabelHandler implements Handler {
         textDiv.addEventListener("keydown", this.typeLabelHandler)
 
         textDiv.focus()
-        console.log(textDiv)
     }
 
     getTimestamp(note: Element) {
         var layer = note.closest("layer")
         var elements = Array.from(layer.querySelectorAll("*[dur]"))
         elements = elements.filter((v, i) => i <= elements.indexOf(note))
-        var tstamp: number
+        var tstamp: number = 0
         elements.forEach(e => {
             var dur = parseInt(e.getAttribute("dur"))
             tstamp += 4 / dur

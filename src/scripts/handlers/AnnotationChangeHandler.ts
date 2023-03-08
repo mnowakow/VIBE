@@ -562,6 +562,8 @@ class AnnotationChangeHandler implements Handler{
         }
     }
 
+    
+
     /**
      * Delete attributes from Elements which are just used temporarily to resize or drag objects
      */
