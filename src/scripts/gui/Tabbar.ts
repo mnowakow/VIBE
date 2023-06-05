@@ -8,7 +8,6 @@ import * as meioperations from "../utils/MEIOperations"
 import * as cq from "../utils/convenienceQueries"
 import { isJSDocThisTag } from 'typescript'
 
-
 const buttonStyleDarkOutline = "btn btn-outline-dark btn-sm"
 const buttonStyleDark = "btn btn-dark btn-md"
 const smuflFont = "smufl"
@@ -103,7 +102,7 @@ class Tabbar {
         var keyListCMaj = dc.makeNewDiv("keyListC", "list-group flex-fill col")
         keySelectItem.querySelector("#selectKeyDiv").appendChild(keyListCMajRow)
         keyListCMajRow.appendChild(keyListCMaj)
-        keyListCMaj.appendChild(dc.makeNewAElement("=&#xE01A;&#xE050;&#xE014;=&#xE014;=&#xE014;=&#xE014;=&#xE014;=&#xE014;", "KeyCMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        keyListCMaj.appendChild(dc.makeNewAElement("&#xE01A;&#xE050;&#xE014;&#xE014;&#xE014;&#xE014;&#xE014;&#xE014;", "KeyCMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
 
         var keyListSignedRow = dc.makeNewDiv("keyListCrossDIV", "col row g-0")
         var keyListCross = dc.makeNewDiv("keyListCross", "list-group flex-fill col")
@@ -271,6 +270,7 @@ class Tabbar {
         // and now the tabs
         this.notationTab = cq.getContainer(this.containerId).querySelector("#notationTabGroup")
         this.notationTab.append(dc.makeNewButton("Notation", "notationTabBtn", buttonStyleDarkOutline + " " + tabFlag))
+        //this.notationTab.append(dc.makeNewButton("Notation", "notationTabBtn", buttonStyleDarkOutline + " " + tabFlag + " selected"));
 
         this.annotationTab = cq.getContainer(this.containerId).querySelector("#annotationTabGroup")
         this.annotationTab.append(dc.makeNewButton("Annotation", "annotationTabBtn", buttonStyleDarkOutline + " " + tabFlag))
@@ -287,7 +287,6 @@ class Tabbar {
         //handlerDropdown.append(dc.makeNewAElement("Select Mode", "activateSelect", "dropdown-item", "#"))
         handlerDropdown.append(dc.makeNewAElement("Annotations", "activateAnnot", "dropdown-item", "#"))
         //handlerDropdown.append(dc.makeNewAElement("Harmony Mode", "activateHarm", "dropdown-item", "#"))
-
         this.handlerGroup = cq.getContainer(this.containerId).querySelector("#handlerGroup")
         this.handlerGroup.append(dc.makeNewButton("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;", "insertMode", buttonStyleDarkOutline + " empty", "dropdown"))
         this.handlerGroup.append(handlerDropdown)
@@ -295,7 +294,9 @@ class Tabbar {
         this.noteButtonGroup = cq.getContainer(this.containerId).querySelector("#noteGroup")
         this.noteButtonGroup.append(dc.makeNewButton("&#x1D15D", "fullNote", buttonStyleDarkOutline + " " + smuflFont, "", true))
         this.noteButtonGroup.append(dc.makeNewButton("&#x1D15E", "halfNote", buttonStyleDarkOutline + " " + smuflFont, "", true))
-        this.noteButtonGroup.append(dc.makeNewButton("&#x1D15F", "quarterNote", buttonStyleDarkOutline + " " + smuflFont, "", true))
+        //this.noteButtonGroup.append(dc.makeNewButton("&#x1D15F", "quarterNote", buttonStyleDarkOutline + " " + smuflFont, "", true))
+        this.noteButtonGroup.append(dc.makeNewButton("&#x1D15F", "quarterNote", buttonStyleDarkOutline + " " + smuflFont + " selected", "", true));
+              
         this.noteButtonGroup.append(dc.makeNewButton("&#x1D160", "eigthNote", buttonStyleDarkOutline + " " + smuflFont, "", true))
         this.noteButtonGroup.append(dc.makeNewButton("&#x1D161", "sixteenthNote", buttonStyleDarkOutline + " " + smuflFont, "", true))
         this.noteButtonGroup.append(dc.makeNewButton("&#x1D162", "thirtysecondNote", buttonStyleDarkOutline + " " + smuflFont, "", true))
@@ -610,7 +611,7 @@ class Tabbar {
             })
             if (!target.classList.contains(selectedFlag)) {
                 target.classList.add(selectedFlag)
-            }else if(["modGroup", "dotGroup", "chordGroupKM"].some(id => id === target.parentElement.id) && target.classList.contains(selectedFlag)){
+            }else if(["modGroup", "dotGroup", "chordGroupKM", "notationTabBtn"].some(id => id === target.parentElement.id) && target.classList.contains(selectedFlag)){
                 target.classList.remove(selectedFlag)
             }
 
