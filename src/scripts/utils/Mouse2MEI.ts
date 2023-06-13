@@ -66,6 +66,13 @@ export class Mouse2MEI {
                 }
             })
         })
+        this.container.addEventListener("mouseleave", function (e) {
+            Array.from(document.getElementsByClassName("vse-container")).forEach(ac => {
+                if (ac === that.container) {
+                    ac.classList.remove(activeContainerFlag)
+                } 
+            })
+        })
 
         this.interactionOverlay.querySelectorAll(".system").forEach(sy => {
             sy.addEventListener(mouseEventName, function (e) {
@@ -517,9 +524,11 @@ export class Mouse2MEI {
      * @returns 
      */
     findScoreTarget(posX: number, posY: number, checkStaff = true, orientation = { left: true, right: true }): NoteBBox {
+
         var notes: NoteBBox[] = this.getNoteBBoxes()
         var nextNote: NoteBBox
         var tempDist: number = Math.pow(10, 10)
+        var i = 0
         notes.forEach(n => {
             var x: number
             var y: number
@@ -550,6 +559,9 @@ export class Mouse2MEI {
                 tempDist = dist
                 nextNote = n
             }
+            // var l = {x: x, posX: posX, dist: dist, tempDist: tempDist, nextNote: nextNote.id}
+            // console.log(i, l)
+            // i++
         })
         return nextNote
     }

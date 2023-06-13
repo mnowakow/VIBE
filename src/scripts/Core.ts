@@ -50,7 +50,7 @@ class Core {
   private currentMEIDoc: Document
   private svg: string
   private currentMidi: string;
-  private keyboardHandler: GlobalKeyboardHandler;
+  private globalKeyboardHandler: GlobalKeyboardHandler;
   private musicplayer: MusicPlayer;
   private scoreGraph: ScoreGraph;
   private svgFiller: SVGFiller;
@@ -89,11 +89,8 @@ class Core {
   */
   loadData(pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, options: LoadOptions = null): Promise<string> {
 
-    // if(options !== null){
-    //   if(options.deleteLastNoteInserted){
-    //     this.lastInsertedNoteId = undefined
-    //   }
-    // }
+
+
 
     this.verovioWrapper = this.verovioWrapper || new VerovioWrapper();
     if (cq.getRootSVG(this.containerId) !== null) {
@@ -107,6 +104,7 @@ class Core {
 
     document.getElementById(this.containerId).dispatchEvent(new Event("loadingStart"))
 
+
     return new Promise((resolve, reject): void => {
       var d: string;
       var u: boolean;
@@ -118,6 +116,7 @@ class Core {
           u = isUrl
           break;
         case 'XMLDocument':
+          this.partialRender(data as Document)
           data = meiOperation.disableFeatures(["grace", "arpeg"], (data as Document)) // for Debugging
           this.svgFiller.copyClassesFromMei(data)
           d = new XMLSerializer().serializeToString(data as Document);
@@ -196,14 +195,14 @@ class Core {
         //   m.classList.remove("marked")
         // })
         //if(document.querySelectorAll(".marked").length === 0){
-          var lastAddedClass = "lastAdded"
-          document.querySelectorAll("." + lastAddedClass).forEach(m => {
-            m.classList.remove(lastAddedClass)
-          })
+        var lastAddedClass = "lastAdded"
+        document.querySelectorAll("." + lastAddedClass).forEach(m => {
+          m.classList.remove(lastAddedClass)
+        })
 
-          if (this.lastInsertedNoteId != undefined && ["textmode", "clickmode"].some(mode => this.container.classList.contains(mode))) {
-            this.container.querySelector("#" + this.lastInsertedNoteId)?.classList.add(lastAddedClass)
-          }
+        if (this.lastInsertedNoteId != undefined && ["textmode", "clickmode"].some(mode => this.container.classList.contains(mode))) {
+          this.container.querySelector("#" + this.lastInsertedNoteId)?.classList.add(lastAddedClass)
+        }
         //}
 
         // MusicPlayer stuff
@@ -215,9 +214,9 @@ class Core {
             this.musicplayer.update()
             this.scoreGraph = new ScoreGraph(this.currentMEIDoc, this.containerId, md)
             //the first condition should only occur at first starting the score editor
-            if(this.container.querySelector(".lastAdded") === null && this.scoreGraph.getCurrentNode() == undefined){
+            if (this.container.querySelector(".lastAdded") === null && this.scoreGraph.getCurrentNode() == undefined) {
               this.scoreGraph.setCurrentNodeById(this.container.querySelector(".staff > .layer").firstElementChild.id)
-            }else{ //second condition always sets lastAdded Note
+            } else { //second condition always sets lastAdded Note
               this.scoreGraph.setCurrentNodeById(this.container.querySelector(".lastAdded")?.id)
             }
             this.musicplayer.setScoreGraph(this.scoreGraph)
@@ -244,6 +243,65 @@ class Core {
     return this.loadData(pageURI, data, isUrl)
   }).bind(this)
 
+
+  /**
+   * Get the changed staff element, render it  and integrate it manually into the existing svg.
+   * Full render will we performed later to ensure consistent data
+   * @param xmlDoc new XML Document to be rendered.
+   */
+  partialRender(xmlDoc: Document) {
+    //1. get current Staff to be rendered
+    function createHierarchyDocument(element, xmlDoc) {
+      var newElem = xmlDoc.createElement(element.tagName);
+
+      Array.from(element.attributes as NamedNodeMap).forEach((attribute) => {
+        if(attribute.name === "n"){
+          //newElem.setAttribute(attribute.name, "1");
+        }else{
+          newElem.setAttribute(attribute.name, attribute.value);
+        }
+      });
+
+      if (element.parentElement) {
+        var parent = createHierarchyDocument(element.parentElement, xmlDoc);
+        if(parent.tagName === "score"){
+          parent.append(scoreDef)
+        }
+        parent.appendChild(newElem);
+      } else {
+        xmlDoc.appendChild(newElem);
+      }
+
+      return newElem;
+    }
+
+    var newNote = this.m2m.getNewNote();
+    if (newNote === undefined) return;
+
+    var docCopy = xmlDoc.cloneNode(true) as Document
+    var staff = docCopy.querySelector("[*|id=\"" + newNote.staffId + "\"]");
+    var scoreDef = docCopy.querySelector("scoreDef")
+
+    var newDoc = document.implementation.createDocument(null, null, null);
+    createHierarchyDocument(staff, newDoc);
+
+
+    const message: VerovioMessage = {
+      id: uuidv4(),
+      action: 'renderData',
+      mei: new XMLSerializer().serializeToString(newDoc),
+      isUrl: false
+    };
+
+    var response = this.verovioWrapper.setMessage(message);
+    var svg = response.mei;
+
+    console.log("partial render", newDoc, svg);
+
+
+    //3. get relative positions and lengths of elements (notes, barlines in the svg)
+  }
+
   /**
    * Initialize Handlers
    */
@@ -263,7 +321,7 @@ class Core {
     this.insertModeHandler = this.insertModeHandler || new InsertModeHandler(this.containerId)
     this.deleteHandler = this.deleteHandler || new DeleteHandler(this.containerId)
     this.noteDragHandler = new NoteDragHandler(this.containerId)
-    this.keyboardHandler = this.keyboardHandler || new GlobalKeyboardHandler(this.containerId)
+    this.globalKeyboardHandler = this.globalKeyboardHandler || new GlobalKeyboardHandler(this.containerId)
     this.sidebarHandler = this.sidebarHandler || new SidebarHandler()
     this.labelHandler = this.labelHandler || new LabelHandler(this.containerId)
     this.modHandler = this.modHandler || new ModHandler(this.containerId)
@@ -311,7 +369,7 @@ class Core {
       .setM2M(this.m2m)
       .resetListeners()
 
-    this.keyboardHandler
+    this.globalKeyboardHandler
       .setContainerId(this.containerId)
       .setUndoCallback(this.undo)
       .setRedoCallback(this.redo)
@@ -352,10 +410,10 @@ class Core {
       .setContainerId(this.containerId)
       .removeListeners()
       .setListeners()
-    
-      // always start from click mode
+
+    // always start from click mode
     if (this.firstStart) {
-      document.getElementById("clickInsert").click()
+      document.getElementById("notationTabBtn").click()
       this.firstStart = false
     }
 
@@ -619,7 +677,7 @@ class Core {
       var rootBBox = root.getBoundingClientRect()
       var rootWidth = (rootBBox.width).toString()
       var rootHeigth = (rootBBox.height).toString()
-      
+
       if (this.interactionOverlay.getAttribute("viewBox") === null) {
         this.interactionOverlay.setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))
       }
@@ -757,9 +815,9 @@ class Core {
 
     for (const [key, value] of Object.entries(options)) {
       if (value) {
-        if(key === "groups"){
+        if (key === "groups") {
           (document.getElementById(this.containerId)?.querySelectorAll("[role=\"group\"]")).forEach(g => (g as HTMLElement).classList.add("hideUI")) // style.setProperty("display", "none", "important"))
-        }else{
+        } else {
           (document.getElementById(this.containerId)?.querySelector("#" + key) as HTMLElement)?.classList.add("hideUI")//style.setProperty("display", "none", "important")
         }
 
@@ -777,9 +835,9 @@ class Core {
 
     for (const [key, value] of Object.entries(options)) {
       if (value) {
-        if(key === "groups"){
+        if (key === "groups") {
           (document.getElementById(this.containerId)?.querySelectorAll("[role=\"group\"]")).forEach(g => (g as HTMLElement).classList.remove("hideUI")) // style.setProperty("display", "none", "important"))
-        }else{
+        } else {
           (document.getElementById(this.containerId)?.querySelector("#" + key) as HTMLElement)?.classList.remove("hideUI")//style.setProperty("display", "none", "important")
         }
 
@@ -813,8 +871,20 @@ class Core {
     return this.currentMEI;
   }
 
-  getSVG(): string{
-    return this.svg
+  /**
+   * Get SVG of the current container.
+   * @param {boolean} [plain=true] - delete classes which would result in coloration of the score
+   * @returns {string} - serialized svg
+   */
+  getSVG(plain = true): string {
+    var svgDom = this.container.querySelector("#svg_output")
+    if (plain) {
+      svgDom.querySelectorAll(".lastAdded, .marked").forEach(sd => {
+        sd.classList.remove("lastAdded")
+        sd.classList.remove("marked")
+      })
+    }
+    return new XMLSerializer().serializeToString(svgDom)
   }
 
   getNoteDragHandler() {
@@ -822,7 +892,7 @@ class Core {
   }
 
   getGlobalKeyboardHandler() {
-    return this.keyboardHandler
+    return this.globalKeyboardHandler
   }
 
   getSidebarHandler() {

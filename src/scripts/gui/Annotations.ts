@@ -60,7 +60,7 @@ class Annotations implements Handler{
     }
 
     setMenuClickHandler(){
-       this.container.querySelector("#activateAnnot")?.addEventListener("click", this.clickHandler)
+       //this.container.querySelector("#activateAnnot")?.addEventListener("click", this.clickHandler)
         return this
     }
 
@@ -73,7 +73,6 @@ class Annotations implements Handler{
         this.container.querySelectorAll("#staticTextButton, #linkedAnnotButton").forEach(b => {
             b.addEventListener("click", function(){
                 that.setToFront()
-                //harmonyButton.classList.remove("selected")
                 that.resetTextListeners()
                 b.dispatchEvent(new Event("annotationButtonClicked"))
             })
@@ -129,7 +128,7 @@ class Annotations implements Handler{
     }
 
     removeTextListeners() {
-        this.container.querySelector("#activateAnnot").removeEventListener("click", this.clickHandler)
+        //this.container.querySelector("#activateAnnot").removeEventListener("click", this.clickHandler)
         this.setMenuClickHandler()
         this.interactionOverlay.removeEventListener("dblclick", this.createAnnotationHandler)
         this.interactionOverlay.querySelectorAll(".annotDiv").forEach(ad => {

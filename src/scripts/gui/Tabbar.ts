@@ -281,16 +281,14 @@ class Tabbar {
         this.melismaTab = cq.getContainer(this.containerId).querySelector("#melismaTabGroup")
         //this.melismaTab.append(dc.makeNewButton("Melisma", "melismaTabBtn", buttonStyleDarkOutline + " " + tabFlag))
 
-        var handlerDropdown = dc.makeNewDiv("insertDropdown", "dropdown-menu")
-        handlerDropdown.append(dc.makeNewAElement("Mouse Input", "clickInsert", "dropdown-item", "#"))
-        handlerDropdown.append(dc.makeNewAElement("Keyboard Input", "keyMode", "dropdown-item", "#"))
-        //handlerDropdown.append(dc.makeNewAElement("Select Mode", "activateSelect", "dropdown-item", "#"))
-        handlerDropdown.append(dc.makeNewAElement("Annotations", "activateAnnot", "dropdown-item", "#"))
-        //handlerDropdown.append(dc.makeNewAElement("Harmony Mode", "activateHarm", "dropdown-item", "#"))
-
-        this.handlerGroup = cq.getContainer(this.containerId).querySelector("#handlerGroup")
-        this.handlerGroup.append(dc.makeNewButton("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;", "insertMode", buttonStyleDarkOutline + " empty", "dropdown"))
-        this.handlerGroup.append(handlerDropdown)
+        // var handlerDropdown = dc.makeNewDiv("insertDropdown", "dropdown-menu")
+        // handlerDropdown.append(dc.makeNewAElement("Mouse Input", "clickInsert", "dropdown-item", "#"))
+        // handlerDropdown.append(dc.makeNewAElement("Keyboard Input", "keyMode", "dropdown-item", "#"))
+        // handlerDropdown.append(dc.makeNewAElement("Annotations", "activateAnnot", "dropdown-item", "#"))
+    
+        // this.handlerGroup = cq.getContainer(this.containerId).querySelector("#handlerGroup")
+        // this.handlerGroup.append(dc.makeNewButton("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;", "insertMode", buttonStyleDarkOutline + " empty", "dropdown"))
+        // this.handlerGroup.append(handlerDropdown)
 
         this.noteButtonGroup = cq.getContainer(this.containerId).querySelector("#noteGroup")
         this.noteButtonGroup.append(dc.makeNewButton("&#x1D15D", "fullNote", buttonStyleDarkOutline + " " + smuflFont, "", true))
@@ -403,7 +401,7 @@ class Tabbar {
         var btnToolbar = cq.getContainer(this.containerId).querySelector("#btnToolbar")
         btnToolbar.appendChild(this.sideBarGroup)
         btnToolbar.parentElement.insertBefore(this.sidebar, btnToolbar.parentElement.firstChild) // important for ~ selector
-        btnToolbar.appendChild(this.handlerGroup) // invisible
+        //btnToolbar.appendChild(this.handlerGroup) // invisible
         
         //tabs
         btnToolbar.appendChild(this.notationTab)
@@ -672,9 +670,9 @@ class Tabbar {
                 this.harmHandler()
                 break;
         }
-        if (target.textContent === cq.getContainer(this.containerId).querySelector("#insertMode").textContent) {
-            this.removeAllCustomGroups()
-        }
+        // if (target.textContent === cq.getContainer(this.containerId).querySelector("#insertMode").textContent) {
+        //     this.removeAllCustomGroups()
+        // }
     }).bind(this)
 
     clickInsertHandler() {

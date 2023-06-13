@@ -1,6 +1,7 @@
 import MusicPlayer from "../MusicPlayer";
 import { Mouse2MEI } from "../utils/Mouse2MEI";
 import Handler from "./Handler";
+import * as coordinates from "../utils/coordinates";
 import { constants as c } from '../constants'
 import Annotations from "../gui/Annotations";
 import { NewNote } from "../utils/Types";
@@ -159,8 +160,9 @@ class ClickModeHandler implements Handler {
 
     mouseOverChordHandler = (function mouseOverHandler(e: MouseEvent): void {
         if (!this.phantomElementHandler.getIsTrackingMouse()) { return }
-        var posx = e.offsetX
-        var posy = e.offsetY
+        var coords = coordinates.transformToDOMMatrixCoordinates(e.clientX, e.clientY, this.interactionOverlay)
+        var posx = coords.x//e.offsetX
+        var posy = coords.y//e.offsetY
 
         var elementToHighlight: Element = this.findScoreTarget(posx, posy)
         if (elementToHighlight == undefined || elementToHighlight.closest(".mRest") !== null || elementToHighlight.closest(".rest") !== null) { return }
@@ -176,10 +178,10 @@ class ClickModeHandler implements Handler {
             var phantom = this.interactionOverlay.querySelector("#phantomNote")
             var cx = parseFloat(phantom.getAttribute("cx"))
 
-            var bboxElemenet = this.interactionOverlay.querySelector("[refId=" + elementToHighlight.id + "]")
-            var ptLeft = new DOMPoint(bboxElemenet.getBoundingClientRect().left, 0)
-            var ptRight = new DOMPoint(bboxElemenet.getBoundingClientRect().right, 0)
-            var rootSVG = this.rootSVG as unknown as SVGGraphicsElement
+            var bboxElement = this.interactionOverlay.querySelector("[refId=" + elementToHighlight.id + "]")
+            var ptLeft = new DOMPoint(bboxElement.getBoundingClientRect().left, 0)
+            var ptRight = new DOMPoint(bboxElement.getBoundingClientRect().right, 0)
+            var rootSVG = cq.getRootSVG(this.containerId) as unknown as SVGGraphicsElement //this.rootSVG as unknown as SVGGraphicsElement
             var left = ptLeft.matrixTransform(rootSVG.getScreenCTM().inverse()).x
             var right = ptRight.matrixTransform(rootSVG.getScreenCTM().inverse()).x
 
@@ -199,7 +201,7 @@ class ClickModeHandler implements Handler {
                 //     // phantomSnapX = snapTargetBBox.x - window.scrollX - rootBBox.x - root.scrollLeft
                 //     snapCoord = snapTargetBBox.x
                 // }else{
-                snapTarget = bboxElemenet//elementToHighlight.querySelector(".notehead")|| elementToHighlight
+                snapTarget = bboxElement//elementToHighlight.querySelector(".notehead")|| elementToHighlight
                 snapTargetBBox = snapTarget.getBoundingClientRect()
                 // phantomSnapX = snapTargetBBox.x + snapTargetBBox.width/2 - window.scrollX - rootBBox.x - root.scrollLeft
                 snapCoord = snapTargetBBox.x + snapTargetBBox.width / 2

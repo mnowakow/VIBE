@@ -85,7 +85,7 @@ class ScoreManipulatorHandler implements Handler{
         })
     }
 
-    addMeasure = (function handler(e: MouseEvent){
+    addMeasure = (function addMeasure(e: MouseEvent){
         e.target.dispatchEvent(this.manipulateEvent)
         e.preventDefault()
         e.stopPropagation()
@@ -93,7 +93,7 @@ class ScoreManipulatorHandler implements Handler{
         this.loadDataCallback("", meiConverter.restoreXmlIdTags(this.currentMEI), false)
     }).bind(this)
 
-    removeMeasure = (function handler(e: MouseEvent){
+    removeMeasure = (function removeMeasure(e: MouseEvent){
         e.target.dispatchEvent(this.manipulateEvent)
         e.preventDefault()
         e.stopPropagation()
@@ -101,7 +101,7 @@ class ScoreManipulatorHandler implements Handler{
         this.loadDataCallback("", meiConverter.restoreXmlIdTags(this.currentMEI), false)
     }).bind(this)
 
-    addStaff = (function handler(e: MouseEvent){
+    addStaff = (function addStaff(e: MouseEvent){
         var target = (e.target as Element).closest(".manipulator")
         target.dispatchEvent(this.manipulateEvent)
         e.preventDefault()
@@ -113,7 +113,7 @@ class ScoreManipulatorHandler implements Handler{
       
     }).bind(this)
 
-    removeStaff = (function handler(e: MouseEvent){
+    removeStaff = (function removeStaff(e: MouseEvent){
         var target = (e.target as Element).closest(".manipulator")
         target.dispatchEvent(this.manipulateEvent)
         e.preventDefault()
@@ -126,11 +126,11 @@ class ScoreManipulatorHandler implements Handler{
     }).bind(this)
 
 
-    removeFunction = (function handler(){
+    removeFunction = (function removeElementsFunction(){
         this.removeElements()
     }).bind(this)
 
-    drawFunction = (function handler(e: TransitionEvent){
+    drawFunction = (function drawFunction(e: TransitionEvent){
         var that = this
         setTimeout(function(){
             that.drawElements()

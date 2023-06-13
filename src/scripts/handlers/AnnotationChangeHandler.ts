@@ -9,6 +9,9 @@ import * as cq from "../utils/convenienceQueries"
 import * as coordinates from "../utils/coordinates"
 
 
+/**
+ * Handle Interaction with annotation text and shape elements (drag & resize)
+ */
 class AnnotationChangeHandler implements Handler{
     m2m?: Mouse2MEI;
     musicPlayer?: MusicPlayer;

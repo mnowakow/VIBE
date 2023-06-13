@@ -147,6 +147,12 @@ class SVGFiller {
             var el = this.container.querySelector("#" + key)
             if (el !== null) {
                 el.setAttribute("transform", value)
+                var style = el.getAttribute("style")
+                if(style === null){
+                    el.setAttribute("style", "transform: " + value)
+                }else{
+                    el.setAttribute("style", style + "; transform: " + value)
+                }
             }
         }
         return this
