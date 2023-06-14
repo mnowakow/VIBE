@@ -293,7 +293,7 @@ class Tabbar {
         this.noteButtonGroup = cq.getContainer(this.containerId).querySelector("#noteGroup")
         this.noteButtonGroup.append(dc.makeNewButton("&#x1D15D", "fullNote", buttonStyleDarkOutline + " " + smuflFont, "", true))
         this.noteButtonGroup.append(dc.makeNewButton("&#x1D15E", "halfNote", buttonStyleDarkOutline + " " + smuflFont, "", true))
-        this.noteButtonGroup.append(dc.makeNewButton("&#x1D15F", "quarterNote", buttonStyleDarkOutline + " " + smuflFont, "", true))
+        this.noteButtonGroup.append(dc.makeNewButton("&#x1D15F", "quarterNote", buttonStyleDarkOutline + " " + smuflFont + " selected", "", true))
         this.noteButtonGroup.append(dc.makeNewButton("&#x1D160", "eigthNote", buttonStyleDarkOutline + " " + smuflFont, "", true))
         this.noteButtonGroup.append(dc.makeNewButton("&#x1D161", "sixteenthNote", buttonStyleDarkOutline + " " + smuflFont, "", true))
         this.noteButtonGroup.append(dc.makeNewButton("&#x1D162", "thirtysecondNote", buttonStyleDarkOutline + " " + smuflFont, "", true))
