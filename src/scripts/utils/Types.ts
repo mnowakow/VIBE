@@ -13,7 +13,8 @@ export type VerovioMessage = {
   mei?: string;
   elementId?: string;
   editorAction?: EditorAction;
-  isUrl?: boolean
+  isUrl?: boolean;
+  pageNo?: number;
 };
 
 export type VerovioResponse = {
@@ -123,4 +124,5 @@ export type NoteTime = {
 
 export type LoadOptions = {
   deleteLastNoteInserted?: Boolean
+  changeOnPageNo?: string
 }

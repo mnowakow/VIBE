@@ -5,7 +5,7 @@ import * as d3 from 'd3';
 import MusicPlayer from '../MusicPlayer';
 import DeleteHandler from './DeleteHandler';
 import Handler from './Handler';
-import { Mouse2MEI } from '../utils/Mouse2MEI';
+import { Mouse2SVG } from '../utils/Mouse2SVG';
 import * as coordinates from "../utils/coordinates"
 import * as cq from "../utils/convenienceQueries"
 
@@ -20,16 +20,16 @@ class NoteDragHandler implements Handler{
   private containerId: string;
   private container : Element
   private interactionOverlay: Element
-  private rootSVG: Element
+  private vrvSVG: Element
   private dragStartCoords: {x:number, y:number}
   private dx: number;
   private dy: number;
   private notes;
   private draggedOverlayElement: Element;
-  private draggedRootSVGElement: Element
+  private draggedvrvSVGElement: Element
   private draggedUseChild: Element
   musicPlayer: MusicPlayer;
-  m2m?: Mouse2MEI;
+  m2s?: Mouse2SVG;
   currentMEI: Document
   private wasDragged: boolean = false;
   private oldNote: Array<string>
@@ -83,15 +83,15 @@ class NoteDragHandler implements Handler{
       // Drag effects
     function dragStarted (): void {      
       this.draggedOverlayElement =  d3.event.sourceEvent.currentTarget
-      this.draggedRootSVGElement = this.rootSVG.querySelector("#" + this.draggedOverlayElement.getAttribute("refId"))?.closest(".note")
-      this.dragStartCoords = [d3.event.x, d3.event.y]//coordinates.transformToDOMMatrixCoordinates(d3.event.sourceEvent.clientX, d3.event.sourceEvent.clientY, document.getElementById(c._ROOTSVGID_))
+      this.draggedvrvSVGElement = this.vrvSVG.querySelector("#" + this.draggedOverlayElement.getAttribute("refId"))?.closest(".note")
+      this.dragStartCoords = [d3.event.x, d3.event.y]//coordinates.transformToDOMMatrixCoordinates(d3.event.sourceEvent.clientX, d3.event.sourceEvent.clientY, document.getElementById(c._vrvSVGID_))
       this.dx = 0; //this.dragStartCoords[0]
       this.dy = 0; //this.dragStartCoords[1]
     }
   }
 
   dragging(): void{
-    if(this.draggedOverlayElement === null || this.draggedRootSVGElement === null) return
+    if(this.draggedOverlayElement === null || this.draggedvrvSVGElement === null) return
     this.dx = d3.event.x
     this.dy = d3.event.y
     var overlayCoords = coordinates.transformToDOMMatrixCoordinates(d3.event.sourceEvent.clientX, d3.event.sourceEvent.clientY, this.interactionOverlay)
@@ -102,8 +102,8 @@ class NoteDragHandler implements Handler{
     }
 
     //snap while dragging
-    this.m2m.defineNote(overlayCoords.x, overlayCoords.y, {})
-    var newNote = [this.m2m.getNewNote().pname, this.m2m.getNewNote().oct]
+    this.m2s.defineNote(overlayCoords.x, overlayCoords.y, {})
+    var newNote = [this.m2s.getNewNote().pname, this.m2s.getNewNote().oct]
     if(this.oldNote == undefined){
       this.oldNote = newNote
     }
@@ -112,7 +112,7 @@ class NoteDragHandler implements Handler{
     const relativeX = 0//d3.event.x - this.dragStartCoords[0];
 
     //overlay and defscale have completely different viewbox dimensions
-    var defScaleVBox = (this.rootSVG.querySelector(".definition-scale") as SVGSVGElement).viewBox.baseVal
+    var defScaleVBox = (this.vrvSVG.querySelector(".definition-scale") as SVGSVGElement).viewBox.baseVal
     var overlayVBox = (this.interactionOverlay as SVGSVGElement).viewBox.baseVal
     this.scaleX = defScaleVBox.width/ overlayVBox.width
     this.scaleY = defScaleVBox.height/ overlayVBox.height
@@ -122,38 +122,38 @@ class NoteDragHandler implements Handler{
     shiftY = relativeY < 0 ? -shiftY : shiftY
     if(!this.oldNote.every((v, i) => v === newNote[i])){
       this.draggedOverlayElement.setAttribute('transform', 'translate(' + [relativeX, relativeY + shiftY] + ')')
-      this.draggedRootSVGElement.setAttribute('transform', 'translate(' + [relativeX * this.scaleX, (relativeY + shiftY) * this.scaleY] + ')')
+      this.draggedvrvSVGElement.setAttribute('transform', 'translate(' + [relativeX * this.scaleX, (relativeY + shiftY) * this.scaleY] + ')')
       this.oldNote = newNote
     }
   }
 
   dragEnded (): void {
-    if(this.draggedOverlayElement === null || this.draggedRootSVGElement === null) return
+    if(this.draggedOverlayElement === null || this.draggedvrvSVGElement === null) return
     if(this.wasDragged){
       this.notes.on("drag", null);
       this.wasDragged = false;
 
       this.draggedOverlayElement.dispatchEvent(this.noteDraggedEvent)
 
-      this.container.querySelector("#" + this.draggedRootSVGElement.id).classList.remove(this.deleteHandler.getDeleteFlag()) //remove flag to delete after dragging
+      this.container.querySelector("#" + this.draggedvrvSVGElement.id).classList.remove(this.deleteHandler.getDeleteFlag()) //remove flag to delete after dragging
       const action: EditorAction = {
         action: "drag",
-        param: { elementId: this.draggedRootSVGElement.id,
+        param: { elementId: this.draggedvrvSVGElement.id,
           //x: this.dx,
           //y: this.dy
         }
       }
       this.editCallback(action).then(() => {
 
-        var attr = this.elementAttrCallback(this.draggedRootSVGElement.id);
+        var attr = this.elementAttrCallback(this.draggedvrvSVGElement.id);
         var mm = new MeasureMatrix();
         //mm.populateFromSVG(svg)
         mm.populateFromMEI(this.currentMEI)
-        var staff = this.currentMEI.getElementById(this.draggedRootSVGElement.id).closest("staff")
+        var staff = this.currentMEI.getElementById(this.draggedvrvSVGElement.id).closest("staff")
         var measure = staff.closest("measure")
         var staffIdx = parseInt(staff.getAttribute("n")) - 1
         var measureIdx = parseInt(measure.getAttribute("n")) - 1
-        var dur = this.currentMEI.getElementById(this.draggedRootSVGElement.id).closest("chord") !== null ? this.currentMEI.getElementById(this.draggedRootSVGElement.id).closest("chord").getAttribute("dur") : attr.dur
+        var dur = this.currentMEI.getElementById(this.draggedvrvSVGElement.id).closest("chord") !== null ? this.currentMEI.getElementById(this.draggedvrvSVGElement.id).closest("chord").getAttribute("dur") : attr.dur
         
         let newNote: NewNote = {
           pname: attr.pname,
@@ -180,8 +180,8 @@ class NoteDragHandler implements Handler{
     return this
   }
 
-  setM2M(m2m: Mouse2MEI){
-    this.m2m = m2m
+  setm2s(m2s: Mouse2SVG){
+    this.m2s = m2s
     return this
   }
 
@@ -204,7 +204,7 @@ class NoteDragHandler implements Handler{
     this.containerId = id
     this.container = document.getElementById(id)
     this.interactionOverlay = cq.getInteractOverlay(id)
-    this.rootSVG = cq.getRootSVG(id)
+    this.vrvSVG = cq.getVrvSVG(id)
     return this
   }
 }

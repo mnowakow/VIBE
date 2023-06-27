@@ -4,7 +4,7 @@ import MeasureMatrix from '../datastructures/MeasureMatrix'
 import MusicPlayer from '../MusicPlayer';
 import DeleteHandler from './DeleteHandler';
 import Handler from './Handler';
-import { Mouse2MEI } from '../utils/Mouse2MEI';
+import { Mouse2SVG } from '../utils/Mouse2SVG';
 import * as coordinates from "../utils/coordinates"
 import * as cq from "../utils/convenienceQueries"
 import interact from "interactjs"
@@ -17,7 +17,7 @@ class NoteDragHandler implements Handler {
   private containerId: string
 
   musicPlayer: MusicPlayer;
-  m2m?: Mouse2MEI;
+  m2s?: Mouse2SVG;
   currentMEI: Document
 
 
@@ -75,13 +75,13 @@ class NoteDragHandler implements Handler {
     var noteHeadBBox = e.target as Element
     this.noteDragEvent = new MouseEvent("draggingNote", e)
     noteHeadBBox.dispatchEvent(this.noteDragEvent)
-    var refNote = cq.getRootSVG(this.containerId).querySelector("#" + noteHeadBBox.parentElement.getAttribute("refId")).closest(".note")
+    var refNote = cq.getVrvSVG(this.containerId).querySelector("#" + noteHeadBBox.parentElement.getAttribute("refId")).closest(".note")
     var note = cq.getInteractOverlay(this.containerId).querySelector("*[refId=\"" + refNote.id + "\"] rect")
 
     if (!noteHeadBBox.classList.contains("moving")) noteHeadBBox.classList.add("moving")
     var headPos = this.newPos(noteHeadBBox, e)
-    this.m2m.defineNote(headPos.x, headPos.y, {})
-    this.newNote = this.m2m.getNewNote()
+    this.m2s.defineNote(headPos.x, headPos.y, {})
+    this.newNote = this.m2s.getNewNote()
     if (refNote.closest(".chord") !== null) {
       this.newNote.chordElement = refNote.closest(".chord")
       this.currentMEI.querySelector("#" + refNote.id)?.remove()
@@ -114,8 +114,8 @@ class NoteDragHandler implements Handler {
     return this
   }
 
-  setM2M(m2m: Mouse2MEI) {
-    this.m2m = m2m
+  setm2s(m2s: Mouse2SVG) {
+    this.m2s = m2s
     return this
   }
 

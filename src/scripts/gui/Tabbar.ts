@@ -43,7 +43,7 @@ class Tabbar {
     private containerId: string
     private container: Element
     private interactionOverlay: Element
-    private rootSVG: Element
+    private vrvSVG: Element
     importCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>
     getMEICallback: (pageURI: string) => Promise<string>
 
@@ -638,6 +638,7 @@ class Tabbar {
             Array.from(cq.getContainer(this.containerId).querySelectorAll(".openSidebar")).forEach(el => {
                 elParent = el.parentElement
                 elParent.querySelectorAll(":scope > div").forEach(d => {
+                    if(d.id === "svgContainer") return
                     that.styleCache.set(d.id, d.getAttribute("style"))
                     d.removeAttribute("style")
                 })

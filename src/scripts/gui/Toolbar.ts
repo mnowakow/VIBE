@@ -40,7 +40,7 @@ class Toolbar {
     private containerId: string
     private container: Element
     private interactionOverlay: Element
-    private rootSVG: Element
+    private vrvSVG: Element
     importCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>
     getMEICallback: (pageURI: string) => Promise<string>
 

@@ -1,5 +1,5 @@
 import MusicPlayer from "../MusicPlayer";
-import { Mouse2MEI } from "../utils/Mouse2MEI";
+import { Mouse2SVG } from "../utils/Mouse2SVG";
 import Handler from "./Handler";
 import { keyIdToSig, clefToLine, unicodeToTimesig } from "../utils/mappings"
 import { constants as c } from "../constants"
@@ -10,6 +10,7 @@ import * as cq from "../utils/convenienceQueries"
 import MeiTemplate from "../assets/mei_template"
 import interact from "interactjs"
 import { reduceEachTrailingCommentRange } from "typescript";
+import { Interval } from "tone/build/esm/core/type/Units";
 
 /**
  * Handles all Events when interacting with the sidebar.
@@ -18,16 +19,17 @@ import { reduceEachTrailingCommentRange } from "typescript";
  */
 class SidebarHandler implements Handler {
 
-    m2m?: Mouse2MEI;
+    m2s?: Mouse2SVG;
     musicPlayer?: MusicPlayer;
     currentMEI?: Document;
     loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean) => Promise<string>;
     containerId: string;
     container: Element
     interactionOverlay: Element
-    rootSVG: Element
+    vrvSVG: Element
     sidebarContainer: Element
     resizeListener: Interact.Interactable
+    dropInterval: NodeJS.Timer
 
     constructor() {
         //this.setListeners()
@@ -42,7 +44,7 @@ class SidebarHandler implements Handler {
 
         // Controll dpossible drag and drop zones on screen
         var that = this
-        var dragTarget = this.interactionOverlay.querySelector("#scoreRects") //document.getElementById("rootSVG")
+        var dragTarget = this.interactionOverlay.querySelector("#scoreRects") //document.getElementById("vrvSVG")
         this.interactionOverlay.addEventListener("dragleave", function (event) {
             event.preventDefault()
             event.stopPropagation()
@@ -179,7 +181,7 @@ class SidebarHandler implements Handler {
     changeSelectedElementInSidebar(element: Element) {
         if (!element.classList.contains("meterSig")) return
 
-        var baseEl = this.rootSVG.querySelector("#" + element.getAttribute("refId"))
+        var baseEl = this.vrvSVG.querySelector("#" + element.getAttribute("refId"))
         var tempY: string
         var count: string = ""
         var unit: string = ""
@@ -223,7 +225,7 @@ class SidebarHandler implements Handler {
         var count = (this.container.querySelector("#timeCount") as any).value
         var unit = (this.container.querySelector("#timeUnit") as any).value
 
-        var markedTimes = Array.from(this.rootSVG.querySelectorAll(".meterSig.marked"))
+        var markedTimes = Array.from(this.vrvSVG.querySelectorAll(".meterSig.marked"))
         var reload = false
         markedTimes.forEach(mt => {
             var meiMt = this.currentMEI.getElementById(mt.id)
@@ -296,7 +298,7 @@ class SidebarHandler implements Handler {
 
     setKeyLocal(e: MouseEvent) {
         var target = e.target as Element
-        var markedClefs = Array.from(this.rootSVG.querySelectorAll(".keySig.marked"))
+        var markedClefs = Array.from(this.vrvSVG.querySelectorAll(".keySig.marked"))
         var reload = false
         markedClefs.forEach(mc => {
             var isInStaffDef = this.currentMEI.querySelector("#" + mc.id) === null
@@ -364,7 +366,7 @@ class SidebarHandler implements Handler {
      */
     setClef(e: MouseEvent) {
         var target = e.target as Element
-        var markedClefs = Array.from(this.rootSVG.querySelectorAll(".clef.marked"))
+        var markedClefs = Array.from(this.vrvSVG.querySelectorAll(".clef.marked"))
         var reload = false
         markedClefs.forEach(mc => {
             var isInStaffDef = this.currentMEI.querySelector("#" + mc.id) === null
@@ -424,16 +426,16 @@ class SidebarHandler implements Handler {
         var dropFlag: string
 
         if (eventTargetIsClef) {
-            dropTargets = Array.from(this.rootSVG.querySelectorAll(".clef, .barLine > path"))
+            dropTargets = Array.from(this.vrvSVG.querySelectorAll(".clef, .barLine > path"))
             dropFlag = "dropClef"
         } else if (eventTargetIsKey) {
-            dropTargets = Array.from(this.rootSVG.querySelectorAll(".keySig, .barLine > path, .clef"))
+            dropTargets = Array.from(this.vrvSVG.querySelectorAll(".keySig, .barLine > path, .clef"))
             dropFlag = "dropKey"
         } else if (eventTargetIsTime) {
-            dropTargets = Array.from(this.rootSVG.querySelectorAll(".meterSig, .barLine > path, .clef"))
+            dropTargets = Array.from(this.vrvSVG.querySelectorAll(".meterSig, .barLine > path, .clef"))
             dropFlag = "dropTime"
         } else if (eventTargetIsTempo) {
-            dropTargets = Array.from(this.rootSVG.querySelectorAll(".note, .chord, .rest, .mRest"))
+            dropTargets = Array.from(this.vrvSVG.querySelectorAll(".note, .chord, .rest, .mRest"))
             dropFlag = "dropTempo"
         }
         else {
@@ -466,7 +468,9 @@ class SidebarHandler implements Handler {
     }
 
     findDropTargetFunction = (function findBarline(e: MouseEvent) {
-        this.findDropTarget(e)
+        e.target.removeEventListener("drag", this.findDropTargetFunction)
+        clearInterval(this.dropInterval)
+        this.dropInterval = setInterval(this.findDropTarget(e), 50)
     }).bind(this)
 
     /**
@@ -479,9 +483,9 @@ class SidebarHandler implements Handler {
         var t = e.target as Element
         var mei: Document
 
-        var isFirstClef = Array.from(this.rootSVG.querySelectorAll(".measure[n=\"1\"] .clef")).some(mc => mc?.id === selectedElement?.id)
-        var isFirstKey = Array.from(this.rootSVG.querySelectorAll(".measure[n=\"1\"] .keySig")).some(mc => mc?.id === selectedElement?.id)
-        var isFirstMeter = Array.from(this.rootSVG.querySelectorAll(".measure[n=\"1\"] .meterSig")).some(mc => mc?.id === selectedElement?.id)
+        var isFirstClef = Array.from(this.vrvSVG.querySelectorAll(".measure[n=\"1\"] .clef")).some(mc => mc?.id === selectedElement?.id)
+        var isFirstKey = Array.from(this.vrvSVG.querySelectorAll(".measure[n=\"1\"] .keySig")).some(mc => mc?.id === selectedElement?.id)
+        var isFirstMeter = Array.from(this.vrvSVG.querySelectorAll(".measure[n=\"1\"] .meterSig")).some(mc => mc?.id === selectedElement?.id)
 
         if (selectedElement?.classList.contains("dropClef")) {
             if (isFirstClef) {
@@ -519,7 +523,7 @@ class SidebarHandler implements Handler {
 
     getElementInSVG(id: string): Element {
         if (id === "") return
-        return this.rootSVG.querySelector("#" + id)
+        return this.vrvSVG.querySelector("#" + id)
     }
 
     getElementInInteractOverlay(id: string): Element {
@@ -535,8 +539,8 @@ class SidebarHandler implements Handler {
         return this
     }
 
-    setM2M(m2m: Mouse2MEI) {
-        this.m2m = m2m
+    setm2s(m2s: Mouse2SVG) {
+        this.m2s = m2s
         return this
     }
 
@@ -547,7 +551,7 @@ class SidebarHandler implements Handler {
 
     setContainerId(containerId: string) {
         this.containerId = containerId
-        this.rootSVG = cq.getRootSVG(containerId)
+        this.vrvSVG = cq.getVrvSVG(containerId)
         this.interactionOverlay = cq.getInteractOverlay(containerId)
         this.container = document.getElementById(containerId)
         this.sidebarContainer = this.container.querySelector("#sidebarContainer")

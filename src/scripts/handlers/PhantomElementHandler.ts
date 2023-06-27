@@ -2,7 +2,7 @@
 import { constants as c } from "../constants"
 import PhantomElement from "../gui/PhantomElement";
 import MusicPlayer from "../MusicPlayer";
-import { Mouse2MEI } from "../utils/Mouse2MEI";
+import { Mouse2SVG } from "../utils/Mouse2SVG";
 import Handler from "./Handler";
 import * as coordinates from "../utils/coordinates"
 import * as  cq from "../utils/convenienceQueries"
@@ -11,7 +11,7 @@ import MeasureMatrix from "../datastructures/MeasureMatrix";
 
 
 class PhantomElementHandler implements Handler{
-    m2m?: Mouse2MEI;
+    m2s?: Mouse2SVG;
     musicPlayer?: MusicPlayer;
     currentMEI?: string | Document;
 
@@ -21,7 +21,7 @@ class PhantomElementHandler implements Handler{
     phantom: PhantomElement
     private isTrackingMouse: boolean
     private containerId: string
-    private rootSVG: Element
+    private vrvSVG: Element
     private interactionOverlay: Element
     private container: Element
 
@@ -34,7 +34,8 @@ class PhantomElementHandler implements Handler{
     
     
     addCanvas(){
-        this.rootBBox = this.rootSVG.getBoundingClientRect()
+        if(cq.getInteractOverlay(this.containerId).querySelector("#phantomCanvas") !== null) return
+        this.rootBBox = this.vrvSVG.getBoundingClientRect()
         var rootWidth = this.rootBBox.width.toString()
         var rootHeigth = this.rootBBox.height.toString()
         
@@ -100,12 +101,13 @@ class PhantomElementHandler implements Handler{
      * @param e 
      */
     trackMouse(e: MouseEvent){
+        if(this.m2s.getLastMouseEnter().staff === null) return
         var pt = coordinates.transformToDOMMatrixCoordinates(e.clientX, e.clientY, this.interactionOverlay)
         var relX = pt.x
         var relY = pt.y
-
-        var definitionScale = cq.getRootSVG(this.containerId).querySelector(".definition-scale")
-        var dsCoords = coordinates.getDOMMatrixCoordinates(definitionScale, this.rootSVG)
+        var definitionScale = cq.getVrvSVG(this.containerId).querySelector("#" + this.m2s.getLastMouseEnter().staff?.getAttribute("refId"))?.closest(".definition-scale")
+        
+        var dsCoords = coordinates.getDOMMatrixCoordinates(definitionScale, definitionScale.closest(".page"))
         if(relX < dsCoords.left || relX > dsCoords.right){
             this.isTrackingMouse = false
             return
@@ -125,16 +127,16 @@ class PhantomElementHandler implements Handler{
         if(phantomNoteElement == undefined){return}
         phantomNoteElement.setAttribute("cx", relX.toString());
         phantomNoteElement.setAttribute("cy", relY.toString());
-        phantomNoteElement.setAttribute("r", this.m2m?.getLineDist()?.toString() || "0")
+        phantomNoteElement.setAttribute("r", this.m2s?.getLineDist()?.toString() || "0")
         phantomNoteElement.setAttribute("visibility", phantomNoteElement.getAttribute("visibility") || "visible")
-        this.m2m.defineNote(relX, relY, options)
-        var newCY = (this.m2m.getNewNoteY())?.toString()
+        this.m2s.defineNote(relX, relY, options)
+        var newCY = (this.m2s.getNewNoteY())?.toString()
         phantomNoteElement.setAttribute("cy", (newCY || "0"))
 
         this.removeLines()
-        if(this.m2m.getPhantomLines() != undefined){
+        if(this.m2s.getPhantomLines() != undefined){
             this.phantomLines = new Array();
-            this.m2m.getPhantomLines().forEach(pl => {
+            this.m2s.getPhantomLines().forEach(pl => {
                 this.phantomLines.push(new PhantomElement("line", this.containerId, {lineX: relX, lineY: pl}, this.phantomCanvas))
             })
             this.setPhantomLineListeners()
@@ -164,13 +166,13 @@ class PhantomElementHandler implements Handler{
         var pm = new PhantomElement("timeMarkers", 
             this.containerId, 
             {lastStaffEnteredId: (e.target as Element).getAttribute("refId"),
-            measureMatrix: this.m2m.getMeasureMatrix()
+            measureMatrix: this.m2s.getMeasureMatrix()
         })
     }
 
     resetCanvas(){
         this.setContainerId(this.containerId)
-        this.rootBBox = this.rootSVG.getBoundingClientRect()
+        this.rootBBox = this.vrvSVG.getBoundingClientRect()
     
         this.phantomCanvas = this.interactionOverlay.querySelector("#phantomCanvas")
         
@@ -182,14 +184,14 @@ class PhantomElementHandler implements Handler{
     }
 
 
-    setM2M(m2m: Mouse2MEI){
-        this.m2m = m2m
+    setm2s(m2s: Mouse2SVG){
+        this.m2s = m2s
         return this
     }
 
     setContainerId(id: string){
         this.containerId = id
-        this.rootSVG = cq.getRootSVG(id)
+        this.vrvSVG = cq.getVrvSVG(id)
         this.interactionOverlay = cq.getInteractOverlay(id)
         this.container = document.getElementById(id)
         return this

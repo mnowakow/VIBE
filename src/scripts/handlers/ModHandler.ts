@@ -1,5 +1,5 @@
 import MusicPlayer from "../MusicPlayer";
-import { Mouse2MEI } from "../utils/Mouse2MEI";
+import { Mouse2SVG } from "../utils/Mouse2SVG";
 import Handler from "./Handler";
 import { constants as c} from "../constants"
 import { uuidv4 } from "../utils/random";
@@ -15,7 +15,7 @@ const modSelector = ".slur, .tie, .accid"
  */
 class ModHandler implements Handler{
 
-    m2m?: Mouse2MEI;
+    m2s?: Mouse2SVG;
     musicPlayer?: MusicPlayer;
     currentMEI?: Document;
 
@@ -31,7 +31,7 @@ class ModHandler implements Handler{
     containerId: string;
     interactionOverlay: Element
     container: Element
-    rootSVG: Element
+    vrvSVG: Element
   
     constructor(containerId){
         this.setContainerId(containerId)
@@ -96,7 +96,7 @@ class ModHandler implements Handler{
      * @param e 
      */
     connectNotes(e: MouseEvent){
-        var markedElements = Array.from(this.rootSVG.querySelectorAll(".note.marked"))
+        var markedElements = Array.from(this.vrvSVG.querySelectorAll(".note.marked"))
         markedElements = markedElements.filter(me => me.closest(".layer").getAttribute("n") === markedElements[0].closest(".layer").getAttribute("n"))
         if(markedElements.length <= 1){return}
         var makeSlur = markedElements.length > 2
@@ -146,7 +146,7 @@ class ModHandler implements Handler{
      * @param e 
      */
     organizeBeams(e: MouseEvent){
-        var markedElements = Array.from(this.rootSVG.querySelectorAll(".marked")) // (".note.marked, .chord.marked"))
+        var markedElements = Array.from(this.vrvSVG.querySelectorAll(".marked")) // (".note.marked, .chord.marked"))
         markedElements = markedElements.filter(me => {
             var isInLayer = me.closest(".layer").getAttribute("n") === markedElements[0].closest(".layer").getAttribute("n")
             var hasDur = this.currentMEI.getElementById(me.id) !== null ? this.currentMEI.getElementById(me.id).getAttribute("dur") !== null : false
@@ -244,7 +244,7 @@ class ModHandler implements Handler{
                 return
         }
 
-        this.rootSVG.querySelectorAll(".note.marked").forEach(nm => {
+        this.vrvSVG.querySelectorAll(".note.marked").forEach(nm => {
             var meiElement = this.currentMEI.getElementById(nm.id)
             meiElement.setAttribute("accid", accidSig)
             meiElement.removeAttribute("accid.ges")
@@ -265,8 +265,8 @@ class ModHandler implements Handler{
             c.addEventListener("click", function(e: MouseEvent){
                 e.preventDefault()
                 e.stopImmediatePropagation()
-                that.rootSVG.querySelectorAll(modSelector).forEach(c => c.classList.remove("marked"))
-                var originSVG = that.rootSVG.querySelector("#" + this.getAttribute("refId"))
+                that.vrvSVG.querySelectorAll(modSelector).forEach(c => c.classList.remove("marked"))
+                var originSVG = that.vrvSVG.querySelector("#" + this.getAttribute("refId"))
                 if(originSVG.classList.contains("marked")){
                     originSVG.classList.remove("marked")
                 }else{
@@ -290,7 +290,7 @@ class ModHandler implements Handler{
     setContainerId(containerId: string) {
         this.containerId = containerId
         this.interactionOverlay = cq.getInteractOverlay(containerId)
-        this.rootSVG = cq.getRootSVG(containerId)
+        this.vrvSVG = cq.getVrvSVG(containerId)
         this.container = document.getElementById(containerId)
         return this
     }

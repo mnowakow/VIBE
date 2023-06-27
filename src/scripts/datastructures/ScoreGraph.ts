@@ -2,6 +2,7 @@ import { noteToB } from "../utils/mappings"
 import ScoreNode from "./ScoreNode"
 import { constants as c } from "../constants"
 import * as cq from "../utils/convenienceQueries"
+import { isJSDocDeprecatedTag } from "typescript"
 
 const meiNodeSelector = "note, rest, mRest, chord, layer"
 const documentNodeSelector = ".clef, .meterSig, .keySig, .note, .rest, .mRest, .chord" //, .layer"
@@ -15,18 +16,23 @@ class ScoreGraph {
     private containerId: string
     private container: Element
     private interactionOverlay: Element
-    private rootSVG: Element
+    private vrvSVG: Element
 
     constructor(xmlDoc: Document, containerId: string, miditimes: Map<number, Array<Element>>) {
         this.containerId = containerId
         this.container = document.getElementById(containerId)
-        this.rootSVG = cq.getRootSVG(containerId)
+        this.vrvSVG = cq.getVrvSVG(containerId)
         this.interactionOverlay = cq.getInteractOverlay(containerId)
         this.populate(xmlDoc, miditimes)
     }
 
+    /**
+     * @deprecated
+     * Use function populate instead
+     * @param xmlDoc 
+     */
     altPop(xmlDoc: Document) {
-        var documentNodes = Array.from(cq.getRootSVG(this.containerId).querySelectorAll(documentNodeSelector))
+        var documentNodes = Array.from(cq.getVrvSVG(this.containerId).querySelectorAll(documentNodeSelector))
         var documentNodes = documentNodes.filter(dn => {
             if (!dn.classList.contains("note")) {
                 return dn
@@ -39,7 +45,7 @@ class ScoreGraph {
         })
 
         var nodeCoodrs = new Map<Element, { x: number, y: number }>()
-        var root = cq.getRootSVG(this.containerId)
+        var root = cq.getVrvSVG(this.containerId)
         var rootBBox = root.getBoundingClientRect()
         documentNodes.forEach(dn => {
             var dnx = dn.getBoundingClientRect().x - rootBBox.x - root.scrollLeft - window.pageXOffset
@@ -74,7 +80,7 @@ class ScoreGraph {
             }
             this.graph.set(e.id, new ScoreNode(e.id))
         })
-        cq.getRootSVG(this.containerId).querySelectorAll(documentNodeSelector).forEach(e => {
+        cq.getVrvSVG(this.containerId).querySelectorAll(documentNodeSelector).forEach(e => {
             if ((e.classList.contains("note") && e.closest(".chord") !== null)) {
                 return
             }
@@ -102,7 +108,8 @@ class ScoreGraph {
                 layerArray = Array.from(xmlDoc.querySelectorAll("staff[n=\"" + (s + 1).toString() + "\"] > layer[n=\"" + (i + 1).toString() + "\"]"))
                 var elements = new Array<Element>()
                 layerArray.forEach(l => {
-                    let staff = cq.getRootSVG(this.containerId).querySelector("#" + l.id).closest(".measure").querySelector(".staff[n='" + l.closest("staff").getAttribute("n") + "']")
+                    if(cq.getVrvSVG(this.containerId).querySelector("#" + l.id) === null) return
+                    let staff = cq.getVrvSVG(this.containerId).querySelector("#" + l.id).closest(".measure").querySelector(".staff[n='" + l.closest("staff").getAttribute("n") + "']")
                     var documentNodes = Array.from(staff.querySelectorAll(documentNodeSelector2))
                     var documentNodes = documentNodes.filter(dn => {
                         if (!dn.classList.contains("note")) {
@@ -172,7 +179,7 @@ class ScoreGraph {
         }
 
         //DEAL WITH MRESTS
-        var staves =  cq.getRootSVG(this.containerId).querySelectorAll(".staff")
+        var staves =  cq.getVrvSVG(this.containerId).querySelectorAll(".staff")
         for(var i = 0; i < staves.length-1; i++){
             var staffElements = staves[i].querySelectorAll(documentNodeSelector)
             var emptyElements = staves[i+1].querySelectorAll(".clef, .meterSig, .keySig, .mRest, .layer")
@@ -269,13 +276,6 @@ class ScoreGraph {
                 currentNode.setDown(downSet)
             }
         }
-
-        // for(const[key, value] of this.graph.entries()){
-        //     console.log(document.getElementById(key))
-        // }
-
-        //console.log(this.graph)
-
     }
 
     targetNodeIsLeftOrRight(startNode: ScoreNode, targetNode: ScoreNode): Boolean {
@@ -362,6 +362,22 @@ class ScoreGraph {
         return this.currentNode
     }
 
+    nextMeasureRight(){
+        while(this.getCurrentNode().getRight().getDocElement().closest(".measure").id ===
+            this.getCurrentNode().getDocElement().closest(".measure").id){
+                this.nextRight()
+            }
+        return this.currentNode
+    }
+
+    nextMeasureLeft(){
+        while(this.getCurrentNode().getLeft().getDocElement().closest(".measure").id ===
+            this.getCurrentNode().getDocElement().closest(".measure").id){
+                this.nextLeft()
+            }
+        return this.currentNode
+    }
+
     /**
      * Go to next Element with given classname. 
      * Whatever comes first according to the classNames array.
@@ -369,7 +385,8 @@ class ScoreGraph {
      * @param direction 
      * @returns 
      */
-    nextClass(classNames: string[], direction: string){
+    getNextClass(classNames: string | string[], direction: string){
+        if(typeof classNames === "string") classNames = [classNames]
         var currentId = this.currentNode?.getId()
         if([null, undefined].some(id => id == currentId)) return 
         var nextIsNull = false
@@ -377,34 +394,72 @@ class ScoreGraph {
             switch(direction){
                 case "ArrowLeft":
                 case "left":
-                    nextIsNull = [null, undefined].some(n => this.currentNode.getLeft() == n) 
                     this.nextLeft()
                     break;
                 case "ArrowRight":
                 case "right":
-                    nextIsNull = [null, undefined].some(n => this.currentNode.getRight() == n) 
                     this.nextRight()
                     break;
                 case "ArrowUp":
                 case "up":
-                    nextIsNull = [null, undefined].some(n => this.currentNode.getUp() == n) 
                     this.nextUp()
                     break;
                 case "ArrowDown":
                 case "down":
-                    nextIsNull = [null, undefined].some(n => this.currentNode.getDown() == n) 
                     this.nextDown()
                     break;
                 default: 
                     console.error(direction + " is not allowed. Use left, right, up or down")
                     return
             }
+            nextIsNull = [null, undefined].some(n => this.currentNode == n) 
         }while(!classNames.some(cn => this.currentNode?.getDocElement()?.classList.contains(cn)) && !nextIsNull)
 
         if(nextIsNull){
             this.setCurrentNodeById(currentId)
         }
         return this.currentNode
+    }
+
+    /**
+     * Find node based on class Names. Will not change state and pointers of the graph.
+     * To change this.currentNode, use getNextClass instead.
+     * @param classNames 
+     * @param direction 
+     * @returns 
+     */
+    lookUp(classNames: string | string[], direction: string): ScoreNode{
+        if(typeof classNames === "string") classNames = [classNames]
+        var currentId = this.currentNode?.getId()
+        if([null, undefined].some(id => id == currentId)) return 
+        var isNull = false
+        var node = this.currentNode
+        do{
+            switch(direction){
+                case "ArrowLeft":
+                case "left":
+                    node = node.getLeft()  
+                    break;
+                case "ArrowRight":
+                case "right":
+                    node = node.getRight()
+                    break;
+                case "ArrowUp":
+                case "up":
+                    node = node.getUp()
+                    break;
+                case "ArrowDown":
+                case "down":
+                    node = node.getDown()
+                    break;
+                default: 
+                    console.error(direction + " is not allowed. Use left, right, up or down")
+                    return
+            }
+            isNull = [null, undefined].some(n => node == n)
+        }while(!classNames.some(cn => node?.getDocElement()?.classList.contains(cn)) && !isNull)
+
+        return node
     }
 
     //Check if ScoreGraph is at beginning of layer

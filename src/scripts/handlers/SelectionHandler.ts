@@ -1,5 +1,5 @@
 import * as d3 from 'd3';
-import { Mouse2MEI } from '../utils/Mouse2MEI';
+import { Mouse2SVG } from '../utils/Mouse2SVG';
 import Handler from './Handler';
 import MusicPlayer from '../MusicPlayer';
 import { numToNoteButtonId, numToDotButtonId, accidToModButtonId } from '../utils/mappings'
@@ -17,7 +17,7 @@ class SelectionHandler implements Handler {
     private canvas;
     private initialX: number;
     private initialY: number;
-    m2m: Mouse2MEI;
+    m2s: Mouse2SVG;
     private dsa: any
     private selectStartEvent: Event;
     private selectEndEvent: Event;
@@ -25,7 +25,7 @@ class SelectionHandler implements Handler {
     private containerId: string
     private container: Element
     private interactionOverlay: Element
-    private rootSVG: Element
+    private vrvSVG: Element
     private scoreGraph: ScoreGraph
 
     constructor(containerId: string) {
@@ -50,8 +50,8 @@ class SelectionHandler implements Handler {
             that.initialY = pt.y //d3.event.y
 
             if (!document.getElementById(that.containerId).classList.contains("harmonyMode") && !that.shiftPressed) { //!that.harmonyHandler.getGlobal()){
-                that.m2m.getNoteBBoxes().forEach(bb => {
-                    let note = that.rootSVG.querySelector("#" + bb.id)
+                that.m2s.getNoteBBoxes().forEach(bb => {
+                    let note = that.vrvSVG.querySelector("#" + bb.id)
                     note.classList.remove(marked)
                 })
             }
@@ -72,16 +72,16 @@ class SelectionHandler implements Handler {
             that.updateRect(newX, newY, width, height);
 
             var rect = that.interactionOverlay.querySelector("#selectRect");
-            var rectpt = coordinates.getDOMMatrixCoordinates(rect, that.rootSVG)
+            var rectpt = coordinates.getDOMMatrixCoordinates(rect, that.vrvSVG)
             var rectHeightpt = rectpt.height //Math.abs(rectpt.y - ptBottom.matrixTransform(rootMatrix.getScreenCTM().inverse()).y) 
             var rectWidthpt = rectpt.width //Math.abs(rectpt.x - ptRight.matrixTransform(rootMatrix.getScreenCTM().inverse()).x)
 
 
             var rx = rectpt.x
             var ry = rectpt.y
-            var noteBBoxes = that.m2m.getNoteBBoxes();
+            var noteBBoxes = that.m2s.getNoteBBoxes();
             noteBBoxes.forEach(bb => {
-                var note = cq.getRootSVG(that.containerId).querySelector("#" + bb.id)
+                var note = cq.getVrvSVG(that.containerId).querySelector("#" + bb.id)
                 let stem = note.querySelector(".stem") as HTMLElement
                 let accid = note.querySelector(".accid") as HTMLElement
                 if (bb.x >= rx &&
@@ -119,8 +119,8 @@ class SelectionHandler implements Handler {
                 document.dispatchEvent(that.selectEndEvent)
             }
             selectRect?.remove();
-            var firstMarkedNote = that.rootSVG.querySelector(".chord.marked, .note.marked, .rest.marked")?.id
-            var meiNote = that.m2m.getCurrentMei().getElementById(firstMarkedNote)
+            var firstMarkedNote = that.vrvSVG.querySelector(".chord.marked, .note.marked, .rest.marked")?.id
+            var meiNote = that.m2s.getCurrentMei().getElementById(firstMarkedNote)
             document.getElementById(that.containerId)?.querySelectorAll(".lastAdded")?.forEach(la => la.classList.remove("lastAdded"))
             if (firstMarkedNote?.length > 0) {
                 document.getElementById(that.containerId)?.querySelectorAll("#noteGroup *, #dotGroup *, #modGroup *").forEach(b => b.classList.remove("selected"))
@@ -200,15 +200,15 @@ class SelectionHandler implements Handler {
         var target = e.target as Element
         if (target.getAttribute("refId") === null) {
             target = target.closest("[refId]")
-            target = this.rootSVG.querySelector("#" + target.getAttribute("refId"))
+            target = this.vrvSVG.querySelector("#" + target.getAttribute("refId"))
         }
         target = target.closest(".note, .rest, .mRest, .chord") || target
         target.classList.add(marked)
         this.scoreGraph.setCurrentNodeById(target.id)
 
         // change the selected durations in the toolbar
-        var firstMarkedNote = this.rootSVG.querySelector(".chord.marked, .note.marked, .rest.marked")?.id
-        var meiNote = this.m2m.getCurrentMei().getElementById(firstMarkedNote)
+        var firstMarkedNote = this.vrvSVG.querySelector(".chord.marked, .note.marked, .rest.marked")?.id
+        var meiNote = this.m2s.getCurrentMei().getElementById(firstMarkedNote)
         if(meiNote?.closest("chord") !== null){
             meiNote = meiNote.closest("chord")
         }
@@ -239,8 +239,8 @@ class SelectionHandler implements Handler {
 
     ///////// GETTER/ SETTER ////////
 
-    setM2M(m2m: Mouse2MEI) {
-        this.m2m = m2m
+    setm2s(m2s: Mouse2SVG) {
+        this.m2s = m2s
         return this
     }
 
@@ -253,7 +253,7 @@ class SelectionHandler implements Handler {
         this.containerId = id
         this.container = document.getElementById(id)
         this.interactionOverlay = cq.getInteractOverlay(id)
-        this.rootSVG = cq.getRootSVG(id)
+        this.vrvSVG = cq.getVrvSVG(id)
         return this
     }
 }

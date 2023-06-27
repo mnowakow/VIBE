@@ -1,5 +1,5 @@
-export function getRootSVG(containerId: string): HTMLElement{
-    return document.querySelector("#" + containerId + " #rootSVG")
+export function getVrvSVG(containerId: string, pageNo = 1): HTMLElement{
+    return document.querySelector("#" + containerId + " #vrvSVG")
 }
 
 export function getInteractOverlay(containerId: string): HTMLElement{

@@ -1,7 +1,7 @@
 import * as d3 from 'd3';
 import Handler from "./Handler";
 import MusicPlayer from "../MusicPlayer";
-import { Mouse2MEI } from "../utils/Mouse2MEI";
+import { Mouse2SVG } from "../utils/Mouse2SVG";
 import {uuidv4} from '../utils/random'
 import { constants as c } from "../constants"
 import * as coordinates from "../utils/coordinates"
@@ -9,7 +9,7 @@ import * as cq from "../utils/convenienceQueries"
 import { textSpanIntersectsWithTextSpan } from 'typescript';
 
 class CustomAnnotationShapeDrawer implements Handler{
-    m2m?: Mouse2MEI;
+    m2s?: Mouse2SVG;
     musicPlayer?: MusicPlayer;
     currentMEI?: string | Document;
 
@@ -25,7 +25,7 @@ class CustomAnnotationShapeDrawer implements Handler{
     private containerId: string
     private container: Element
     private interactionOverlay: Element
-    private rootSVG: Element
+    private vrvSVG: Element
 
     private updateCallback: () => void
 
@@ -149,15 +149,15 @@ class CustomAnnotationShapeDrawer implements Handler{
 
     ///////// GETTER/ SETTER ////////
 
-    setM2M(m2m: Mouse2MEI){
-        this.m2m = m2m
+    setm2s(m2s: Mouse2SVG){
+        this.m2s = m2s
     }
 
     setContainerId(id: string){
         this.containerId = id
         this.container = document.getElementById(id)
         this.interactionOverlay = cq.getInteractOverlay(id)
-        this.rootSVG = cq.getRootSVG(id)
+        this.vrvSVG = cq.getVrvSVG(id)
     }
 
     getShapes(): Array<HTMLElement>{

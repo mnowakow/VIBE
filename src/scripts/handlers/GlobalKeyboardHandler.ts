@@ -118,7 +118,7 @@ class GlobalKeyboardHandler implements Handler {
     selectAllHandler(e: KeyboardEvent) {
         if (!this.hasContainerFocus()) return
         e.preventDefault()
-        cq.getRootSVG(this.containerId).querySelectorAll(".note").forEach(note => {
+        cq.getVrvSVG(this.containerId).querySelectorAll(".note").forEach(note => {
             let stem = note.querySelector(".stem") as HTMLElement
             note.classList.add(marked)
             if (stem !== null) {

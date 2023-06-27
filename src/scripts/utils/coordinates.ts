@@ -11,7 +11,7 @@ export function getDOMMatrixCoordinates(element: Element | DOMRect, canvas: Elem
         if(element instanceof DOMRect){throw new Error("Canvas must be provided, if input is instance of DOMRect. Actual instance: " + element.constructor.name) }
         if(canvas === null) return 
     }
-
+    if(canvas.id === "vrvSVG") canvas = canvas.previousElementSibling
     var canvasMatrix = (canvas as unknown as SVGGraphicsElement).getScreenCTM().inverse()
     var elementBBox = !(element instanceof Element) ? element : element.getBoundingClientRect()
     var ptLT = new DOMPoint(elementBBox.left, elementBBox.top)
@@ -32,7 +32,7 @@ export function getDOMMatrixCoordinates(element: Element | DOMRect, canvas: Elem
  * @returns 
  */
 export function transformToDOMMatrixCoordinates(x: number, y: number, canvas: Element): {x: number, y: number}{
-    
+    if(canvas.id === "vrvSVG") canvas = canvas.previousElementSibling
     var canvasMatrix = (canvas as unknown as SVGGraphicsElement).getScreenCTM().inverse()
     var pt = new DOMPoint(x, y)
     pt = pt.matrixTransform(canvasMatrix)

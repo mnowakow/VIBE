@@ -1,5 +1,5 @@
 import { constants as c } from '../constants';
-import { Mouse2MEI } from '../utils/Mouse2MEI';
+import { Mouse2SVG } from '../utils/Mouse2SVG';
 import Cursor from '../gui/Cursor';
 import MusicPlayer from '../MusicPlayer';
 import PhantomElement from '../gui/PhantomElement';
@@ -30,7 +30,7 @@ class InsertModeHandler implements Handler {
   containerId: string;
   type: string;
   selector: string;
-  m2m: Mouse2MEI;
+  m2s: Mouse2SVG;
   musicPlayer: MusicPlayer;
   cursor: Cursor;
   clickInsertMode: boolean;
@@ -50,7 +50,7 @@ class InsertModeHandler implements Handler {
   phantomNoteHandler: PhantomElementHandler;
   private annotations: Annotations;
   smHandler: ScoreManipulatorHandler
-  rootSVG: Element
+  vrvSVG: Element
   interactionOverlay: Element
   container: Element
 
@@ -89,7 +89,7 @@ class InsertModeHandler implements Handler {
       .setInsertCallback(this.insertCallback)
       .setDeleteCallback(this.deleteCallback)
       .setAnnotations(this.annotations)
-      .setM2M(this.m2m)
+      .setm2s(this.m2s)
       .setMusicPlayer(this.musicPlayer)
       .setPhantomCursor(this.phantomNoteHandler)
       .resetListeners()
@@ -101,13 +101,13 @@ class InsertModeHandler implements Handler {
       .setInsertCallback(this.insertCallback)
       .setDeleteCallback(this.deleteCallback)
       .setScoreGraph(this.scoreGraph)
-      .setM2M(this.m2m)
+      .setm2s(this.m2s)
       .setMusicPlayer(this.musicPlayer)
       .resetListeners()
 
     this.deleteHandler.setListeners()
 
-    this.annotations?.setM2M(this.m2m)
+    this.annotations?.setm2s(this.m2s)
     this.annotations?.updateCanvas()
     //this.annotations?.resetTextListeners() // annotations should also be interactable when in notation mode
     this.activateSelectionMode()
@@ -118,7 +118,7 @@ class InsertModeHandler implements Handler {
 
     this.selectionHandler = new SelectionHandler(this.containerId)
     this.selectionHandler
-      .setM2M(this.m2m)
+      .setm2s(this.m2s)
       .setScoreGraph(this.scoreGraph)
       .resetListeners()
     return this
@@ -149,7 +149,7 @@ class InsertModeHandler implements Handler {
         }
         this.annotations
           .setContainerId(this.containerId)
-          .setM2M(this.m2m)
+          .setm2s(this.m2s)
           .setMusicPlayer(this.musicPlayer)
           .setToFront()
           .setMenuClickHandler()
@@ -175,9 +175,9 @@ class InsertModeHandler implements Handler {
       .setContainerId(this.containerId)
       .setGlobal(this.isGlobal)
       .setListeners()
-      .setM2M(this.m2m)
+      .setm2s(this.m2s)
       .setMusicPlayer(this.musicPlayer)
-      .setCurrentMEI(this.m2m.getCurrentMei())
+      .setCurrentMEI(this.m2s.getCurrentMei())
       .setLoadDataCallback(this.loadDataCallback)
 
     //this.keyMode = false;
@@ -238,16 +238,25 @@ class InsertModeHandler implements Handler {
 
   }
 
+  private firstCall = true
   setSMHandler() {
     if (this.smHandler == undefined) {
       this.smHandler = new ScoreManipulatorHandler()
     }
     this.smHandler
       .setContainerId(this.containerId)
-      .setMEI(this.m2m.getCurrentMei())
+      .setMEI(this.m2s.getCurrentMei())
       .setMusicPlayer(this.musicPlayer)
       .setLoadDataCallback(this.loadDataCallback)
       .drawElements()
+
+    if (this.firstCall) {
+      for (let i = 0; i < 13; i++) {
+        this.interactionOverlay.querySelector("#measureAdder").dispatchEvent(new MouseEvent("click"))
+      }
+      this.firstCall = false
+    }
+
     return this
   }
 
@@ -274,7 +283,7 @@ class InsertModeHandler implements Handler {
         }
       })
     })
-    
+
     //events will come from Annotations Class. 
     this.container.addEventListener("annotationButtonClicked", function (e: MouseEvent) {
       var t = e.target as HTMLElement
@@ -306,10 +315,10 @@ class InsertModeHandler implements Handler {
             dur = 32
             break;
         }
-        that.m2m.setDurationNewNote(dur)
-        if (that.m2m.setMarkedNoteDurations(dur)) {
-          cleanUp(that.m2m.getCurrentMei())
-          var mei = restoreXmlIdTags(that.m2m.getCurrentMei())
+        that.m2s.setDurationNewNote(dur)
+        if (that.m2s.setMarkedNoteDurations(dur)) {
+          cleanUp(that.m2s.getCurrentMei())
+          var mei = restoreXmlIdTags(that.m2s.getCurrentMei())
           that.loadDataCallback("", mei, false)
         }
       })
@@ -327,10 +336,10 @@ class InsertModeHandler implements Handler {
               dots = 2
           }
         }
-        that.m2m.setDotsNewNote(dots)
-        if (that.m2m.setMarkedNoteDots(dots)) {
-          cleanUp(that.m2m.getCurrentMei())
-          var mei = restoreXmlIdTags(that.m2m.getCurrentMei())
+        that.m2s.setDotsNewNote(dots)
+        if (that.m2s.setMarkedNoteDots(dots)) {
+          cleanUp(that.m2s.getCurrentMei())
+          var mei = restoreXmlIdTags(that.m2s.getCurrentMei())
           that.loadDataCallback("", mei, false)
         }
       })
@@ -357,10 +366,10 @@ class InsertModeHandler implements Handler {
 
   /////////////// GETTER/ SETTER /////////////////
 
-  setM2M(m2m: Mouse2MEI) {
-    this.m2m = m2m
+  setm2s(m2s: Mouse2SVG) {
+    this.m2s = m2s
     //this.selectionHandler = new SelectionHandler()
-    //this.selectionHandler?.setM2M(this.m2m)
+    //this.selectionHandler?.setm2s(this.m2s)
     return this
   }
 
@@ -389,7 +398,7 @@ class InsertModeHandler implements Handler {
       this.phantomNoteHandler
         .setPhantomNote()
         .setListeners()
-        .setM2M(this.m2m)
+        .setm2s(this.m2s)
     }
     return this
   }
@@ -417,7 +426,7 @@ class InsertModeHandler implements Handler {
   setContainerId(containerId: string) {
     this.containerId = containerId
     this.interactionOverlay = cq.getInteractOverlay(containerId)
-    this.rootSVG = cq.getRootSVG(containerId)
+    this.vrvSVG = cq.getVrvSVG(containerId)
     this.container = document.getElementById(containerId)
     return this
   }

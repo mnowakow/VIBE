@@ -1,5 +1,5 @@
 import MusicPlayer from "../MusicPlayer";
-import { Mouse2MEI } from "../utils/Mouse2MEI";
+import { Mouse2SVG } from "../utils/Mouse2SVG";
 import { constants as c } from "../constants"
 import Handler from "./Handler";
 import interact from "interactjs"
@@ -13,7 +13,7 @@ import * as coordinates from "../utils/coordinates"
  * Handle Interaction with annotation text and shape elements (drag & resize)
  */
 class AnnotationChangeHandler implements Handler{
-    m2m?: Mouse2MEI;
+    m2s?: Mouse2SVG;
     musicPlayer?: MusicPlayer;
     currentMEI?: string | Document;
 
@@ -402,7 +402,7 @@ class AnnotationChangeHandler implements Handler{
         var posx = pt.x 
         var posy = pt.y 
         
-        var nextScoreObj = this.m2m.findScoreTarget(posx, posy)
+        var nextScoreObj = this.m2s.findScoreTarget(posx, posy)
         var nextShapeObj = this.findCustomShapeTarget(posx, posy)
         var possibleCoords = new Array<Coord>()
 
@@ -436,7 +436,7 @@ class AnnotationChangeHandler implements Handler{
             
             var notept = coordinates.transformToDOMMatrixCoordinates(document.getElementById(nextScoreObj.id).getBoundingClientRect().x, document.getElementById(nextScoreObj.id).getBoundingClientRect().y, this.interactionOverlay)
             var noteCoord: Coord = {
-                obj:  cq.getRootSVG(this.containerId).querySelector("#"+nextScoreObj.id),
+                obj:  cq.getVrvSVG(this.containerId).querySelector("#"+nextScoreObj.id),
                 x: notept.x, 
                 y: notept.y
             }
@@ -553,7 +553,7 @@ class AnnotationChangeHandler implements Handler{
             var shapeBBox = objToAttach.getBoundingClientRect()
             var shapeX = shapeBBox.x
             var shapeY = shapeBBox.y
-            this.m2m.getNoteBBoxes().forEach(bb => {
+            this.m2s.getNoteBBoxes().forEach(bb => {
                 if( bb.x >= shapeX && 
                     bb.x <= shapeX + shapeBBox.width &&
                     bb.y >= shapeY &&
@@ -633,8 +633,8 @@ class AnnotationChangeHandler implements Handler{
         return this
     }
 
-    setM2M(m2m: Mouse2MEI){
-        this.m2m = m2m
+    setm2s(m2s: Mouse2SVG){
+        this.m2s = m2s
         return this
     }
 

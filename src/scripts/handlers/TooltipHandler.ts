@@ -2,17 +2,17 @@ import Handler from "./Handler";
 import * as cq from "../utils/convenienceQueries"
 import { createPopper } from '@popperjs/core';
 import MusicPlayer from "../MusicPlayer";
-import { Mouse2MEI } from "../utils/Mouse2MEI";
+import { Mouse2SVG } from "../utils/Mouse2SVG";
 import { collapseTextChangeRangesAcrossMultipleVersions } from "typescript";
 
 export default class TooltipHandler implements Handler{
-    m2m?: Mouse2MEI;
+    m2s?: Mouse2SVG;
     musicPlayer?: MusicPlayer;
     currentMEI?: string | Document;
 
     containerId: string
     interactionOverlay: Element
-    rootSVG: Element
+    vrvSVG: Element
     container: Element
 
     private timeOuts: Array<any>
@@ -26,7 +26,7 @@ export default class TooltipHandler implements Handler{
     setContainerId(containerId: string) {
         this.containerId = containerId
         this.interactionOverlay = cq.getInteractOverlay(containerId)
-        this.rootSVG = cq.getRootSVG(containerId)
+        this.vrvSVG = cq.getVrvSVG(containerId)
         this.container = document.getElementById(containerId)
         return this
     }

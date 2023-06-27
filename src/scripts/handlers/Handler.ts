@@ -1,9 +1,9 @@
 import MusicPlayer from "../MusicPlayer";
-import { Mouse2MEI } from "../utils/Mouse2MEI";
+import { Mouse2SVG } from "../utils/Mouse2SVG";
 
 interface Handler{
 
-    m2m?: Mouse2MEI
+    m2s?: Mouse2SVG
     musicPlayer?: MusicPlayer
     currentMEI?: Document | string
 

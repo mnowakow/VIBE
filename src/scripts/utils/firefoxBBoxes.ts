@@ -3,7 +3,7 @@ const allowedClasses = ["chord", "note", "notehead", "staff", "rest", "mRest", "
 
 /**
  * Compute new bounding box coordinates for relevant elements. And attach new translate function to element
- * @param element can be either element in #rootSVG .definition-scale or #interactionOverlay #scoreRects
+ * @param element can be either element in #vrvSVG .definition-scale or #interactionOverlay #scoreRects
  * @returns 
  */
 export function adjustBBox(element: Element): void{
@@ -18,7 +18,7 @@ export function adjustBBox(element: Element): void{
     }
     //target = element in #scoreRects
     var target: HTMLElement
-    //source = element in #rootSVG
+    //source = element in #vrvSVG
     var source: HTMLElement
     if(element.getAttribute("refId") === null){
         target = document.querySelector("[refId=" + element.id + "]")?.querySelector("rect") as unknown as HTMLElement
@@ -83,7 +83,7 @@ function adjustHightToLowestStaffLine(source: HTMLElement, target: HTMLElement):
     }
 
     var lowestStaffLine = Array.from(closestStaff.querySelectorAll(":scope > path")).reverse()[0]
-    var coordsStaffline = coordinates.getDOMMatrixCoordinates(lowestStaffLine, source.closest("#rootSVG"))
+    var coordsStaffline = coordinates.getDOMMatrixCoordinates(lowestStaffLine, source.closest("#vrvSVG"))
     var coordsTarget = coordinates.getDOMMatrixCoordinates(target, target.closest("#interactionOverlay"))
     var targetHeight = coordsStaffline.y - coordsTarget.y
     target.setAttribute("height", targetHeight.toString())
@@ -92,7 +92,7 @@ function adjustHightToLowestStaffLine(source: HTMLElement, target: HTMLElement):
 function adjustWidthToBarLine(source: HTMLElement, target: HTMLElement): void{
     var closestMeasure = source.closest(".measure")
     var barline = closestMeasure.querySelector(".barLine")
-    var coordsBarline = coordinates.getDOMMatrixCoordinates(barline, source.closest("#rootSVG"))
+    var coordsBarline = coordinates.getDOMMatrixCoordinates(barline, source.closest("#vrvSVG"))
     var coordsTarget = coordinates.getDOMMatrixCoordinates(target, target.closest("#interactionOverlay"))
     var targetWidth = coordsBarline.x - coordsTarget.x
     target.setAttribute("width", targetWidth.toString())

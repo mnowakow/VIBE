@@ -1,19 +1,20 @@
 import ScoreManipulator from "../gui/ScoreManipulator";
 import MusicPlayer from "../MusicPlayer";
-import { Mouse2MEI } from "../utils/Mouse2MEI";
+import { Mouse2SVG } from "../utils/Mouse2SVG";
 import Handler from "./Handler";
-import {constants as c } from '../constants'
+import { constants as c } from '../constants'
 import * as meiOperation from '../utils/MEIOperations'
 import * as meiConverter from '../utils/MEIConverter'
 import * as cq from "../utils/convenienceQueries"
 
 const manipSelector = ".manipulator"
+const canvasId = "manipulatorCanvas"
 
 /**
  * Handler for all options which could modulate the given score from within the score. These functions are related to all elements seen inside a score
  */
-class ScoreManipulatorHandler implements Handler{
-    m2m?: Mouse2MEI;
+class ScoreManipulatorHandler implements Handler {
+    m2s?: Mouse2SVG;
     musicPlayer?: MusicPlayer;
     currentMEI?: string | Document;
     private containerId: string
@@ -24,26 +25,27 @@ class ScoreManipulatorHandler implements Handler{
     manipulatorCanvas: SVGSVGElement;
     private manipulateEvent: Event
 
-    constructor(){
+    constructor() {
         this.sm = new ScoreManipulator()
         this.manipulateEvent = new Event("manipulated")
     }
 
-    addCanvas(){
-        var rootBBox = cq.getRootSVG(this.containerId).getBoundingClientRect()
+    addCanvas() {
+        var rootBBox = cq.getVrvSVG(this.containerId).firstElementChild.getBoundingClientRect()
         var rootWidth = rootBBox.width.toString()
         var rootHeigth = rootBBox.height.toString()
 
         this.manipulatorCanvas = document.createElementNS(c._SVGNS_, "svg")
-        this.manipulatorCanvas.setAttribute("id", "manipulatorCanvas")
+        this.manipulatorCanvas.setAttribute("id", canvasId)
         this.manipulatorCanvas.classList.add("canvas")
         this.manipulatorCanvas.setAttribute("preserveAspectRatio", "xMinYMin meet")
         this.manipulatorCanvas.setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))
+        this.interactionOverlay.querySelector("#" + canvasId)?.remove()
         this.manipulatorCanvas.insertAdjacentElement("beforebegin", this.interactionOverlay.querySelector("#scoreRects"))
         this.interactionOverlay.append(this.manipulatorCanvas)
     }
 
-    drawElements(){
+    drawElements() {
         this.addCanvas()
         this.sm.drawMeasureAdder()
         this.sm.drawMeasureRemover()
@@ -51,9 +53,9 @@ class ScoreManipulatorHandler implements Handler{
         this.setListeners()
     }
 
-    removeElements(){
+    removeElements() {
         //this.removeListeners()
-       this.interactionOverlay.querySelectorAll(manipSelector).forEach(m => {
+        this.interactionOverlay.querySelectorAll(manipSelector).forEach(m => {
             m.remove()
         })
     }
@@ -67,12 +69,12 @@ class ScoreManipulatorHandler implements Handler{
             as.addEventListener("click", that.addStaff, true)
         })
 
-       this.interactionOverlay.querySelectorAll(".removeStaff").forEach(as => {
+        this.interactionOverlay.querySelectorAll(".removeStaff").forEach(as => {
             as.addEventListener("click", that.removeStaff, true)
         })
     }
 
-    removeListeners(){
+    removeListeners() {
         var that = this
         this.interactionOverlay.querySelector("#measureAdder")?.removeEventListener("click", this.addMeasure)
         this.interactionOverlay.querySelector("#measureRemover")?.removeEventListener("click", this.removeMeasure)
@@ -85,23 +87,23 @@ class ScoreManipulatorHandler implements Handler{
         })
     }
 
-    addMeasure = (function addMeasure(e: MouseEvent){
+    addMeasure = (function addMeasure(e: MouseEvent) {
         e.target.dispatchEvent(this.manipulateEvent)
         e.preventDefault()
         e.stopPropagation()
         meiOperation.addMeasure(this.currentMEI as Document)
-        this.loadDataCallback("", meiConverter.restoreXmlIdTags(this.currentMEI), false)
+        this.loadDataCallback("last", meiConverter.restoreXmlIdTags(this.currentMEI), false)
     }).bind(this)
 
-    removeMeasure = (function removeMeasure(e: MouseEvent){
+    removeMeasure = (function removeMeasure(e: MouseEvent) {
         e.target.dispatchEvent(this.manipulateEvent)
         e.preventDefault()
         e.stopPropagation()
         meiOperation.removeMeasure(this.currentMEI as Document)
-        this.loadDataCallback("", meiConverter.restoreXmlIdTags(this.currentMEI), false)
+        this.loadDataCallback("last", meiConverter.restoreXmlIdTags(this.currentMEI), false)
     }).bind(this)
 
-    addStaff = (function addStaff(e: MouseEvent){
+    addStaff = (function addStaff(e: MouseEvent) {
         var target = (e.target as Element).closest(".manipulator")
         target.dispatchEvent(this.manipulateEvent)
         e.preventDefault()
@@ -109,11 +111,11 @@ class ScoreManipulatorHandler implements Handler{
         var relpos = target.classList.contains("below") ? "below" : "above"
         meiOperation.addStaff(this.currentMEI as Document, document.getElementById(target.getAttribute("refId")), relpos)
         this.musicPlayer.resetInstruments()
-        this.loadDataCallback("", meiConverter.restoreXmlIdTags(this.currentMEI), false)
-      
+        this.loadDataCallback("1", meiConverter.restoreXmlIdTags(this.currentMEI), false)
+
     }).bind(this)
 
-    removeStaff = (function removeStaff(e: MouseEvent){
+    removeStaff = (function removeStaff(e: MouseEvent) {
         var target = (e.target as Element).closest(".manipulator")
         target.dispatchEvent(this.manipulateEvent)
         e.preventDefault()
@@ -121,37 +123,37 @@ class ScoreManipulatorHandler implements Handler{
         var relpos = target.classList.contains("below") ? "below" : "above"
         meiOperation.removeStaff(this.currentMEI as Document, document.getElementById(target.getAttribute("refId")), relpos)
         this.musicPlayer.resetInstruments()
-        this.loadDataCallback("", meiConverter.restoreXmlIdTags(this.currentMEI), false)
+        this.loadDataCallback("1", meiConverter.restoreXmlIdTags(this.currentMEI), false)
         e.target.dispatchEvent(this.manipulateEvent)
     }).bind(this)
 
 
-    removeFunction = (function removeElementsFunction(){
+    removeFunction = (function removeElementsFunction() {
         this.removeElements()
     }).bind(this)
 
-    drawFunction = (function drawFunction(e: TransitionEvent){
-        var that = this
-        setTimeout(function(){
-            that.drawElements()
-        }, 500)
-        //this.drawElements()
-    }).bind(this)
+    // drawFunction = (function drawFunction(e: TransitionEvent) {
+    //     var that = this
+    //     setTimeout(function () {
+    //         that.drawElements()
+    //     }, 500)
+    //     //this.drawElements()
+    // }).bind(this)
 
     //SETTER////
 
-    setMEI(mei:Document){
+    setMEI(mei: Document) {
         this.currentMEI = mei
         this.sm.setMEI(mei)
         return this
     }
 
-    setMusicPlayer(mp: MusicPlayer){
+    setMusicPlayer(mp: MusicPlayer) {
         this.musicPlayer = mp
         return this
     }
 
-    setLoadDataCallback(loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean) => Promise<string>){
+    setLoadDataCallback(loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean) => Promise<string>) {
         this.loadDataCallback = loadDataCallback
         return this
     }

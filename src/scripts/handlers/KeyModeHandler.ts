@@ -1,7 +1,7 @@
 import ScoreGraph from "../datastructures/ScoreGraph";
 import MusicPlayer from "../MusicPlayer";
 import { keyCodeNoteMap, keysigToNotes, octToNum } from "../utils/mappings";
-import { Mouse2MEI } from "../utils/Mouse2MEI";
+import { Mouse2SVG } from "../utils/Mouse2SVG";
 import { uuidv4 } from "../utils/random";
 import { NewNote } from "../utils/Types";
 import { constants as c } from "../constants"
@@ -13,7 +13,7 @@ import ScoreNode from "../datastructures/ScoreNode";
 const marked = "marked"
 
 class KeyModeHandler implements Handler{
-    m2m?: Mouse2MEI;
+    m2s?: Mouse2SVG;
     musicPlayer?: MusicPlayer;
     currentMEI?: string | Document;
 
@@ -27,7 +27,7 @@ class KeyModeHandler implements Handler{
 
     containerId: string
     container: Element
-    rootSVG: Element
+    vrvSVG: Element
     interactionOverlay: Element
 
     private shiftDown: Boolean
@@ -82,7 +82,7 @@ class KeyModeHandler implements Handler{
       if(document.getElementById(currentNode.getId()).closest(".chord") !== null){
         var chordNotes = Array.from(document.getElementById(currentNode.getId()).closest(".chord").querySelectorAll(".note"))
         chordNotes.forEach((n: Element) => {
-          var meiNote = this.m2m.getCurrentMei().getElementById(n.id)
+          var meiNote = this.m2s.getCurrentMei().getElementById(n.id)
           var sameOct = meiNote.getAttribute("oct") === newNote.oct 
           var samePname = meiNote.getAttribute("pname") === newNote.pname
           if(sameOct && samePname){
@@ -98,31 +98,30 @@ class KeyModeHandler implements Handler{
         if(this.scoreGraph.getCurrentNode().getDocElement().classList.contains("rest")){
           newNote.relPosX = "left";
           newNote.nearestNoteId = this.scoreGraph.getCurrentNode().getId()
-          //newNote.id = this.scoreGraph.getCurrentNode().getId()
-        }else if(!this.scoreGraph.getCurrentNode()?.getDocElement().classList.contains("mRest") && this.scoreGraph.getCurrentNode()?.getRight() == null && newNote.chordElement == undefined){
+        }else if(!this.scoreGraph.getCurrentNode()?.getDocElement().classList.contains("mRest") && this.scoreGraph.lookUp(["note","rest","mRest"], "right") == null && newNote.chordElement == undefined){
           //check if new Measure must be created 
-          meiOperation.addMeasure(this.m2m.getCurrentMei())
-          var currentStaff = this.m2m.getCurrentMei().getElementById(newNote.staffId)
+          meiOperation.addMeasure(this.m2s.getCurrentMei())
+          var currentStaff = this.m2s.getCurrentMei().getElementById(newNote.staffId)
           var staffN = currentStaff.getAttribute("n")
           newNote.staffId = currentStaff.closest("measure").nextElementSibling.querySelector("staff[n=\"" + staffN + "\"]").id
           newNote.relPosX = "left"
-          newNote.nearestNoteId = this.m2m.getCurrentMei().querySelector("#" + newNote.staffId).querySelector("mRest").id
+          newNote.nearestNoteId = this.m2s.getCurrentMei().querySelector("#" + newNote.staffId).querySelector("mRest").id
         }else {
-          //or if ne note must be in new measure
+          //or if ne note must be rendered into the next bar
           var oldStaffId = newNote.staffId
-          newNote.staffId = this.m2m.getCurrentMei().getElementById(this.scoreGraph.getCurrentNode()?.getRight()?.getId())?.closest("staff").id || newNote.staffId
+          newNote.staffId = this.m2s.getCurrentMei().getElementById(this.scoreGraph.getNextClass(["note","rest","mRest"], "right")?.getId())?.closest("staff").id || newNote.staffId
           
           if(oldStaffId !== newNote.staffId){
             newNote.relPosX = "left"
-            newNote.nearestNoteId = this.scoreGraph.getCurrentNode().getRight().getId()
+            newNote.nearestNoteId = this.scoreGraph.getCurrentNode()?.getId()
           }
         }
         this.insertCallback(newNote, true).then(() => {
-          //this.m2m.update();
+          //this.m2s.update();
           this.resetListeners()
           var currentTargetId;
           if(newNote.chordElement != undefined){
-            currentTargetId = this.rootSVG.querySelector("#" + newNote.chordElement.id).closest(".chord").id // new chord with own ID is created, if note is added
+            currentTargetId = this.vrvSVG.querySelector("#" + newNote.chordElement.id).closest(".chord").id // new chord with own ID is created, if note is added
           }else{
             currentTargetId = newNote.id
           }
@@ -133,7 +132,7 @@ class KeyModeHandler implements Handler{
         })
       }else{
         this.deleteCallback([noteToDelete]).then(() => {
-          //this.m2m.update();
+          //this.m2s.update();
           this.resetListeners()
           this.scoreGraph.setCurrentNodeById(newNote.chordElement?.id)
         })
@@ -170,12 +169,12 @@ class KeyModeHandler implements Handler{
     //get relevant staffinfo
     var nearestNodeId = this.scoreGraph.getCurrentNode()?.getId()
     if(nearestNodeId == undefined) return
-    var closestStaff = this.m2m.getCurrentMei().getElementById(nearestNodeId)?.closest("staff") || this.m2m.getCurrentMei().querySelector("measure > staff") //asume first measure first staff
+    var closestStaff = this.m2s.getCurrentMei().getElementById(nearestNodeId)?.closest("staff") || this.m2s.getCurrentMei().querySelector("measure > staff") //asume first measure first staff
     var closestMeasure = closestStaff.closest("measure")
     var closestStaffIdx = parseInt(closestStaff.getAttribute("n")) - 1
     var closestMeasureIdx = parseInt(closestMeasure.getAttribute("n")) - 1
 
-    var keysig = this.m2m.getMeasureMatrix().get(closestMeasureIdx, closestStaffIdx).keysig
+    var keysig = this.m2s.getMeasureMatrix().get(closestMeasureIdx, closestStaffIdx).keysig
     var accids: string[]
     var accid: string
     if(keysig == undefined){
@@ -189,7 +188,7 @@ class KeyModeHandler implements Handler{
     var targetChord: Element
     //if(this.container.querySelector("#chordButton")?.classList.contains("selected")){
     if(this.shiftDown){
-      targetChord = this.rootSVG.querySelector("#"+nearestNodeId)
+      targetChord = this.vrvSVG.querySelector("#"+nearestNodeId)
       if(targetChord?.closest(".chord") !== null){
         targetChord = targetChord.closest(".chord")
       }
@@ -199,14 +198,14 @@ class KeyModeHandler implements Handler{
     var newNote: NewNote = {
         pname: pname,
         id: uuidv4(),
-        dur: this.m2m.getDurationNewNote(),
-        dots: this.m2m.getDotsNewNote(),
+        dur: this.m2s.getDurationNewNote(),
+        dots: this.m2s.getDotsNewNote(),
         oct: oct,
         keysig: keysig,
         accid: accid,
         nearestNoteId: nearestNodeId,
         relPosX: "right",
-        staffId: this.rootSVG.querySelector("#" + nearestNodeId).closest(".staff").id,
+        staffId: this.vrvSVG.querySelector("#" + nearestNodeId)?.closest(".staff").id,
         chordElement: targetChord,
         rest: this.container.querySelector("#pauseNote").classList.contains("selected")
     }
@@ -272,7 +271,7 @@ class KeyModeHandler implements Handler{
     this.startSelect = undefined
     if(this.selectRect !== null && typeof this.selectRect !== "undefined"){
       this.selectRect.remove()
-      this.rootSVG.querySelectorAll(".marked").forEach(m => {
+      this.vrvSVG.querySelectorAll(".marked").forEach(m => {
         m.classList.remove("marked")
       })
     }
@@ -318,13 +317,13 @@ class KeyModeHandler implements Handler{
     if(isFocusedChord){key = "Backspace"}
     switch(key){
       case "Delete":
-        //elementToDelete = this.rootSVG.querySelector("#" + this.scoreGraph.getCurrentNode().getRight().getId())
+        //elementToDelete = this.vrvSVG.querySelector("#" + this.scoreGraph.getCurrentNode().getRight().getId())
         //break;
       case "Backspace":
-        elementToDelete = this.rootSVG.querySelector("#" + this.scoreGraph.getCurrentNode().getId())
+        elementToDelete = this.vrvSVG.querySelector("#" + this.scoreGraph.getCurrentNode().getId())
         
         if(this.scoreGraph.getCurrentNode().isLayer()){
-          elementToDelete = this.rootSVG.querySelector("#" + this.scoreGraph.getCurrentNode().getLeft().getId())
+          elementToDelete = this.vrvSVG.querySelector("#" + this.scoreGraph.getCurrentNode().getLeft().getId())
           this.navigateCursor("ArrowLeft")
         }
         
@@ -337,9 +336,9 @@ class KeyModeHandler implements Handler{
     }
 
     currNodeId = this.scoreGraph.getCurrentNode().getId()
-    // if(this.rootSVG.querySelector(".marked") === null){
+    // if(this.vrvSVG.querySelector(".marked") === null){
     //   this.deleteCallback([elementToDelete]).then(() => {
-    //     this.m2m.update();
+    //     this.m2s.update();
     //     this.resetListeners()
     //     this.cursor.definePosById(currNodeId)
     //   })
@@ -348,8 +347,8 @@ class KeyModeHandler implements Handler{
 
   ///// GETTER / SETTER////////////////
 
-  setM2M(m2m: Mouse2MEI){
-    this.m2m = m2m
+  setm2s(m2s: Mouse2SVG){
+    this.m2s = m2s
     return this
   }
 
@@ -370,7 +369,7 @@ class KeyModeHandler implements Handler{
 
   setContainerId(id: string){
     this.containerId = id
-    this.rootSVG = cq.getRootSVG(id)
+    this.vrvSVG = cq.getVrvSVG(id)
     this.interactionOverlay = cq.getInteractOverlay(id)
     this.container = document.getElementById(id)
     return this

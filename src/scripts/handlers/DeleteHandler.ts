@@ -15,7 +15,7 @@ class DeleteHandler implements Handler{
     private deleteCallback: (items: Array<Element>) => Promise<any> 
     containerId: string;
     container: Element
-    rootSVG: Element
+    vrvSVG: Element
     interactionOverlay: Element
 
     constructor(containerId){
@@ -24,7 +24,7 @@ class DeleteHandler implements Handler{
 
     setListeners(){
         // Listenere for whole SVG (maybe just layer?)
-        var notes = this.rootSVG.querySelectorAll(".note")
+        var notes = this.vrvSVG.querySelectorAll(".note")
         Array.from(notes).forEach(element => {
             element.addEventListener(action , this.clickHandler)
         });
@@ -32,7 +32,7 @@ class DeleteHandler implements Handler{
     }
     
     removeListeners(){
-        var notes = this.rootSVG.querySelectorAll(".note")
+        var notes = this.vrvSVG.querySelectorAll(".note")
         Array.from(notes).forEach(element => {
             element.removeEventListener(action, this.clickHandler)
         });
@@ -65,9 +65,9 @@ class DeleteHandler implements Handler{
         if(e.code !== "Backspace") return
         var hasRests = false
         var hasNotes = false
-        if(cq.getRootSVG(this.containerId).querySelectorAll("." + this.primaryDeleteFlag + ".rest, ." + this.secondaryDeleteFlag + ".rest").length > 0){hasRests = true}
-        if(cq.getRootSVG(this.containerId).querySelectorAll("." + this.primaryDeleteFlag + ":not(.rest), ." + this.secondaryDeleteFlag + ":not(.rest)").length > 0){hasNotes = true}
-        Array.from(cq.getRootSVG(this.containerId).querySelectorAll("." + this.primaryDeleteFlag + ", ." + this.secondaryDeleteFlag)).forEach(el => {
+        if(cq.getVrvSVG(this.containerId).querySelectorAll("." + this.primaryDeleteFlag + ".rest, ." + this.secondaryDeleteFlag + ".rest").length > 0){hasRests = true}
+        if(cq.getVrvSVG(this.containerId).querySelectorAll("." + this.primaryDeleteFlag + ":not(.rest), ." + this.secondaryDeleteFlag + ":not(.rest)").length > 0){hasNotes = true}
+        Array.from(cq.getVrvSVG(this.containerId).querySelectorAll("." + this.primaryDeleteFlag + ", ." + this.secondaryDeleteFlag)).forEach(el => {
             if(hasNotes && hasRests){
                 if(!el.classList.contains("rest")){
                     this.selectedElements.push(el)
@@ -80,7 +80,7 @@ class DeleteHandler implements Handler{
         if((e.code === "Backspace" || e.code === "Delete") && this.selectedElements.length > 0 && this.container.querySelectorAll(".harmonyDiv").length === 0){
             this.deleteCallback(this.selectedElements).then(() => {
                 this.selectedElements.length = 0
-                cq.getRootSVG(this.containerId).querySelectorAll("." + this.primaryDeleteFlag + ", ." + this.secondaryDeleteFlag).forEach(el => {
+                cq.getVrvSVG(this.containerId).querySelectorAll("." + this.primaryDeleteFlag + ", ." + this.secondaryDeleteFlag).forEach(el => {
                     el.classList.remove(this.primaryDeleteFlag)
                     el.classList.remove(this.secondaryDeleteFlag)
                 })
@@ -105,7 +105,7 @@ class DeleteHandler implements Handler{
     setContainerId(containerId: string) {
         this.containerId = containerId
         this.container = cq.getContainer(containerId)
-        this.rootSVG = cq.getRootSVG(containerId)
+        this.vrvSVG = cq.getVrvSVG(containerId)
         this.interactionOverlay = cq.getInteractOverlay(containerId)
         return this
     }

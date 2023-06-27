@@ -5,7 +5,7 @@ import { constants as c } from './constants';
 import InsertModeHandler from './handlers/InsertModeHandler';
 import DeleteHandler from './handlers/DeleteHandler';
 import NoteDragHandler from './handlers/NoteDragHandler';
-import { Mouse2MEI } from './utils/Mouse2MEI';
+import { Mouse2SVG } from './utils/Mouse2SVG';
 import GlobalKeyboardHandler from './handlers/GlobalKeyboardHandler';
 import MusicPlayer from './MusicPlayer';
 import * as meiConverter from "./utils/MEIConverter"
@@ -21,7 +21,6 @@ import * as cq from "./utils/convenienceQueries"
 import * as coordinates from "./utils/coordinates"
 import * as ffbb from "./utils/firefoxBBoxes"
 import TooltipHandler from './handlers/TooltipHandler';
-import { textChangeRangeIsUnchanged } from 'typescript';
 
 
 /**
@@ -30,7 +29,7 @@ import { textChangeRangeIsUnchanged } from 'typescript';
  */
 class Core {
   private verovioWrapper: VerovioWrapper;
-  private m2m: Mouse2MEI;
+  private m2s: Mouse2SVG;
 
   private undoMEIStacks: Array<string>;
   private redoMEIStacks: Array<string>;
@@ -87,25 +86,65 @@ class Core {
   /**
    * Load data into the verovio toolkit and update the cache.
   */
-  loadData(pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, options: LoadOptions = null): Promise<string> {
-
-
+  loadData(data: string | Document | HTMLElement, isUrl: boolean, options: LoadOptions = null): Promise<void> {
 
 
     this.verovioWrapper = this.verovioWrapper || new VerovioWrapper();
-    if (cq.getRootSVG(this.containerId) !== null) {
-      this.svgFiller.cacheClasses().cacheScales()
-      cq.getRootSVG(this.containerId).remove()
-    }
     var waitingFlag = "waiting"
-    if (cq.getRootSVG(this.containerId) !== null) {
+    if (cq.getVrvSVG(this.containerId) !== null) {
       document.body.classList.add(waitingFlag)
     }
 
     document.getElementById(this.containerId).dispatchEvent(new Event("loadingStart"))
 
+    var that = this
+    async function render(pageNo: number = 1, options: LoadOptions = null): Promise<void> {
+      return new Promise((resolve, reject): void => {
 
-    return new Promise((resolve, reject): void => {
+        var message: VerovioMessage = {
+          id: uuidv4(),
+          action: 'renderToSVG',
+          pageNo: pageNo
+        };
+
+        var response: VerovioResponse
+        var svg: string
+        response = that.verovioWrapper.setMessage(message);
+        svg = response.svg;
+        var svgDoc = new DOMParser().parseFromString(svg, "image/svg+xml")
+        var pageElement  = svgDoc.querySelector("svg")
+        var pageId = "vrvPage" + pageNo.toString()
+        pageElement.setAttribute("id", "vrvPage" + pageNo.toString())
+        pageElement.classList.add("page")
+
+        try {
+          // delete old svg
+          if (cq.getVrvSVG(that.containerId).querySelector("#" + pageId) !== null) {
+            that.svgFiller.cacheClasses().cacheScales()
+            cq.getVrvSVG(that.containerId).querySelector("#" + pageId).innerHTML = "" //.remove()
+          }
+          //insert new complete svg
+          //document.querySelector("#" + that.containerId + " #vrvSVG").append(pageElement)
+          cq.getVrvSVG(that.containerId).querySelector("#" + pageId).replaceWith(pageElement)
+        } catch (error) {
+          document.querySelector("#" + that.containerId + " #vrvSVG").append(pageElement)
+          
+        }
+        that.svgFiller.distributeIds(pageElement.querySelector(".definition-scale"))
+        
+        pageElement.setAttribute("preserveAspectRatio", "xMinYMin meet")
+        var systemHeigth = pageElement.querySelector(".system").getBoundingClientRect().height
+        systemHeigth += systemHeigth * 0.2
+        that.verovioWrapper.setHeightValue(systemHeigth)
+        
+        resolve()
+      })
+    }
+
+    //END ASYNC FUNCTION RENDER
+
+    return new Promise((resolve, reject) => {
+
       var d: string;
       var u: boolean;
       var type: string = data?.constructor.name;
@@ -116,9 +155,8 @@ class Core {
           u = isUrl
           break;
         case 'XMLDocument':
-          this.partialRender(data as Document)
           data = meiOperation.disableFeatures(["grace", "arpeg"], (data as Document)) // for Debugging
-          this.svgFiller.copyClassesFromMei(data)
+          that.svgFiller.copyClassesFromMei(data)
           d = new XMLSerializer().serializeToString(data as Document);
           u = false;
           break;
@@ -135,184 +173,132 @@ class Core {
           break;
       }
 
-      const message: VerovioMessage = {
+      //just render the data once to make pagecount accessible
+      var message: VerovioMessage = {
         id: uuidv4(),
         action: 'renderData',
         mei: d,
         isUrl: u
       };
+      this.verovioWrapper.setMessage(message);
 
-      var response: VerovioResponse
-      var svg: string
+      var pageGroup = document.createElement("g")
+      pageGroup.setAttribute("id", "vrvSVG")
 
-      response = this.verovioWrapper.setMessage(message);
-
-
-      svg = response.mei;
-      svg = svg.replace("<svg", "<svg id=\"" + c._ROOTSVGID_ + "\"");
-      try {
-        document.querySelector("#" + this.containerId + "> #svg_output").innerHTML = svg
-      } catch (ignore) {
-        console.log("Error inserting SVG")
+      if (cq.getVrvSVG(that.containerId) !== null) {
+        that.svgFiller.cacheClasses().cacheScales()
+        //cq.getVrvSVG(that.containerId).remove()
       }
-      this.svgFiller.distributeIds(this.container.querySelector("#rootSVG .definition-scale"))
-      this.container.querySelector("#rootSVG").setAttribute("preserveAspectRatio", "xMidYMid meet")
 
-      /**
-       * some partial load things
-       */
-
-      this.currentMEIDoc
-
-      var rootBBox = this.container.querySelector("#rootSVG").getBoundingClientRect()
-      var rootWidth = rootBBox.width.toString()
-      var rootHeigth = rootBBox.height.toString()
-
-      this.container.querySelector("#rootSVG").setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))
-      this.container.querySelector("#rootSVG").removeAttribute("height")
-      this.container.querySelector("#rootSVG").removeAttribute("width")
-
-      document.body.classList.remove(waitingFlag)
-      this.createSVGOverlay(true)
-      this.svgFiller.setXY(this.windowHandler?.getX(), this.windowHandler?.getY())
-
-      this.getMEI("").then(mei => {
-        this.currentMEI = mei
-        this.currentMEIDoc = this.getCurrentMEI(true) as Document
-        console.log(this.currentMEIDoc)
-        this.svgFiller
-          .setContainerId(this.containerId)
-          .loadClasses()
-          .loadScales()
-          .fillSVG(this.currentMEIDoc)
-        this.musicplayer = this.musicplayer || new MusicPlayer(this.containerId)
-        this.musicplayer
-          .setMEI(this.currentMEIDoc)
-        this.undoMEIStacks.push(mei)
-
-        //mark if note was inserted (enables direct manipulation)
-        // document.querySelectorAll(".marked").forEach(m => {
-        //   m.classList.remove("marked")
-        // })
-        //if(document.querySelectorAll(".marked").length === 0){
-        var lastAddedClass = "lastAdded"
-        document.querySelectorAll("." + lastAddedClass).forEach(m => {
-          m.classList.remove(lastAddedClass)
-        })
-
-        if (this.lastInsertedNoteId != undefined && ["textmode", "clickmode"].some(mode => this.container.classList.contains(mode))) {
-          this.container.querySelector("#" + this.lastInsertedNoteId)?.classList.add(lastAddedClass)
+      if(!cq.getVrvSVG(that.containerId)) document.querySelector("#" + that.containerId + "> #svgContainer").append(pageGroup)
+      var pageCount: number = this.verovioWrapper.getToolkit().getPageCount()
+      var renderPromises = new Array()
+      var staffId = this.m2s?.getLastMouseEnter()?.staff?.getAttribute("refId")
+      
+      var optionPage: number
+      if(options?.changeOnPageNo != undefined){
+        if(options.changeOnPageNo === "last"){
+          optionPage = pageCount
+        }else{
+          optionPage = parseInt(options.changeOnPageNo)
+        }     
+      }
+      
+      
+      var changeOnPage = optionPage || parseInt(cq.getVrvSVG(this.containerId).querySelector("#" + staffId)?.closest(".page")?.id.split("").reverse()[0])
+      Array.from({length: pageCount}, (_, index) => index + 1 ).forEach(pageNo => {
+        
+        if(!isNaN(changeOnPage)){
+          if(pageNo < changeOnPage) return
         }
-        //}
+        renderPromises.push(setTimeout(function(){render(pageNo, options)}, 5))
 
-        // MusicPlayer stuff
-        this.getMidi().then(midi => {
-          this.musicplayer.setMidi(midi)
-          this.musicplayer.addCanvas()
-          this.resolveMidiTimes().then(md => {
-            this.musicplayer.setMidiTimes(md)
-            this.musicplayer.update()
-            this.scoreGraph = new ScoreGraph(this.currentMEIDoc, this.containerId, md)
-            //the first condition should only occur at first starting the score editor
-            if (this.container.querySelector(".lastAdded") === null && this.scoreGraph.getCurrentNode() == undefined) {
-              this.scoreGraph.setCurrentNodeById(this.container.querySelector(".staff > .layer").firstElementChild.id)
-            } else { //second condition always sets lastAdded Note
-              this.scoreGraph.setCurrentNodeById(this.container.querySelector(".lastAdded")?.id)
-            }
-            this.musicplayer.setScoreGraph(this.scoreGraph)
-            this.initializeHandlers()
-            document.getElementById(this.containerId).dispatchEvent(new Event("loadingEnd"))
-            this.svg = new XMLSerializer().serializeToString(this.container.querySelector("#svg_output"))
-            if (this.meiChangedCallback != undefined) {
-              this.meiChangedCallback(this.currentMEI)
-            }
-            resolve(svg);
-          })
-        })
       })
-    });
+
+      Promise.all(renderPromises).then(() => {
+        document.body.classList.remove(waitingFlag)
+        var that = this
+        setTimeout(function(){ // timeout after the vrv rendering completed to render the DOM first
+          
+          that.createSVGOverlay(true)
+
+          that.svgFiller.setXY(that.windowHandler?.getX(), that.windowHandler?.getY())
+
+          that.getMEI("").then(mei => {
+            that.currentMEI = mei  
+            that.currentMEIDoc = that.getCurrentMEI(true) as Document
+            
+            console.log(that.currentMEIDoc)
+            that.svgFiller
+              .setContainerId(that.containerId)
+              .loadClasses()
+              .fillSVG(that.currentMEIDoc)
+            that.undoMEIStacks.push(mei)
+
+            var lastAddedClass = "lastAdded"
+            document.querySelectorAll("." + lastAddedClass).forEach(m => {
+              m.classList.remove(lastAddedClass)
+            })
+
+            if (that.lastInsertedNoteId != undefined && ["textmode", "clickmode"].some(mode => that.container.classList.contains(mode))) {
+              that.container.querySelector("#" + that.lastInsertedNoteId)?.classList.add(lastAddedClass)
+            }
+            if (that.meiChangedCallback != undefined) {
+              that.meiChangedCallback(that.currentMEI)
+            }
+            resolve()
+          })
+
+          //MusicPlayer stuff
+          that.getMidi().then(midi => {
+            that.musicplayer = that.musicplayer || new MusicPlayer(that.containerId)
+            that.musicplayer
+              .setMEI(that.currentMEIDoc)
+              .setMidi(midi)
+              .addCanvas()
+            that.getMidiTimesForSymbols().then(md => {
+              that.musicplayer.setMidiTimes(md)
+              that.musicplayer.update()
+              that.scoreGraph = new ScoreGraph(that.currentMEIDoc, that.containerId, md)
+              //the first condition should only occur at first starting the score editor
+              if (that.container.querySelector(".lastAdded") === null && that.scoreGraph.getCurrentNode() == undefined) {
+                that.scoreGraph.setCurrentNodeById(that.container.querySelector(".staff > .layer").firstElementChild.id)
+              } else { //second condition always sets lastAdded Note
+                that.scoreGraph.setCurrentNodeById(that.container.querySelector(".lastAdded")?.id)
+              }
+              that.initializeHandlers()
+              that.musicplayer.setScoreGraph(that.scoreGraph)
+              document.getElementById(that.containerId).dispatchEvent(new Event("loadingEnd"))
+              that.svg = new XMLSerializer().serializeToString(that.container.querySelector("#svgContainer"))
+            })
+          })
+        }, 5)
+      })
+    })
   }
 
 
 
   reloadDataFunction = (function reloadData(): Promise<boolean> {
-    return this.loadData("", this.currentMEI, false)
+    return this.loadData(this.currentMEI, false)
   }).bind(this)
 
   loadDataFunction = (function loadDataFunction(pageURI: string, data: string | Document | HTMLElement, isUrl: boolean) {
-    return this.loadData(pageURI, data, isUrl)
+    return this.loadData(data, isUrl, {changeOnPageNo: pageURI})
   }).bind(this)
 
-
-  /**
-   * Get the changed staff element, render it  and integrate it manually into the existing svg.
-   * Full render will we performed later to ensure consistent data
-   * @param xmlDoc new XML Document to be rendered.
-   */
-  partialRender(xmlDoc: Document) {
-    //1. get current Staff to be rendered
-    function createHierarchyDocument(element, xmlDoc) {
-      var newElem = xmlDoc.createElement(element.tagName);
-
-      Array.from(element.attributes as NamedNodeMap).forEach((attribute) => {
-        if(attribute.name === "n"){
-          //newElem.setAttribute(attribute.name, "1");
-        }else{
-          newElem.setAttribute(attribute.name, attribute.value);
-        }
-      });
-
-      if (element.parentElement) {
-        var parent = createHierarchyDocument(element.parentElement, xmlDoc);
-        if(parent.tagName === "score"){
-          parent.append(scoreDef)
-        }
-        parent.appendChild(newElem);
-      } else {
-        xmlDoc.appendChild(newElem);
-      }
-
-      return newElem;
-    }
-
-    var newNote = this.m2m.getNewNote();
-    if (newNote === undefined) return;
-
-    var docCopy = xmlDoc.cloneNode(true) as Document
-    var staff = docCopy.querySelector("[*|id=\"" + newNote.staffId + "\"]");
-    var scoreDef = docCopy.querySelector("scoreDef")
-
-    var newDoc = document.implementation.createDocument(null, null, null);
-    createHierarchyDocument(staff, newDoc);
-
-
-    const message: VerovioMessage = {
-      id: uuidv4(),
-      action: 'renderData',
-      mei: new XMLSerializer().serializeToString(newDoc),
-      isUrl: false
-    };
-
-    var response = this.verovioWrapper.setMessage(message);
-    var svg = response.mei;
-
-    console.log("partial render", newDoc, svg);
-
-
-    //3. get relative positions and lengths of elements (notes, barlines in the svg)
-  }
 
   /**
    * Initialize Handlers
    */
   initializeHandlers() {
     //must be first!!!
-    if (this.m2m == undefined) {
-      this.m2m = new Mouse2MEI()
+    if (this.m2s == undefined) {
+      this.m2s = new Mouse2SVG()
     } else {
-      //   this.m2m.update()
+      //this.m2s.update()
     }
-    this.m2m
+    this.m2s
       .setContainerId(this.containerId)
       .setUpdateOverlayCallback(this.createSVGOverlay)
       .setCurrentMEI(this.currentMEIDoc)
@@ -342,7 +328,7 @@ class Core {
 
     this.insertModeHandler
       .setContainerId(this.containerId)
-      .setM2M(this.m2m)
+      .setm2s(this.m2s)
       .setMusicPlayer(this.musicplayer)
       .setDeleteHandler(this.deleteHandler)
       .setLabelHandler(this.labelHandler)
@@ -366,7 +352,7 @@ class Core {
       .setCurrentMEI(this.currentMEIDoc)
       .setInsertCallback(this.insert)
       .setMusicPlayer(this.musicplayer)
-      .setM2M(this.m2m)
+      .setm2s(this.m2s)
       .resetListeners()
 
     this.globalKeyboardHandler
@@ -384,7 +370,7 @@ class Core {
     this.sidebarHandler
       .setContainerId(this.containerId)
       .setCurrentMei(this.currentMEIDoc)
-      .setM2M(this.m2m)
+      .setm2s(this.m2s)
       .setLoadDataCallback(this.loadDataFunction)
       .loadMeter()
       .makeScoreElementsClickable()
@@ -398,7 +384,7 @@ class Core {
 
     this.windowHandler
       .setContainerId(this.containerId)
-      .setM2M(this.m2m)
+      .setm2s(this.m2s)
       .setCurrentMEI(this.currentMEIDoc)
       .setLoadDataCallback(this.loadDataFunction)
       .setSVGReloadCallback(this.reloadDataFunction)
@@ -440,7 +426,7 @@ class Core {
       this.getMEI("").then(mei => {
         meiOperation.removeFromMEI(notes, this.currentMEIDoc).then(updatedMEI => {
           if (updatedMEI != undefined) {
-            this.loadData("", updatedMEI, false).then(() => {
+            this.loadData(updatedMEI, false).then(() => {
               resolve(true);
             })
           } else {
@@ -465,7 +451,7 @@ class Core {
           reject()
         }
         if (updatedMEI != undefined) {
-          this.loadData("", updatedMEI, false).then(() => {
+          this.loadData(updatedMEI, false).then(() => {
             resolve(true)
           })
         } else {
@@ -502,7 +488,7 @@ class Core {
       const meistate = this.undoMEIStacks.pop()
       if (meistate != undefined) {
         this.redoMEIStacks.push(this.currentMEI)
-        this.loadData(pageURI, meistate, false).then(() => resolve(true))
+        this.loadData(meistate, false).then(() => resolve(true))
       } else {
         resolve(false)
       }
@@ -532,7 +518,7 @@ class Core {
       const meistate = this.redoMEIStacks.pop()
       if (meistate !== undefined) {
         this.undoMEIStacks.push(this.currentMEI);
-        this.loadData(pageURI, meistate, false).then(() => resolve(true))
+        this.loadData(meistate, false).then(() => resolve(true))
       } else {
         resolve(false)
       }
@@ -541,47 +527,6 @@ class Core {
 
   ////// VEROVIO REQUESTS /////////////////
 
-  /**
-   * Edits pitch position of given note via verovio toolkit
-   * @param action 
-   * @returns 
-   */
-  edit = (function edit(action: EditorAction): Promise<boolean> {
-    return new Promise((resolve): void => {
-      action.param = action.param as { elementId, x, y }
-      if (action.param.x != undefined && action.param.y != undefined) {
-        var message: VerovioMessage = {
-          action: "edit",
-          editorAction: action
-        }
-
-        var response: VerovioResponse
-        response = this.verovioWrapper.setMessage(message)
-        // MEI ist already updated after edit (setMessage)
-        this.getMEI("").then(mei => {
-          this.loadData("", mei, false).then(() => {
-
-            message = {
-              action: "getElementAttr",
-              //@ts-ignore
-              elementId: action.param.elementId
-            }
-            response = this.verovioWrapper.setMessage(message);
-            resolve(response.result);
-          })
-        })
-      } else {
-        var nn = this.m2m.getNewNote()
-        var editNote = this.currentMEIDoc.getElementById(nn.nearestNoteId)
-        editNote.setAttribute("oct", nn.oct)
-        editNote.setAttribute("pname", nn.pname)
-        this.loadData("", meiConverter.restoreXmlIdTags(this.currentMEIDoc), false).then(() => {
-          resolve(true);
-
-        })
-      }
-    })
-  }).bind(this)
 
   /**
    * Get the MEI for a specific page.
@@ -627,32 +572,52 @@ class Core {
   }
 
   /**
-   * Get all times for each note 
+   * Get all times for each event visible in the score (notes, rests, etc.)
    * @returns 
    */
-  resolveMidiTimes(): Promise<Map<number, Array<Element>>> {
+  getMidiTimesForSymbols(): Promise<Map<number, Array<Element>>> {
     return new Promise((resolve): void => {
       var noteTimes = new Map<number, Array<Element>>();
-
-      var result = Array.from(cq.getRootSVG(this.containerId).querySelectorAll(".note, .rest"))
-      result.forEach(node => {
-        try {
-          var message: VerovioMessage = {
-            action: "getTimeForElement",
-            id: uuidv4(),
-            elementId: node.id
+      var that = this
+      var container = cq.getVrvSVG(this.containerId)
+      var midi = that.verovioWrapper.getMidiJSON()
+      var tracks = midi.tracks
+      tracks.forEach((t, tIdx) => {
+        var svgNotes = container.querySelectorAll(".staff[n=\"" + (tIdx + 1).toString() + "\"] .note")
+        var prevNote: { midi: any, svg: Element }
+        t.notes.forEach((n, nIdx) => {
+          if (!noteTimes.has(n.ticks)) {
+            noteTimes.set(n.ticks, new Array())
           }
-
-          var response: VerovioResponse = this.verovioWrapper.setMessage(message)
-          if (!noteTimes.has(response.time)) {
-            noteTimes.set(response.time, new Array())
+          var arr = noteTimes.get(n.ticks)
+          var currNote = svgNotes[nIdx]
+          //indicaton, that some rests are in between
+          //trailing rests are intentionally left out, since there is nothing to play anyway
+          if (prevNote?.midi.ticks + prevNote?.midi.durationTicks != n.ticks) {
+            var elements = container.querySelectorAll(".staff[n=\"" + (tIdx + 1).toString() + "\"] .note, .staff[n=\"" + (tIdx + 1).toString() + "\"] .rest")
+            var elementIds = Array.from(elements).map(e => e.id)
+            var sliceLeft = prevNote == undefined && n.ticks > 0 ? 0 : undefined
+            sliceLeft = prevNote != undefined ? elementIds.findIndex(eid => eid === prevNote.svg.id) + 1 : 0
+            var sliceRight = elementIds.findIndex(eid => eid === currNote.id) - 1
+            var slicedElementIds = elementIds.slice(sliceLeft, sliceRight)
+            var currentTickPos = prevNote?.midi.ticks + prevNote?.midi.durationTicks || 0
+            slicedElementIds.forEach(id => {
+              var ratio = meiOperation.getAbsoluteRatio(this.currentMEIDoc.getElementById(id))
+              var tickDur = 4 * ratio * midi.header.ppq
+              if (!noteTimes.has(currentTickPos)) {
+                noteTimes.set(currentTickPos, new Array())
+              }
+              var restArr = noteTimes.get(currentTickPos)
+              restArr.push(container.querySelector("#" + id))
+              currentTickPos += tickDur
+            })
           }
-          var arr = noteTimes.get(response.time)
-          //arr.push(node.id)
-          arr.push(cq.getRootSVG(this.containerId).querySelector("#" + node.id))
-        } catch {
-          console.log("Catched Midi Event", node)
-        }
+          arr.push(currNote)
+          prevNote = {
+            midi: n,
+            svg: svgNotes[nIdx]
+          }
+        })
       })
       resolve(noteTimes)
     })
@@ -665,7 +630,7 @@ class Core {
   createSVGOverlay(loadBBoxes: boolean = true): Promise<boolean> {
     return new Promise((resolve): void => {
       document.getElementById(this.containerId).focus()
-      var refSVG = document.getElementById(this.containerId).querySelector("#rootSVG") as unknown as SVGSVGElement
+      var refSVG = document.getElementById(this.containerId).querySelector("#vrvSVG") as unknown as SVGSVGElement
       this.interactionOverlay = document.getElementById(this.containerId).querySelector("#interactionOverlay")
       if (this.interactionOverlay === null) {
         var overlay = document.createElementNS(c._SVGNS_, "svg")
@@ -673,14 +638,14 @@ class Core {
         this.interactionOverlay = overlay
       }
 
-      var root = cq.getRootSVG(this.containerId)
+      var root = cq.getVrvSVG(this.containerId)
       var rootBBox = root.getBoundingClientRect()
       var rootWidth = (rootBBox.width).toString()
       var rootHeigth = (rootBBox.height).toString()
 
-      if (this.interactionOverlay.getAttribute("viewBox") === null) {
+      //if (this.interactionOverlay.getAttribute("viewBox") === null) {
         this.interactionOverlay.setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))
-      }
+      //}
 
       document.getElementById(this.containerId).querySelector("#interactionOverlay #scoreRects")?.remove()
       var scoreRects = document.createElementNS(c._SVGNS_, "svg")
@@ -714,47 +679,47 @@ class Core {
         // staff always has to be on top of sibling elements, so that one can interact with score elements
         reorderedBoxes = reorderedBoxes.reverse()
 
+        async function computeCoords(box: Element, interactionOverlay: Element) { // since order is not important, this block can be asynchronous
+          return new Promise((resolve): void => {
+            var g = document.createElementNS(c._SVGNS_, "g")
+            var refId: string = box.id !== "" ? box.id : box.getAttribute("refId")
+            if (refId !== "" && refId !== null) {
+              g.setAttribute("refId", refId)
+            }
+            box.classList.forEach(c => g.classList.add(c))
+            var bbox = box.getBoundingClientRect()
+            var cc = coordinates.getDOMMatrixCoordinates(bbox, interactionOverlay)
+            var rect = document.createElementNS(c._SVGNS_, "rect")
+            rect.setAttribute("x", cc.left.toString())
+            rect.setAttribute("y", cc.top.toString())
+            var w: number
+            if (cc.width === 0) w = 2
+            rect.setAttribute("width", w?.toString() || cc.width.toString())
+            var h: number
+            if (cc.height === 0) h = 2
+            rect.setAttribute("height", h?.toString() || cc.height.toString())
+            g.appendChild(rect)
+
+            scoreRects.append(g)
+            if (navigator.userAgent.toLowerCase().includes("firefox")) {
+              ffbb.adjustBBox(g)
+            }
+            resolve(true)
+          })
+        }
+        var coordPromises = new Array<Promise<any>>()
         reorderedBoxes.forEach(sr => {
           if (!["g", "path"].includes(sr.tagName.toLowerCase())) {
-            //sr.remove()
             return
           } else if (Array.from(sr.classList).some(srcl => srcl.includes("page") || srcl.includes("system"))) {
-            //sr.remove()
             return
           } else {
-            var that = this
-            async function computeCoords() { // since order is not important, this block can be asynchronous
-              return new Promise((resolve): void => {
-                var parentsr = sr
-                var g = document.createElementNS(c._SVGNS_, "g")
-                var refId: string = parentsr.id !== "" ? parentsr.id : parentsr.getAttribute("refId")
-                if (refId !== "" && refId !== null) {
-                  g.setAttribute("refId", refId)
-                }
-                parentsr.classList.forEach(c => g.classList.add(c))
-                var bbox = sr.getBoundingClientRect()
-                var cc = coordinates.getDOMMatrixCoordinates(bbox, that.interactionOverlay)
-                var rect = document.createElementNS(c._SVGNS_, "rect")
-                rect.setAttribute("x", cc.left.toString())
-                rect.setAttribute("y", cc.top.toString())
-                var w: number
-                if (cc.width === 0) w = 2
-                rect.setAttribute("width", w?.toString() || cc.width.toString())
-                var h: number
-                if (cc.height === 0) h = 2
-                rect.setAttribute("height", h?.toString() || cc.height.toString())
-                g.appendChild(rect)
+            coordPromises.push(computeCoords(sr, this.interactionOverlay))
 
-                scoreRects.append(g)
-                if (navigator.userAgent.toLowerCase().includes("firefox")) {
-                  ffbb.adjustBBox(g)
-                }
-                resolve(true)
-              })
-            }
-            computeCoords()
           }
         })
+
+        setTimeout(function(){Promise.all(coordPromises)}, 1)
       }
       resolve(true)
     })
@@ -848,10 +813,10 @@ class Core {
   ////////// GETTER/ SETTER
   /**
    * 
-   * @returns current Mouse2MEI Instance
+   * @returns current Mouse2SVG Instance
    */
-  getMouse2MEI(): Mouse2MEI {
-    return this.m2m;
+  getMouse2SVG(): Mouse2SVG {
+    return this.m2s;
   }
 
   getDeleteHandler(): DeleteHandler {
@@ -877,7 +842,7 @@ class Core {
    * @returns {string} - serialized svg
    */
   getSVG(plain = true): string {
-    var svgDom = this.container.querySelector("#svg_output")
+    var svgDom = this.container.querySelector("#svgContainer")
     if (plain) {
       svgDom.querySelectorAll(".lastAdded, .marked").forEach(sd => {
         sd.classList.remove("lastAdded")
@@ -960,7 +925,7 @@ class Core {
    * @param separator optional separator, default: " "
    */
   setAttributes(options: {}, separator = " ") {
-    var svg = cq.getRootSVG(this.containerId)
+    var svg = cq.getVrvSVG(this.containerId)
     for (const [elKey, elValue] of Object.entries(options)) {
       var element = svg.querySelector(elKey)
       if (element !== null) {
@@ -983,7 +948,7 @@ class Core {
    * @param separator optional separator, default: " "
    */
   setStyles(options: {}, separator = " ") {
-    var svg = cq.getRootSVG(this.containerId)
+    var svg = cq.getVrvSVG(this.containerId)
     for (const [elKey, elValue] of Object.entries(options)) {
       var element = svg.querySelector(elKey) as HTMLElement
       if (element !== null) {

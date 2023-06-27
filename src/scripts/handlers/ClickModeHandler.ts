@@ -1,5 +1,5 @@
 import MusicPlayer from "../MusicPlayer";
-import { Mouse2MEI } from "../utils/Mouse2MEI";
+import { Mouse2SVG } from "../utils/Mouse2SVG";
 import Handler from "./Handler";
 import * as coordinates from "../utils/coordinates";
 import { constants as c } from '../constants'
@@ -11,7 +11,7 @@ import * as cq from "../utils/convenienceQueries"
 
 
 class ClickModeHandler implements Handler {
-    m2m?: Mouse2MEI;
+    m2s?: Mouse2SVG;
     musicPlayer?: MusicPlayer;
     currentMEI?: string | Document;
     annotations: Annotations;
@@ -20,7 +20,7 @@ class ClickModeHandler implements Handler {
     deleteCallback: (notes: Array<Element>) => Promise<any>;
 
     private containerId: string
-    private rootSVG: Element
+    private vrvSVG: Element
     private interactionOverlay: Element
     private container: Element
 
@@ -95,9 +95,10 @@ class ClickModeHandler implements Handler {
         if (!this.phantomElementHandler.getIsTrackingMouse()) { return }
         if (this.musicPlayer.getIsPlaying() === true) { return } // getIsPlaying could also be undefined
 
-        var pt = new DOMPoint(e.clientX, e.clientY)
-        var rootSVG = this.rootSVG as unknown as SVGGraphicsElement
-        var pospt = pt.matrixTransform(rootSVG.getScreenCTM().inverse())
+        // var pt = new DOMPoint(e.clientX, e.clientY)
+        // var vrvSVG = this.vrvSVG as unknown as SVGGraphicsElement
+        // var pospt = pt.matrixTransform(vrvSVG.getScreenCTM().inverse())
+        var pospt = coordinates.transformToDOMMatrixCoordinates(e.clientX, e.clientY, this.vrvSVG)
 
         var posx = pospt.x
         var posy = pospt.y
@@ -111,12 +112,12 @@ class ClickModeHandler implements Handler {
             options["targetChord"] = this.findScoreTarget(posx, posy)
         }
 
-        //this.m2m.defineNote(e.pageX, e.pageY, options);
-        this.m2m.defineNote(posx, posy, options);
+        //this.m2s.defineNote(e.pageX, e.pageY, options);
+        this.m2s.defineNote(posx, posy, options);
 
-        var newNote: NewNote = this.m2m.getNewNote()
+        var newNote: NewNote = this.m2s.getNewNote()
         if (newNote == undefined) return //Eingabemaske in Chrome: zusätzliche Notenlinien in Noteneditor #10
-        var meiDoc = this.m2m.getCurrentMei()
+        var meiDoc = this.m2s.getCurrentMei()
         var pitchExists: Boolean = false
 
         // do not insert same note more than once in chord
@@ -136,8 +137,8 @@ class ClickModeHandler implements Handler {
 
         if (!pitchExists) {
             var replace = (this.container.querySelector("#insertToggle") as HTMLInputElement).checked && newNote.chordElement == undefined
-            this.insertCallback(this.m2m.getNewNote(), replace).then(() => {
-                this.musicPlayer.generateTone(this.m2m.getNewNote())
+            this.insertCallback(this.m2s.getNewNote(), replace).then(() => {
+                this.musicPlayer.generateTone(this.m2s.getNewNote())
             }).catch(() => {
                 //alert("Your bar is to small")
             })
@@ -170,8 +171,8 @@ class ClickModeHandler implements Handler {
 
 
             //update focussed layer if element and layer do not match
-            if (elementToHighlight.closest(".layer").id !== this.m2m.getMouseEnterElementByName("layer")?.id && this.m2m.getMouseEnterElementByName("layer") !== null) {
-                this.m2m.setMouseEnterElements(elementToHighlight)
+            if (elementToHighlight.closest(".layer").id !== this.m2s.getMouseEnterElementByName("layer")?.id && this.m2s.getMouseEnterElementByName("layer") !== null) {
+                this.m2s.setMouseEnterElements(elementToHighlight)
             }
 
             //snap note to closest Chord
@@ -181,9 +182,9 @@ class ClickModeHandler implements Handler {
             var bboxElement = this.interactionOverlay.querySelector("[refId=" + elementToHighlight.id + "]")
             var ptLeft = new DOMPoint(bboxElement.getBoundingClientRect().left, 0)
             var ptRight = new DOMPoint(bboxElement.getBoundingClientRect().right, 0)
-            var rootSVG = cq.getRootSVG(this.containerId) as unknown as SVGGraphicsElement //this.rootSVG as unknown as SVGGraphicsElement
-            var left = ptLeft.matrixTransform(rootSVG.getScreenCTM().inverse()).x
-            var right = ptRight.matrixTransform(rootSVG.getScreenCTM().inverse()).x
+            var vrvSVG = this.interactionOverlay //cq.getVrvSVG(this.containerId) as unknown as SVGGraphicsElement 
+            var left = ptLeft.matrixTransform(vrvSVG.getScreenCTM().inverse()).x
+            var right = ptRight.matrixTransform(vrvSVG.getScreenCTM().inverse()).x
 
             //snap only when within boundaries of target Chord
             if (cx > left && cx < right) {
@@ -208,7 +209,7 @@ class ClickModeHandler implements Handler {
                 //}
 
                 let snappt = new DOMPoint(snapCoord, 0)
-                phantomSnapX = snappt.matrixTransform(rootSVG.getScreenCTM().inverse()).x
+                phantomSnapX = snappt.matrixTransform(vrvSVG.getScreenCTM().inverse()).x
 
                 if (elementToHighlight.querySelector(".chord") !== null) {
                     console.log(phantomSnapX)
@@ -239,24 +240,6 @@ class ClickModeHandler implements Handler {
                 })
             }
 
-            //MaNo: 6.9.2021: Chords will be detected by vertical snapping, not by highlighting box
-            // var highLightRects: NodeListOf<Element> = this.annotations.getCanvasGroup().querySelectorAll(".highlightChord")
-            // Array.from(highLightRects).forEach(el => {
-            //     el.remove()
-            // })
-
-            // var ebb: DOMRect = elementToHighlight.getBoundingClientRect()
-
-            // var highlightRect: SVGElement = document.createElementNS(c._SVGNS_, "rect")
-            // var margin = 5
-            // highlightRect.setAttribute("x", (ebb.x - rootBBox.x - margin).toString())
-            // highlightRect.setAttribute("y", (ebb.y - rootBBox.y - 10*margin).toString())
-            // highlightRect.setAttribute("height", (ebb.height + 20*margin).toString())
-            // highlightRect.setAttribute("width", (ebb.width + 2*margin).toString())
-            // highlightRect.classList.add("highlightChord")
-            // this.annotations.getCanvasGroup().appendChild(highlightRect)
-            // //highlightRect.addEventListener("click", this.clickHandler)
-
             this.currentElementToHighlight = elementToHighlight
         }
 
@@ -264,14 +247,14 @@ class ClickModeHandler implements Handler {
 
     /**
          * Find Score Element nearest to given Position (e.g. Mouse)
-         * @param posx 
-         * @param posy 
+         * @param posx client position
+         * @param posy client position
          * @returns 
          */
     findScoreTarget(posx: number, posy: number): Element {
-        var nextNote = this.m2m.findScoreTarget(posx, posy)
+        var nextNote = this.m2s.findScoreTarget(posx, posy)
         if (nextNote != undefined) {
-            var el = this.rootSVG.querySelector("#" + nextNote.id).closest(".chord") || this.rootSVG.querySelector("#" + nextNote.id)
+            var el = this.vrvSVG.querySelector("#" + nextNote.id)?.closest(".chord") || this.vrvSVG.querySelector("#" + nextNote.id)
             if (el.classList.contains("notehead")) {
                 el = el.parentElement
             }
@@ -283,8 +266,8 @@ class ClickModeHandler implements Handler {
 
     ///// GETTER / SETTER////////////////
 
-    setM2M(m2m: Mouse2MEI) {
-        this.m2m = m2m
+    setm2s(m2s: Mouse2SVG) {
+        this.m2s = m2s
         return this
     }
 
@@ -295,7 +278,7 @@ class ClickModeHandler implements Handler {
 
     setContainerId(id: string) {
         this.containerId = id
-        this.rootSVG = cq.getRootSVG(id)
+        this.vrvSVG = cq.getVrvSVG(id)
         this.interactionOverlay = cq.getInteractOverlay(id)
         this.container = document.getElementById(id)
         return this

@@ -808,7 +808,7 @@ export function adjustAccids(currentMEI : Document): Document{
  * @returns 
  */
 export function transposeByStep(currentMEI : Document, direction: string): Document{
-  //document.querySelectorAll(".activeContainer #rootSVG :is(.note.marked, .note.lastAdded)").forEach(nm => {
+  //document.querySelectorAll(".activeContainer #vrvSVG :is(.note.marked, .note.lastAdded)").forEach(nm => {
   document.querySelectorAll(".activeContainer :is(.note.marked, .note.lastAdded)").forEach(nm => {
     if(nm.id === null || nm.id == undefined || nm.id === "") return // make shure that only the id is taken from the verovio svg so that the element will only be effected once
     var id = nm.id
@@ -1707,7 +1707,7 @@ export function paste(ids: Array<string>, refId: string, currentMEI : Document):
  * @returns 
  */
 export function replaceClefinScoreDef(target: Element, newClef: string, currentMEI: Document): Document{
-  var staffN = document.querySelector(".activeContainer #rootSVG #" + target.id).closest(".staff").getAttribute("n")
+  var staffN = document.querySelector(".activeContainer #vrvSVG #" + target.id).closest(".staff").getAttribute("n")
   var staffDefClef = currentMEI.querySelector("staffDef[n=\"" + staffN + "\"] > clef")
   staffDefClef.setAttribute("shape", newClef.charAt(0))
   staffDefClef.setAttribute("line", clefToLine.get(newClef.charAt(0)))
@@ -1758,7 +1758,7 @@ function findAttributeRecursive(element: Element, attributeName: string, current
  * @returns 
  */
 export function replaceKeyInScoreDef(target: Element, newSig: string, currentMEI: Document): Document {
-  var staffN = document.querySelector(".activeContainer #rootSVG #" + target.id).closest(".staff").getAttribute("n")
+  var staffN = document.querySelector(".activeContainer #vrvSVG #" + target.id).closest(".staff").getAttribute("n")
   var staffDefSig = currentMEI.querySelector("staffDef[n=\"" + staffN + "\"] > keySig")
   if(staffDefSig !== null){
     staffDefSig.setAttribute("sig", keyIdToSig.get(newSig))
@@ -1798,7 +1798,7 @@ export function insertKey(target: Element, newSig: string, currentMEI: Document)
 }
 
 export function replaceMeterInScoreDef(target: Element, currentMEI: Document): Document {
-  var staffN = document.querySelector(".activeContainer #rootSVG #" + target.id).closest(".staff").getAttribute("n")
+  var staffN = document.querySelector(".activeContainer #vrvSVG #" + target.id).closest(".staff").getAttribute("n")
   var staffDefMeter = currentMEI.querySelector("staffDef[n=\"" + staffN + "\"]")
 
   var count = (document.querySelector(".activeContainer #timeCount") as HTMLSelectElement).value

@@ -43,12 +43,17 @@ body.waiting * {
     cursor: crosshair
 }
 
-#rootSVG{
+#vrvSVG{
     top: 0px;
     width: 100%;
     height: auto;
     position: absolute;
+    display: flex;
+    flex-direction: column;
+}
 
+#vrvSVG > svg{
+   outline: 1px dashed #000; /* Adjust the color and width as needed */
 }
 
 #interactionOverlay{
@@ -83,12 +88,12 @@ text{
 
 
 /*
-#svg_output, .annotLinkedText, .annotLinkedText *{
+#svgContainer, .annotLinkedText, .annotLinkedText *{
     white-space: pre;
 }
 */
 
-#svg_output{
+#svgContainer{
     position: relative;
     height: 100%;
     overflow: scroll;
@@ -577,6 +582,6 @@ text{
     display: none;
 }
 
-#interactionOverlay, #rootSVG{
+#interactionOverlay, #vrvSVG > svg{
     transform-origin: top left
 }

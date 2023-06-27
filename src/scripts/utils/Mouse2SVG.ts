@@ -3,12 +3,13 @@ import { NoteBBox, StaffLineBBox, NewNote, Staff } from './Types';
 import { uuidv4 } from './random';
 import { idxNoteMapGClef, idxNoteMapFClef, idxNotePhantomMapBelowG, idxNotePhantomMapAboveG, idxNotePhantomMapBelowF, idxNotePhantomMapAboveF, idxNotePhantomMapBelowC, idxNotePhantomMapAboveC, keysigToNotes, idxNoteMapCClef, modButtonToAccid } from './mappings';
 import MeasureMatrix from '../datastructures/MeasureMatrix'
-import * as meiOperation from "../utils/MEIOperations"
+import * as meiOperation from "./MEIOperations"
 import * as coordinates from "./coordinates"
 import * as cq from "./convenienceQueries"
 import * as ffbb from "./firefoxBBoxes"
 import { collapseTextChangeRangesAcrossMultipleVersions } from 'typescript';
-export class Mouse2MEI {
+
+export class Mouse2SVG {
 
     private noteBBoxes: Array<NoteBBox>;
     private staffLineBBoxes: Array<StaffLineBBox>;
@@ -21,7 +22,7 @@ export class Mouse2MEI {
     private lastLayerMouseEnter: Element = null;
     private measureMatrix: MeasureMatrix;
     private containerId: string
-    private rootSVG: Element
+    private vrvSVG: Element
     private interactionOverlay: Element
     private container: Element
 
@@ -97,11 +98,11 @@ export class Mouse2MEI {
                 if (!that.lastStaffMouseEnter.classList.contains(enteredFlag)) {
                     cq.getInteractOverlay(that.containerId).querySelectorAll(".staff").forEach(s => {
                         s.classList.remove(enteredFlag)
-                        that.getElementInRootSVG(s.getAttribute("refId")).classList.remove(enteredFlag)
+                        that.getElementinVrvSVG(s.getAttribute("refId")).classList.remove(enteredFlag)
                     })
                     that.container.querySelectorAll(".onChord").forEach(oc => oc.classList.remove("onChord")) // reset onChord, so that only chords in the same staff are set
                     that.lastStaffMouseEnter.classList.add(enteredFlag)
-                    that.getElementInRootSVG(that.lastStaffMouseEnter.getAttribute("refId")).classList.add(enteredFlag)
+                    that.getElementinVrvSVG(that.lastStaffMouseEnter.getAttribute("refId")).classList.add(enteredFlag)
                 }
             })
         });
@@ -116,7 +117,7 @@ export class Mouse2MEI {
                         m.classList.remove(enteredFlag)
                     })
                     that.lastMeasureMouseEnter.classList.add(enteredFlag)
-                    //that.rootSVG.querySelector("#"+that.lastMeasureMouseEnter.id).classList.add(enteredFlag)
+                    //that.vrvSVG.querySelector("#"+that.lastMeasureMouseEnter.id).classList.add(enteredFlag)
                 }
             })
         });
@@ -169,8 +170,8 @@ export class Mouse2MEI {
     }
 
     findBBoxes() {
-        var notes = this.rootSVG.querySelectorAll(".note, .rest, .mRest, .notehead");
-        var root = this.rootSVG
+        var notes = this.vrvSVG.querySelectorAll(".note, .rest, .mRest, .notehead");
+        var root = this.vrvSVG
         Array.from(notes).forEach(element => {
             var interactionElement = this.interactionOverlay.querySelector("[refId=" + element.id + "]")
             if (interactionElement === null) return
@@ -181,8 +182,6 @@ export class Mouse2MEI {
                 parentStaff: element.closest(".staff"),
                 parentLayer: element.closest(".layer"),
                 parentMeasure: element.closest(".measure"),
-                //x: element.getBoundingClientRect().x + window.pageXOffset,
-                //y: element.getBoundingClientRect().y + window.pageYOffset
                 x: relpt.right, //relpt.x,
                 y: relpt.y
             }
@@ -190,11 +189,11 @@ export class Mouse2MEI {
         })
 
 
-        // this.measureMatrix.populateFromSVG(document.querySelector(c._ROOTSVGID_WITH_IDSELECTOR_));
+        // this.measureMatrix.populateFromSVG(document.querySelector(c._vrvSVGID_WITH_IDSELECTOR_));
         this.measureMatrix.populateFromMEI(this.currentMEI)
-        var staves = cq.getRootSVG(this.containerId).querySelectorAll(c._STAFF_WITH_CLASSSELECTOR_)
+        var staves = cq.getVrvSVG(this.containerId).querySelectorAll(c._STAFF_WITH_CLASSSELECTOR_)
         Array.from(staves).forEach(element => {
-            let g = cq.getRootSVG(this.containerId).querySelectorAll("#" + element.id + " > path")
+            let g = cq.getVrvSVG(this.containerId).querySelectorAll("#" + element.id + " > path")
             let staff = element;
             let idxStaff = parseInt(element.getAttribute("n")) - 1
             let closestMeasure = element.closest(".measure");
@@ -223,11 +222,11 @@ export class Mouse2MEI {
                 }
                 staffLine.classList.add(map.get(idx * 2))
                 staffLine.classList.add("Clef" + clefShape)
-                //var interactionElement = this.interactionOverlay.querySelector("[refId=" + staffLine.id +"]")
-                var relpt = coordinates.getDOMMatrixCoordinates(staffLine, this.rootSVG)
+            
+                var relpt = coordinates.getDOMMatrixCoordinates(staffLine, cq.getInteractOverlay(this.containerId))//this.vrvSVG)
                 let bb: StaffLineBBox = {
                     id: staffLine.parentElement.id,
-                    y: relpt.y, //staffLine.getBoundingClientRect().y + window.pageYOffset,
+                    y: relpt.y, 
                     staffIdx: idx * 2,
                     classList: staffLine.classList
                 }
@@ -270,8 +269,8 @@ export class Mouse2MEI {
      * 2. Check position between staves
      * 3. update
      * 
-     * @param x page Coordinate
-     * @param y page Coordinate
+     * @param x client Coordinate
+     * @param y client Coordinate
      */
     defineNote(x: number, y: number, options: { staffLineId?: string, targetChord?: Element }): void {
 
@@ -282,7 +281,7 @@ export class Mouse2MEI {
         let diffNote: number = null;
         let leftRightPos: string;
 
-        let allIDs: Array<string> = Array.from(this.rootSVG.querySelectorAll(".staff")).map(s => s.getAttribute("id"))
+        let allIDs: Array<string> = Array.from(this.vrvSVG.querySelectorAll(".staff")).map(s => s.getAttribute("id"))
         if (this.lastStaffMouseEnter === null) { return }
         let staffIdx = allIDs.indexOf(this.lastStaffMouseEnter?.getAttribute("refId"))
         let upperStaffBound = staffIdx * 5 + 0;
@@ -299,14 +298,14 @@ export class Mouse2MEI {
         }
         options.targetChord = isRestChord ? undefined : options.targetChord
 
-        this.getElementInRootSVG(this.lastStaffMouseEnter?.getAttribute("refId"))?.querySelectorAll(".layer").forEach(l => {
+        this.getElementinVrvSVG(this.lastStaffMouseEnter?.getAttribute("refId"))?.querySelectorAll(".layer").forEach(l => {
             if (l.hasChildNodes()) {
                 staffIsEmpty = false
             }
         })
 
         var currentStaffClef: string
-        for (const [key, value] of this.getElementInRootSVG(this.lastStaffMouseEnter?.getAttribute("refId"))?.querySelector(".staffLine").classList.entries()) {
+        for (const [key, value] of this.getElementinVrvSVG(this.lastStaffMouseEnter?.getAttribute("refId"))?.querySelector(".staffLine")?.classList.entries()) {
             if (value.indexOf("Clef") !== -1) {
                 currentStaffClef = value
                 break;
@@ -329,11 +328,6 @@ export class Mouse2MEI {
                     diffNote = tempDiff;
                     currentNearestNote = bb;
                     isLeftOfNote = zerocrossing <= 0 ? true : false;
-                    // if(cq.getRootSVG(this.containerId).querySelector("#" + bb.id)?.classList.contains("rest")){
-                    //     isLeftOfNote = !isLeftOfNote
-                        
-                    // }
-                    //isRightOfNote = tempDiff > 0 ? true : false;
                 }
             })
             leftRightPos = isLeftOfNote ? "left" : "right"
@@ -481,7 +475,7 @@ export class Mouse2MEI {
         var closestMeasureIdx = parseInt(closestMeasure.getAttribute("n")) - 1
         var nearestNoteId = (currentNearestNote !== null) ? currentNearestNote.id : null
         if (nearestNoteId !== null) { // ensure note id to be in new note
-            nearestNoteId = this.rootSVG.querySelector("#" + nearestNoteId).classList.contains("notehead") ? this.rootSVG.querySelector("#" + nearestNoteId).closest(".note").id : nearestNoteId
+            nearestNoteId = this.vrvSVG.querySelector("#" + nearestNoteId).classList.contains("notehead") ? this.vrvSVG.querySelector("#" + nearestNoteId).closest(".note").id : nearestNoteId
         }
 
         var keysig = this.measureMatrix.get(closestMeasureIdx, closestStaffIdx).keysig
@@ -532,16 +526,16 @@ export class Mouse2MEI {
         notes.forEach(n => {
             var x: number
             var y: number
-            if (this.getElementInRootSVG(n.id)?.closest(".chord") && navigator.userAgent.toLowerCase().indexOf("firefox") > -1) { // special rule for firefox browsers
-                x = this.getElementInRootSVG(n.id)?.closest(".chord").getBoundingClientRect().x
-                y = this.getElementInRootSVG(n.id)?.closest(".chord").getBoundingClientRect().y
+            if (this.getElementinVrvSVG(n.id)?.closest(".chord") && navigator.userAgent.toLowerCase().indexOf("firefox") > -1) { // special rule for firefox browsers
+                x = this.getElementinVrvSVG(n.id)?.closest(".chord").getBoundingClientRect().x
+                y = this.getElementinVrvSVG(n.id)?.closest(".chord").getBoundingClientRect().y
             } else {
                 x = n.x
                 y = n.y
             }
 
             //filter for left and right elements
-            if (!this.rootSVG.querySelector("#" + n.id).classList.contains("mRest")) { //mRest are excluded from this rule
+            if (!this.vrvSVG.querySelector("#" + n.id).classList.contains("mRest")) { //mRest are excluded from this rule
                 if (orientation.left === false) {
                     if (x < posX) return //exclude left elements
                 } else if (orientation.right === false) {
@@ -550,7 +544,7 @@ export class Mouse2MEI {
             }
 
             var dist = Math.abs(x - posX)
-            var staffCondition = n.parentStaff === this.getElementInRootSVG(this.lastStaffMouseEnter?.getAttribute("refId"))
+            var staffCondition = n.parentStaff === this.getElementinVrvSVG(this.lastStaffMouseEnter?.getAttribute("refId"))
             if (checkStaff === false) {
                 staffCondition = true
                 dist = Math.sqrt(Math.abs(x - posX) ** 2 + Math.abs(y - posY) ** 2)
@@ -608,7 +602,7 @@ export class Mouse2MEI {
      */
     setMarkedNoteDurations(dur: number | string): Boolean {
         var retVal = false
-        var markedElements = this.rootSVG.querySelectorAll(".note.marked, .rest.marked")
+        var markedElements = this.vrvSVG.querySelectorAll(".note.marked, .rest.marked")
         markedElements.forEach(m => {
             var currMeiClone = this.currentMEI.cloneNode(true) as Document
             var meiElement = this.currentMEI.getElementById(m.id)
@@ -654,7 +648,7 @@ export class Mouse2MEI {
      */
     setMarkedNoteDots(dots: number | string): Boolean {
         var retVal = false
-        var markedElements = this.rootSVG.querySelectorAll(".note.marked, .rest.marked")
+        var markedElements = this.vrvSVG.querySelectorAll(".note.marked, .rest.marked")
         markedElements.forEach(m => {
             var currMeiClone = this.currentMEI.cloneNode(true) as Document
             var meiElement = this.currentMEI.getElementById(m.id)
@@ -692,9 +686,9 @@ export class Mouse2MEI {
         return retVal
     }
 
-    getElementInRootSVG(id: string): Element {
+    getElementinVrvSVG(id: string): Element {
         if (id !== "" && id !== null) {
-            return this.rootSVG.querySelector("#" + id)
+            return this.vrvSVG.querySelector("#" + id)
         }
         return
     }
@@ -721,7 +715,7 @@ export class Mouse2MEI {
     setContainerId(id: string) {
         this.containerId = id
         this.interactionOverlay = cq.getInteractOverlay(id)
-        this.rootSVG = cq.getRootSVG(id)
+        this.vrvSVG = cq.getVrvSVG(id)
         this.container = document.getElementById(id)
         return this
     }

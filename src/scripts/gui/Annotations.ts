@@ -1,6 +1,6 @@
 import Handler from "../handlers/Handler";
 import MusicPlayer from "../MusicPlayer";
-import { Mouse2MEI } from "../utils/Mouse2MEI";
+import { Mouse2SVG } from "../utils/Mouse2SVG";
 import { constants as c} from "../constants"
 import { NoteBBox } from "../utils/Types";
 import { Annotation, Coord } from "../utils/Types";
@@ -12,7 +12,7 @@ import * as cq from "../utils/convenienceQueries"
 import * as coordinates from "../utils/coordinates"
 
 class Annotations implements Handler{
-    m2m?: Mouse2MEI;
+    m2s?: Mouse2SVG;
     musicPlayer?: MusicPlayer;
     currentMEI?: string | Document;
     private annotationCanvas: SVGSVGElement
@@ -27,7 +27,7 @@ class Annotations implements Handler{
     private harmonyLabelHandler: LabelHandler;
     private containerId: string
     private container: Element
-    private rootSVG: Element
+    private vrvSVG: Element
     private interactionOverlay: Element
 
     constructor(containerId: string){
@@ -37,10 +37,11 @@ class Annotations implements Handler{
     }
     
     addCanvas(){
-        this.rootBBox = this.rootSVG.getBoundingClientRect()
+        this.interactionOverlay = cq.getInteractOverlay(this.containerId)
+        this.rootBBox = this.interactionOverlay.getBoundingClientRect() //this.vrvSVG.getBoundingClientRect()
         var rootWidth = this.rootBBox.width.toString()
         var rootHeigth = this.rootBBox.height.toString()
-        var vb = this.rootSVG.getAttribute("viewBox")
+        var vb = this.interactionOverlay.getAttribute("viewBox") //this.vrvSVG.getAttribute("viewBox")
         
         if(this.annotationCanvas == undefined){
             this.annotationCanvas = document.createElementNS(c._SVGNS_, "svg")
@@ -51,7 +52,7 @@ class Annotations implements Handler{
             
         }
         this.annotationCanvas.setAttribute("viewBox", vb)
-        this.interactionOverlay = cq.getInteractOverlay(this.containerId)
+        
         if(this.annotationCanvas.classList.contains("front")){
             this.interactionOverlay.insertBefore(this.annotationCanvas, this.interactionOverlay.lastChild.nextSibling)
         }else{
@@ -95,7 +96,7 @@ class Annotations implements Handler{
         this.annotationChangeHandler = new AnnotationChangeHandler(this.containerId)
         this.annotationChangeHandler
             .setUpdateCallback(this.resetTextListeners.bind(this))
-            .setM2M(this.m2m)
+            .setm2s(this.m2s)
             .setAnnotations(this.annotations)
             .update()
             .resetListeners()
@@ -246,7 +247,7 @@ class Annotations implements Handler{
     
         var posx = pt.x //matrixTransform(rootMatrix).x //e.pageX - this.rootBBox.x - window.pageXOffset
         var posy = pt.y //matrixTransform(rootMatrix).y //e.pageY - this.rootBBox.y - window.pageYOffset
-        var annotationTarget = this.m2m.findScoreTarget(posx, posy, false)
+        var annotationTarget = this.m2s.findScoreTarget(posx, posy, false)
 
         var textGroup = document.createElementNS(c._SVGNS_, "g")
         textGroup.setAttribute("id", uuidv4())
@@ -486,8 +487,8 @@ class Annotations implements Handler{
     }
     ////////// GETTER/ SETTER////////////
 
-    setM2M(m2m: Mouse2MEI){
-        this.m2m = m2m
+    setm2s(m2s: Mouse2SVG){
+        this.m2s = m2s
         return this
     }
 
@@ -522,7 +523,7 @@ class Annotations implements Handler{
     setContainerId(id: string){
         this.containerId = id
         this.container = document.getElementById(id)
-        this.rootSVG = cq.getRootSVG(id)
+        this.vrvSVG = cq.getVrvSVG(id)
         this.interactionOverlay = cq.getInteractOverlay(id)
         return this
     }

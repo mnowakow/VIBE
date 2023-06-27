@@ -1,5 +1,5 @@
 import MusicPlayer from "../MusicPlayer";
-import { Mouse2MEI } from "../utils/Mouse2MEI";
+import { Mouse2SVG } from "../utils/Mouse2SVG";
 import Handler from "./Handler";
 import Annotations from "../gui/Annotations";
 import InsertModeHandler from "./InsertModeHandler";
@@ -12,7 +12,7 @@ import { isWhiteSpaceLike } from "typescript";
 
 class WindowHandler implements Handler{
 
-    m2m?: Mouse2MEI;
+    m2s?: Mouse2SVG;
     musicPlayer?: MusicPlayer;
     currentMEI?: string | Document;
     annotations: Annotations;
@@ -21,7 +21,7 @@ class WindowHandler implements Handler{
     containerId: string;
     container: Element;
     eventContainer: Element
-    rootSVG: Element
+    vrvSVG: Element
     interactionOverlay: Element
     w: Window
     verovioWrapper: VerovioWrapper
@@ -50,9 +50,9 @@ class WindowHandler implements Handler{
         this.eventContainer.querySelector("#sidebarContainer").addEventListener("transitionend", this.reloadSVGFunction)
         this.eventContainer.querySelector("#sidebarContainer").addEventListener("resizemove", this.updateFunction)
         this.eventContainer.querySelector("#sidebarContainer").addEventListener("resizemove", this.reloadSVGFunction)
-        this.rootSVG.addEventListener("scroll", this.updateFunction)
-        //this.rootSVG.addEventListener("resize", this.update)
-        this.rootSVG.addEventListener("deviceorientation", this.updateFunction)
+        this.vrvSVG.addEventListener("scroll", this.updateFunction)
+        //this.vrvSVG.addEventListener("resize", this.update)
+        this.vrvSVG.addEventListener("deviceorientation", this.updateFunction)
 
         document.addEventListener("fullscreenchange", this.updateFunction)
         this.eventContainer.addEventListener("wheel", this.wheelZoomFunction)
@@ -74,9 +74,9 @@ class WindowHandler implements Handler{
         this.eventContainer?.querySelector("#sidebarContainer").removeEventListener("transitionend", this.reloadSVGFunction)
         this.eventContainer?.querySelector("#sidebarContainer").removeEventListener("resizemove",this.updateFunction)
         this.eventContainer?.querySelector("#sidebarContainer").removeEventListener("resizemove", this.reloadSVGFunction)
-        this.rootSVG.removeEventListener("scroll", this.updateFunction)
-        //this.rootSVG.removeEventListener("resize", this.update)
-        this.rootSVG.removeEventListener("deviceorientation", this.updateFunction)
+        this.vrvSVG.removeEventListener("scroll", this.updateFunction)
+        //this.vrvSVG.removeEventListener("resize", this.update)
+        this.vrvSVG.removeEventListener("deviceorientation", this.updateFunction)
 
         document.removeEventListener("fullscreenchange", this.updateFunction)
         this.eventContainer?.removeEventListener("wheel",this.wheelZoomFunction)
@@ -104,7 +104,7 @@ class WindowHandler implements Handler{
         this.scrollingTimer.push(
             setTimeout(function(){
                 that.updateXY()
-                that.m2m?.update()
+                that.m2s?.update()
                 that.annotations?.updateCanvas()
                 that.insertModeHandler?.getPhantomNoteHandler()?.resetCanvas()
                 that.scrollingTimer = new Array()
@@ -189,35 +189,27 @@ class WindowHandler implements Handler{
     clickZoom(e: MouseEvent){
         var t = e.target as HTMLElement
         if(t.id === "zoomInBtn"){
-            this.deltaTemp = this.deltaTemp + 200 / 1000
+            this.deltaTemp = this.deltaTemp + 100 / 1000
         }else if(t.id === "zoomOutBtn"){
-            this.deltaTemp = this.deltaTemp - 200 / 1000
+            this.deltaTemp = this.deltaTemp - 100 / 1000
         }
         this.zoomSVG(this.deltaTemp)
     }
     private clickZoomFunction = this.clickZoom.bind(this)
 
     /**
-     * General zoom logic for all top level svgs (interactionOverlay + rootSVG (= rendered score by verovio))
+     * General zoom logic for all top level svgs (interactionOverlay + vrvSVG (= rendered score by verovio))
      * @param delta 
      */
     zoomSVG(delta: number){
         var that = this
-        var container = document.getElementById(this.containerId)
-        container.querySelectorAll("#svg_output [preserveAspectRatio]").forEach(vb => vb.removeAttribute("preserveAspectRatio"))
         
         // ensure that with every call of all obsolete timeouts are deleted so that only one is left to be executed
         this.zoomTimer?.forEach(zt => clearTimeout(zt))
-        container.querySelectorAll("#svg_output > [viewBox]").forEach(vb =>{
-            vb.setAttribute("transform", "scale(" + delta.toString() +")");
-            (vb as HTMLElement).style.transform = "scale(" + delta.toString() +")"
-        })
         this.zoomTimer.push(setTimeout(function(){
-            // that.deltaTemp = 1
-            var mei = meiConverter.restoreXmlIdTags(that.currentMEI as Document)
-            that.loadDataCallback("", mei, false)
-            that.zoomTimer = new Array()
-        }, 300))
+            var svgContainer = cq.getContainer(that.containerId).querySelector("#svgContainer") as HTMLElement
+            svgContainer.style.width = (100 * delta).toString() + "%"
+        }, 10))
     }
 
     /**
@@ -251,10 +243,10 @@ class WindowHandler implements Handler{
     private loadContainerAttrFunction = this.loadContainerAttr.bind(this)
 
     /**
-     * Set X and Y coordinates of the current boundingbox of the of the VerovioScore (#rootSVG)
+     * Set X and Y coordinates of the current boundingbox of the of the VerovioScore (#vrvSVG)
      */
     updateXY(){
-        var bb = document.getElementById(this.containerId)?.querySelector("#rootSVG").getBoundingClientRect()
+        var bb = document.getElementById(this.containerId)?.querySelector("#vrvSVG").getBoundingClientRect()
         this.x = bb.x
         this.y = bb.y
     }
@@ -266,8 +258,8 @@ class WindowHandler implements Handler{
         return this
     }
 
-    setM2M(m2m: Mouse2MEI){
-        this.m2m = m2m
+    setm2s(m2s: Mouse2SVG){
+        this.m2s = m2s
         return this
     }
 
@@ -285,7 +277,7 @@ class WindowHandler implements Handler{
         this.containerId = containerId
         this.container = document.getElementById(this.containerId)
         this.interactionOverlay = cq.getInteractOverlay(this.containerId)
-        this.rootSVG = cq.getRootSVG(this.containerId)
+        this.vrvSVG = cq.getVrvSVG(this.containerId)
         return this
     }
 

@@ -1,5 +1,5 @@
 
-import { Mouse2MEI } from '../utils/Mouse2MEI';
+import { Mouse2SVG } from '../utils/Mouse2SVG';
 import * as cq from "../utils/convenienceQueries"
 import * as coordinates from "../utils/coordinates"
 import { NoteButtonIdToNum } from "../utils/mappings"
@@ -14,7 +14,7 @@ class PhantomElement{
     phantomCanvas: SVGSVGElement;
     noteElement: Element
     containerId: string
-    rootSVG: Element
+    vrvSVG: Element
     interactionOverlay: Element
     container: Element
 
@@ -89,7 +89,7 @@ class PhantomElement{
     makeNewTimeMarkers(options: {lastStaffEnteredId: Element, measureMatrix: MeasureMatrix}){
         if(options.lastStaffEnteredId == undefined) return
         
-        var staff = cq.getRootSVG(this.containerId).querySelector("#" + options.lastStaffEnteredId)
+        var staff = cq.getVrvSVG(this.containerId).querySelector("#" + options.lastStaffEnteredId)
         var staffHeight = Array.from(staff.querySelectorAll(".staffLine")).reverse()[0].getBoundingClientRect().bottom - staff.querySelector(".staffLine").getBoundingClientRect().top
         var staffBegin = staff.closest(".measure").getAttribute("n") === "1" ? 
             staff.querySelector(".meterSig").getBoundingClientRect().right :
@@ -143,7 +143,7 @@ class PhantomElement{
     setContainerId(id: string){
         this.containerId = id
         this.interactionOverlay = cq.getInteractOverlay(id)
-        this.rootSVG = cq.getRootSVG(id)
+        this.vrvSVG = cq.getVrvSVG(id)
         this.container = document.getElementById(id)
         return this
     }

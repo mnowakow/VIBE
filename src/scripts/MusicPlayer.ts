@@ -31,7 +31,7 @@ class MusicPlayer{
     private rootBBox: any;
     private containerId: string
     private interactionOverlay: Element
-    private rootSVG: Element
+    private vrvSVG: Element
     private container: Element
 
     private restartTime: number
@@ -65,7 +65,7 @@ class MusicPlayer{
      * Add Canvas in which all MusicPlayer SVGs are contained
      */
     addCanvas(){
-        //this.root = this.interactionOverlay //document.getElementById(c._ROOTSVGID_)
+        //this.root = this.interactionOverlay //document.getElementById(c._vrvSVGID_)
         this.rootBBox = this.interactionOverlay.getBoundingClientRect()
         var rootWidth = this.rootBBox.width.toString()
         var rootHeigth = this.rootBBox.height.toString()
@@ -77,6 +77,7 @@ class MusicPlayer{
             this.canvasMP.setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))
         }      
 
+        this.interactionOverlay = cq.getInteractOverlay(this.containerId)
         this.interactionOverlay.insertBefore(this.canvasMP, this.interactionOverlay.firstChild)
     }
 
@@ -88,7 +89,6 @@ class MusicPlayer{
 
         //@ts-ignore
         this.player = new MidiPlayer.Player(function(event) {
-            //console.log(event)
             if(event.name === "Set Tempo"){
                 that.tempo = event.data
                 //that.pulse = (60000/ (event.data / 2 * 24))/10 //(60000/ (event.data * 24))/10000 //duration is in seconds
@@ -96,7 +96,7 @@ class MusicPlayer{
             }
             if (event.name === 'Note on' && event.velocity !== 0) {
                 var track = event.track
-                var time = event.tick * that.pulse //* 1000 * 2
+                var time = event.tick
                 var key = track.toString() + "," + event.byteIndex.toString()
                 if(!that.durationMap.has(key)){
                     return
@@ -115,18 +115,7 @@ class MusicPlayer{
             } 
         })
 
-        function stringToBuffer(midi: string): ArrayBuffer{
-            var binary_string = window.atob(midi);
-            var len = binary_string.length;
-            var bytes = new Uint8Array(len);
-            for (var i = 0; i < len; i++) {
-                bytes[i] = binary_string.charCodeAt(i);
-            }
-            return bytes.buffer;
-        }
-
-       
-        this.player.loadArrayBuffer(stringToBuffer(this.midi))
+        this.player.loadArrayBuffer(Buffer.from(this.midi, "base64"))
         this.mapDurations()
 
         if(this.instruments == undefined){ // instruments only have to be updated, when new instrument (= track) is added
@@ -316,32 +305,26 @@ class MusicPlayer{
         var durationMap = new Map<string, {note: Element, duration: number, tick: number}>() // key: tracknumber,byteindex
         var mapByNote = new Map<Element, {duration: number, tick: number}>()
         var eventTracks = this.player.getEvents()
-        //console.log(this.midiTimes)
         eventTracks.forEach(eventArray => {
             //@ts-ignore
             Array.from(eventArray).forEach((event, eventIdx) => { 
                 var e: any = event
-                //console.log(e)
                 if(e.name === "Set Tempo"){
                     this.tempo = e.data
                     this.pulse = ((60/e.data)*1000)/120
                 }
                 else if(e.name === "Note on"){
-                    var time = e.tick * this.pulse //* 1000 * 2
-                    //var notes = this.midiTimes.get(time) || this.midiTimes.get(Math.floor(time)) || this.getClosestEntry(time)
+                    var time = e.tick //* this.pulse //* 1000 * 2
                     var notes = this.getClosestEntry(time)
                     if(notes == undefined){
-                        //console.log("rejected event", e)
                         return
                     }
-                    //console.log(...notes, e, time)
                     //iterate because notes can be in a chord
                     notes.forEach(note => {
                         var meiNote = this.mei.getElementById(note.id)
                         var staffNumber = parseInt(meiNote.closest("staff").getAttribute("n")) + 1
                         if(!meiNote.hasAttribute("grace")){
                             var key = e.track.toString() + "," + e.byteIndex.toString()
-                            //if(!durationMap.has(key) && e.track === staffNumber && e.velocity !== 0){
                             if(!durationMap.has(key) && e.track === staffNumber){
                                 if(!meiNote.hasAttribute("dur")){
                                     meiNote = meiNote.closest("chord")
@@ -365,13 +348,7 @@ class MusicPlayer{
                                 var valueFound = false
                                 var it = durationMap.values()  
                                 var res = it.next()
-                                // while(!res.done){
-                                //     if(res.value.note === note && res.value.duration === dur){
-                                //         valueFound = true
-                                //         break;
-                                //     }
-                                //     res = it.next()
-                                // }
+                                
                                 if(!valueFound ){ // why do I check here?
                                     durationMap.set(key, {note: note, duration: dur, tick: e.tick as number})
                                     mapByNote.set(note, {duration: dur, tick: e.tick as number})
@@ -434,6 +411,7 @@ class MusicPlayer{
 
     setMidi(midi: string){
         this.midi = midi;
+        return this
     }
 
     /**
@@ -442,7 +420,6 @@ class MusicPlayer{
      * @param duration Duration of Element (in ms)
      */
     highlight(time: number, duration: number){
-        //var notes = this.midiTimes.get(time) || this.midiTimes.get(Math.floor(time)) || this.getClosestEntry(time)
         var notes = this.getClosestEntry(time)
         this.timeouts = new Array()
         notes.forEach(n => {
@@ -578,7 +555,7 @@ class MusicPlayer{
     setContainerId(containerId: string){
         this.containerId = containerId
         this.interactionOverlay = cq.getInteractOverlay(containerId)
-        this.rootSVG = cq.getRootSVG(containerId)
+        this.vrvSVG = cq.getVrvSVG(containerId)
         this.container = document.getElementById(containerId)
         return this
     }

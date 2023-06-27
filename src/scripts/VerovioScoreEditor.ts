@@ -2,10 +2,11 @@ import { constants as c} from './constants';
 import * as customType from './utils/Types';
 import Core from './Core';
 import InsertHandler from './handlers/InsertModeHandler';
-import { Mouse2MEI } from './utils/Mouse2MEI';
+import { Mouse2SVG } from './utils/Mouse2SVG';
 import * as dc from './utils/DOMCreator'
 import Toolbar from './gui/Toolbar'
 import Tabbar from './gui/Tabbar'
+
 
 /**
  * Main Class for the VerovioScoreEditor
@@ -14,7 +15,7 @@ class VerovioScoreEditor{
     public coreInstance: Core;
     public startId: string;
     public endId: string;
-    public mouse2mei: Mouse2MEI;
+    public Mouse2SVG: Mouse2SVG;
     public currentMEI: string;
     public insertHandler: InsertHandler;
     
@@ -153,18 +154,6 @@ class VerovioScoreEditor{
             this.container.append(dc.makeNewDiv("articulationTabGroup", btnGrpClass, {role: "group"}))
             this.container.append(dc.makeNewDiv("melismaTabGroup", btnGrpClass, {role: "group"}))
 
-            //textTest
-            // var tt = dc.makeNewDiv("textTest", "")
-            // tt.innerHTML = "&#xE014;";
-            // this.container.append(tt)
-
-
-            //Statusbar
-            //c ontainer.parentElement.insertBefore(dc.makeNewDiv("statusBar", ""), container.nextElementSibling)
-            // var statusBar = dc.makeNewDiv("statusBar", "")
-            // statusBar.textContent = "Status: "
-            // this.container.append(statusBar)
-            // test
 
             var tb = new Tabbar(this.options, this.container.id)//new Toolbar(this.options, this.container.id)
             tb.createToolbars()
@@ -172,25 +161,21 @@ class VerovioScoreEditor{
             this.coreInstance = new Core(this.container.id);
             this.container.append(dc.makeNewDiv(c._TARGETDIVID_, ""))
             var initEvent = new Event("vseInit")
+            var data: any
+            var isUrl: boolean = false
             if(this.options?.meiURL != undefined){
-                this.coreInstance.loadData('', this.options.meiURL, true).then((mei) => {
-                    this.currentMEI = mei;
-                    this.container.dispatchEvent(initEvent)
-                    resolve()
-                });
+                data = this.options.meiURL
+                isUrl = true
             }else if(this.options?.data != undefined){
-                this.coreInstance.loadData('', this.options.data, false).then((mei) => {
-                    this.currentMEI = mei;
-                    this.container.dispatchEvent(initEvent)
-                    resolve()
-                });
+                data = this.options.data
             }else if(this.options === null){
-                this.coreInstance.loadData('', null, false).then((mei) => {
-                    this.currentMEI = mei;
-                    this.container.dispatchEvent(initEvent)
-                    resolve()
-                });
+                data = null
             }
+            this.coreInstance.loadData(data, isUrl).then(() => {
+                this.container.dispatchEvent(initEvent)
+                resolve()
+            });
+
             tb.setImportCallback(this.coreInstance.loadDataFunction)
             tb.setGetMEICallback(this.coreInstance.getMEI.bind(this.coreInstance))
             //block everthing when firefox

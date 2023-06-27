@@ -9,24 +9,34 @@ const manipFlag = "manipulator"
  */
 class ScoreManipulator{
 
-    private lastBline: HTMLElement
+    private lastBline: Element
     private mei: Document
     private staffManipulatorX: number
     private staffManipilatorY: number
     private containerId: string
     private container: Element
-    private rootSVG: SVGSVGElement
+    private vrvSVG: SVGSVGElement
     private interactionOverlay: Element
 
     constructor(){
         
     }
 
+    /**
+     * 
+     * @param id Id for Elment
+     * @param classNames 
+     * @param sign Plus or Minus sign
+     * @param posX 
+     * @param posY 
+     * @param size 
+     * @param targetParent Parent to attach element to 
+     * @param refId 
+     * @returns 
+     */
     drawButton(id: string = null, classNames: string = null, sign: string, posX: number, posY: number, size: number, targetParent: Element, refId: string){
         
-        size = targetParent.getBoundingClientRect().height * 0.01
         var newSVG = document.createElementNS(c._SVGNS_, "svg")
-        //newSVG.setAttribute("viewBox", [posX.toString(), posY.toString(), size.toString(), size.toString()].join(" "))
         if(id !== null) newSVG.setAttribute("id", id)
         if(Array.from(this.interactionOverlay.querySelectorAll("maniplationCanvas *")).some(el => el.id === id)){return}
         
@@ -57,7 +67,6 @@ class ScoreManipulator{
             horizonal.setAttribute("y1", "50%")
             horizonal.setAttribute("x2", "80%")
             horizonal.setAttribute("y2", "50%")
-
             newSVG.append(horizonal)
         }
 
@@ -73,79 +82,36 @@ class ScoreManipulator{
     }
 
     drawMeasureAdder(){
-        this.lastBline = Array.from(this.rootSVG.querySelectorAll(".barLine")).reverse()[0] as HTMLElement
+        this.lastBline = Array.from(this.vrvSVG.querySelectorAll(".barLine")).reverse()[0].querySelector("path") 
         var lastBlineRect = this.lastBline.getBoundingClientRect()
-        var rootBBox = this.rootSVG.getBoundingClientRect()
+        var rootBBox = this.vrvSVG.getBoundingClientRect()
 
-        var rootMatrix = (this.rootSVG as unknown as SVGGraphicsElement).getScreenCTM().inverse()
+        var blineTop = lastBlineRect.top - rootBBox.y
+        //var blineRight = lastBlineRect.right + rootBBox.height*0.001 - rootBBox.x
+        var blineRight = lastBlineRect.right - rootBBox.x
 
-        var ptRootLT = new DOMPoint(rootBBox.left, rootBBox.top)
-        ptRootLT = ptRootLT.matrixTransform(rootMatrix)
-        var ptRootRB = new DOMPoint(rootBBox.right, rootBBox.bottom)
-        ptRootRB = ptRootRB.matrixTransform(rootMatrix)
-
-        var ptRootWidth = Math.abs(ptRootRB.x - ptRootLT.x)
-        var ptRootHeight= Math.abs(ptRootRB.y - ptRootLT.y)
-        
-        var ptBlineLT = new DOMPoint(lastBlineRect.left, lastBlineRect.top)
-        ptBlineLT = ptBlineLT.matrixTransform(rootMatrix)
-        var ptBlineRB = new DOMPoint(lastBlineRect.right, lastBlineRect.bottom)
-        ptBlineRB = ptBlineRB.matrixTransform(rootMatrix)
-
-        var ptBlineWidth = Math.abs(ptBlineRB.x - ptBlineLT.x)
-        var ptBlineHeight= Math.abs(ptBlineRB.y - ptBlineLT.y)
-
-
-        var blineTop = lastBlineRect.top - rootBBox.y// - root.scrollTop
-        var blineRight = lastBlineRect.right + rootBBox.height*0.007 - rootBBox.x //+ root.scrollLeft
-
-
-        // var blineTop = ptBlineLT.y //lastBlineRect.top - rootBBox.y - root.scrollTop
-        // var blineRight = ptBlineRB.x + ptRootHeight*0.007 //lastBlineRect.right + rootBBox.height*0.007 - rootBBox.x + root.scrollLeft
-
-        var containerSize = ptBlineHeight * 0.1 //(lastBlineRect.height * 0.1)
+        var containerSize = lastBlineRect.height * 0.4
 
         this.drawButton("measureAdder", null, "+", blineRight, blineTop, containerSize, this.lastBline.closest("svg").parentElement, "Add Measure")
     }
 
     drawMeasureRemover(){
-        this.lastBline = Array.from(document.getElementById(this.containerId)?.querySelectorAll(".barLine")).reverse()[0] as HTMLElement
+        this.lastBline = Array.from(document.getElementById(this.containerId)?.querySelectorAll(".barLine")).reverse()[0].querySelector("path") 
         var lastBlineRect = this.lastBline.getBoundingClientRect()
-        var rootBBox = this.rootSVG.getBoundingClientRect()
+        var lastBlineRect = this.lastBline.getBoundingClientRect()
+        var rootBBox = this.vrvSVG.getBoundingClientRect()
 
-        var rootMatrix = (this.rootSVG as unknown as SVGGraphicsElement).getScreenCTM().inverse()
+        var blineTop = lastBlineRect.top - rootBBox.y + lastBlineRect.height / 2
+        var blineRight = lastBlineRect.right - rootBBox.x  
 
-        var ptRootLT = new DOMPoint(rootBBox.left, rootBBox.top)
-        ptRootLT = ptRootLT.matrixTransform(rootMatrix)
-        var ptRootRB = new DOMPoint(rootBBox.right, rootBBox.bottom)
-        ptRootRB = ptRootRB.matrixTransform(rootMatrix)
-
-        var ptRootWidth = Math.abs(ptRootRB.x - ptRootLT.x)
-        var ptRootHeight= Math.abs(ptRootRB.y - ptRootLT.y)
-        
-        var ptBlineLT = new DOMPoint(lastBlineRect.left, lastBlineRect.top)
-        ptBlineLT = ptBlineLT.matrixTransform(rootMatrix)
-        var ptBlineRB = new DOMPoint(lastBlineRect.right, lastBlineRect.bottom)
-        ptBlineRB = ptBlineRB.matrixTransform(rootMatrix)
-
-        var ptBlineWidth = Math.abs(ptBlineRB.x - ptBlineLT.x)
-        var ptBlineHeight= Math.abs(ptBlineRB.y - ptBlineLT.y)
-
-        var blineTop = lastBlineRect.top + rootBBox.height*0.01 - rootBBox.y //+ root.scrollTop 
-        var blineRight = lastBlineRect.right + rootBBox.height*0.007 - rootBBox.x //+ root.scrollLeft 
-
-        // var blineTop = ptBlineLT.y + ptRootHeight * 0.01
-        // var blineRight = ptBlineRB.x + ptRootHeight * 0.007
-
-        var containerSize = ptBlineHeight * 0.1 //(lastBlineRect.height * 0.1)
+        var containerSize = lastBlineRect.height * 0.4
 
         this.drawButton("measureRemover", null, "-", blineRight, blineTop, containerSize, this.lastBline.closest("svg").parentElement, "Remove Measure")
     }
 
     drawStaffManipulators(){
-        this.rootSVG.querySelector(".measure").querySelectorAll(".staff").forEach(s => {
-            //var clefBBox = s.querySelector(".clef").getBoundingClientRect()
-            var rootBBox = this.rootSVG.getBoundingClientRect()
+        this.vrvSVG.querySelector(".measure").querySelectorAll(".staff").forEach(s => {
+            var rootBBox = this.vrvSVG.getBoundingClientRect()
 
             var refStaffCoords = this.getStaffManipulatorCoords(s)
             var refStaffX = refStaffCoords.x
@@ -154,25 +120,26 @@ class ScoreManipulator{
             var refStaffWidth = refStaffCoords.width
             var refStaffHeight = refStaffCoords.height
 
-            var posX = refStaffX - rootBBox.x  //-  staffBBox.x
-            var topY = refStaffYTop - rootBBox.height*0.01 - rootBBox.y //- staffBBox.y
 
-            var containerSize = ((refStaffWidth) * 0.1)
-            this.drawButton(null, "addStaff above", "+", posX, topY, containerSize, this.rootSVG, s.id)
+            var posX = refStaffX - refStaffWidth * 0.5 - rootBBox.x
+            var topY = refStaffYTop - refStaffHeight * 0.2 - rootBBox.y
+
+            var containerSize = refStaffHeight / 4 
+            this.drawButton(null, "addStaff above", "+", posX, topY, containerSize, this.vrvSVG, s.id)
             if(parseInt(s.getAttribute("n")) > 1){
-                posX = refStaffX + rootBBox.height*0.01 - rootBBox.x 
-                this.drawButton(null, "removeStaff above", "-", posX, topY, containerSize, this.rootSVG, s.id)
+                posX = refStaffX - rootBBox.x
+                this.drawButton(null, "removeStaff above", "-", posX, topY, containerSize, this.vrvSVG, s.id)
             }
 
-            posX = refStaffX - rootBBox.x //- staffBBox.x
-            var bottomY = refStaffYBottom + 2 - rootBBox.y  //- staffBBox.y
+            posX = refStaffX - refStaffWidth * 0.5 - rootBBox.x
+            var bottomY = refStaffYBottom - rootBBox.y
 
-            var containerSize = (refStaffHeight * 0.1)
-            this.drawButton(null, "addStaff below", "+", posX, bottomY, containerSize, this.rootSVG, s.id)
+            var containerSize = (refStaffHeight / 4)
+            this.drawButton(null, "addStaff below", "+", posX, bottomY, containerSize, this.vrvSVG, s.id)
             var staffCount =  s.parentElement.querySelectorAll(".staff")
             if(parseInt(s.getAttribute("n")) !== staffCount.length){
-                posX = refStaffX + rootBBox.height*0.01 - rootBBox.x 
-                this.drawButton(null, "removeStaff below", "-", posX, bottomY, containerSize, this.rootSVG, s.id)
+                posX = refStaffX - rootBBox.x
+                this.drawButton(null, "removeStaff below", "-", posX, bottomY, containerSize, this.vrvSVG, s.id)
             }
         })
     }
@@ -215,7 +182,7 @@ class ScoreManipulator{
         this.containerId = id
         this.container = document.getElementById(id)
         this.interactionOverlay = cq.getInteractOverlay(this.containerId)
-        this.rootSVG = cq.getRootSVG(this.containerId) as unknown as SVGSVGElement
+        this.vrvSVG = cq.getVrvSVG(this.containerId) as unknown as SVGSVGElement
         return this
     }
 }

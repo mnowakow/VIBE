@@ -1,4 +1,8 @@
+import { createQualifiedName } from 'typescript';
 import { VerovioMessage, VerovioResponse } from './Types';
+import { getVrvSVG } from './convenienceQueries';
+import { Midi } from "@tonejs/midi"
+
 
 //@ts-ignore
 //const $ = H5P.jQuery;
@@ -12,6 +16,7 @@ export default class VerovioWrapper {
   private r: number
   private widthValue: number
   private heightValue: number
+  private options: { [key: string]: any }
 
   constructor() {
     //@ts-ignore
@@ -20,24 +25,22 @@ export default class VerovioWrapper {
     if (this.isRetina()) {
       this.r = 2
     }
-    this.widthValue = 2500
-    this.vrvToolkit.setOptions({
-      // from: 'mei',
+    this.widthValue = 1500
+    var pageWidth = (this.widthValue / (window.devicePixelRatio / this.r)) / (screen.availHeight / window.innerWidth)
+
+    this.options = {
       footer: 'none',
       header: 'none',
       pageMarginLeft: 50,
-      pageMarginTop: 100,
-      pageMarginBottom: 10,
+      pageMarginTop: 50,
+      adjustPageHeight: true,
       font: 'Bravura',
-      //adjustPageWidth: 0,
-      //adjustPageHeight: 0,
-      noJustification: 1,
-      pageWidth: (this.widthValue / (window.devicePixelRatio / this.r)) / (screen.availHeight / window.innerWidth), // adjust size with window size
-      //svgRemoveXlink: true,
+      pageWidth: pageWidth / 2, // adjust size with window size
+      //pageHeight: pageWidth / 4,
+      //justifyVertically: true,
       svgViewBox: true,
-      //svgBoundingBoxes: true
-      //pageHeight: 60000
-    })
+    }
+    this.vrvToolkit.setOptions(this.options)
   }
 
   /**
@@ -71,7 +74,7 @@ export default class VerovioWrapper {
 
     switch (data.action) {
       case 'renderData':
-        result.mei = this.renderData();
+        result.svg = this.renderData();
         break;
       case 'getElementAttr':
         result.attributes = this.getElementAttr();
@@ -91,7 +94,7 @@ export default class VerovioWrapper {
         result.info = this.editInfo();
         break;
       case 'renderToSVG':
-        result.svg = this.renderToSVG();
+        result.svg = this.renderToSVG(data.pageNo);
         break;
       case 'renderToMidi':
         result.midi = this.renderToMidi();
@@ -109,17 +112,6 @@ export default class VerovioWrapper {
   renderData(): string {
     var meiString
     if (this.data.isUrl) {
-      //   $.ajax({
-      //       url: this.data.mei,
-      //       dataType: "text",
-      //       async: false
-      //   })
-      //   .done((res: string) =>{
-      //     console.log(Object.prototype.toString.call(res))
-      //     meiString = res
-      //     return this.vrvToolkit.renderData(meiString, {})
-      //   })
-
       const req = new XMLHttpRequest();
       req.open('GET', this.data.mei, false);
       //req.onload = () => req.status === 200 ? resolve(req.response) : reject(Error(req.statusText));
@@ -133,7 +125,9 @@ export default class VerovioWrapper {
       meiString = this.data.mei
     }
 
-    return this.vrvToolkit.renderData(meiString, {})
+    var render = this.vrvToolkit.renderData(meiString, {})
+    // when page count reaches 2 then each one should be rendered seperately
+    return render
   }
 
   getElementAttr() {
@@ -163,12 +157,18 @@ export default class VerovioWrapper {
     return this.vrvToolkit.editInfo();
   }
 
-  renderToSVG() {
-    return this.vrvToolkit.renderToSVG(1);
+  renderToSVG(pageNo:number) {
+    return this.vrvToolkit.renderToSVG(pageNo);
   }
 
   renderToMidi() {
     return this.vrvToolkit.renderToMIDI();
+  }
+
+  getMidiJSON(){
+    var midiString = this.renderToMidi()
+    var buffer = Buffer.from(midiString, "base64")
+    return new Midi(buffer)
   }
 
   /**
@@ -180,12 +180,19 @@ export default class VerovioWrapper {
     return this.vrvToolkit
   }
 
-  setWidthValue(wv: number){
-    this.widthValue = wv
+  getOptions() {
+    return this.options
   }
 
-  setHeightValue(hv: number){
-    this.heightValue = hv
+  setWidthValue(wv: number) {
+    this.options.pageWidth = wv
+    this.vrvToolkit.setOptions(this.options)
+  }
+
+  setHeightValue(hv: number | string) {
+    if(typeof hv === "string") hv = parseFloat(hv as string)
+    this.options.pageHeight = hv + 250
+    this.vrvToolkit.setOptions(this.options)
   }
 
 }

@@ -49,7 +49,7 @@ class SVGFiller {
     }
 
     cacheClasses() {
-        //var svg = document.querySelector("#"+this.containerId + " #rootSVG")
+        //var svg = document.querySelector("#"+this.containerId + " #vrvSVG")
         var svg = document.querySelector("#" + this.containerId)
         if (svg === null) {
             return this
@@ -119,39 +119,52 @@ class SVGFiller {
      * Reload all the classes which where distributed before
      * @returns this (for chaining convenience)
      */
-    loadClasses() {
+    loadClasses(element = null) {
         if (this.classListMap == undefined) {
             return this
         }
 
-        for (const [key, value] of this.classListMap.entries()) {
-            var el = this.container.querySelector("#" + key)
-            if (el !== null) {
-                //el.removeAttribute("class")
-                value.forEach(v => {
-                    if (v !== "") {
-                        el.classList.add(v)
-                    }
-                })
+        
+        if(element !== null){
+            var value = this.classListMap.get(element.id)
+            if(value == undefined) return this
+            value.forEach(v => {
+                if (v !== "") {
+                    element.classList.add(v)
+                }
+            })
+        }else{
+            for (const [key, value] of this.classListMap.entries()) {
+                var el = this.container.querySelector("#" + key)
+                if (el !== null) {
+                    //el.removeAttribute("class")
+                    value.forEach(v => {
+                        if (v !== "") {
+                            el.classList.add(v)
+                        }
+                    })
+                }
             }
         }
         return this
     }
 
-    loadScales() {
+    loadScales(element = null) {
         if (this.scaleListMap == undefined) {
             return this
         }
 
-        for (const [key, value] of this.scaleListMap.entries()) {
-            var el = this.container.querySelector("#" + key)
-            if (el !== null) {
-                el.setAttribute("transform", value)
-                var style = el.getAttribute("style")
-                if(style === null){
-                    el.setAttribute("style", "transform: " + value)
-                }else{
-                    el.setAttribute("style", style + "; transform: " + value)
+        if(element !==  null){
+            var value = this.scaleListMap.get(element.id);
+            if(value == undefined) return this;
+            (element as HTMLElement).style.transform = value
+            element.setAttribute("transform", value)
+        }else{
+            for (const [key, value] of this.scaleListMap.entries()) {
+                var el = this.container.querySelector("#" + key)
+                if (el !== null) {
+                    (el as HTMLElement).style.transform = value
+                    el.setAttribute("transform", value)
                 }
             }
         }
@@ -234,6 +247,7 @@ class SVGFiller {
                 }
             })
         }
+        return this
     }
 
     setContainerId(containerId: string) {
