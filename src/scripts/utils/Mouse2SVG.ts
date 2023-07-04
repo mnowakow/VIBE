@@ -188,15 +188,13 @@ export class Mouse2SVG {
             this.noteBBoxes.push(bb);
         })
 
-
-        // this.measureMatrix.populateFromSVG(document.querySelector(c._vrvSVGID_WITH_IDSELECTOR_));
         this.measureMatrix.populateFromMEI(this.currentMEI)
-        var staves = cq.getVrvSVG(this.containerId).querySelectorAll(c._STAFF_WITH_CLASSSELECTOR_)
+        var staves = this.currentMEI.querySelectorAll("staff") //cq.getVrvSVG(this.containerId).querySelectorAll(".staff")
         Array.from(staves).forEach(element => {
             let g = cq.getVrvSVG(this.containerId).querySelectorAll("#" + element.id + " > path")
             let staff = element;
             let idxStaff = parseInt(element.getAttribute("n")) - 1
-            let closestMeasure = element.closest(".measure");
+            let closestMeasure = element.closest("measure");
             let idxParentMeasure = parseInt(closestMeasure.getAttribute("n")) - 1
             let clefShape = this.measureMatrix.get(idxParentMeasure, idxStaff).clef;
             Array.from(g).forEach((staffLine, idx) => {
@@ -305,7 +303,9 @@ export class Mouse2SVG {
         })
 
         var currentStaffClef: string
-        for (const [key, value] of this.getElementinVrvSVG(this.lastStaffMouseEnter?.getAttribute("refId"))?.querySelector(".staffLine")?.classList.entries()) {
+        var entries = this.getElementinVrvSVG(this.lastStaffMouseEnter?.getAttribute("refId"))?.querySelector(".staffLine")?.classList?.entries()
+        if([null, undefined].some(n => entries == n)) return
+        for (const [key, value] of entries) {
             if (value.indexOf("Clef") !== -1) {
                 currentStaffClef = value
                 break;
@@ -503,7 +503,7 @@ export class Mouse2SVG {
             relPosX: leftRightPos,
             staffId: this.lastStaffMouseEnter?.getAttribute("refId"),
             chordElement: options.targetChord,
-            rest: this.container.querySelector("#pauseNote").classList.contains("selected")
+            rest: this.container.querySelector("#pauseNote")?.classList.contains("selected")
         }
         this.newNote = newNote
     }
@@ -535,6 +535,7 @@ export class Mouse2SVG {
             }
 
             //filter for left and right elements
+            if(this.vrvSVG.querySelector("#" + n.id) === null) return
             if (!this.vrvSVG.querySelector("#" + n.id).classList.contains("mRest")) { //mRest are excluded from this rule
                 if (orientation.left === false) {
                     if (x < posX) return //exclude left elements

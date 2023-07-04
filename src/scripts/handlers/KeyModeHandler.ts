@@ -68,6 +68,7 @@ class KeyModeHandler implements Handler{
   noteInput(e: KeyboardEvent){
     if(this.container.querySelector("[contenteditable=true]")) return 
     var currentNode = this.scoreGraph.getCurrentNode()
+    if(document.getElementById(currentNode.getId()) === null) return
     if(!cq.hasActiveElement(this.containerId)) return
     if(this.musicPlayer.getIsPlaying() === true){return} // getIsPlaying could also be undefined
     if(keyCodeNoteMap.has(e.code)){
@@ -109,7 +110,10 @@ class KeyModeHandler implements Handler{
         }else {
           //or if ne note must be rendered into the next bar
           var oldStaffId = newNote.staffId
-          newNote.staffId = this.m2s.getCurrentMei().getElementById(this.scoreGraph.getNextClass(["note","rest","mRest"], "right")?.getId())?.closest("staff").id || newNote.staffId
+          if(this.m2s.getCurrentMei().querySelector("#" + newNote.nearestNoteId) === null) return
+          if(this.m2s.getCurrentMei().querySelector("#" + newNote.nearestNoteId).tagName !== "mRest"){
+            newNote.staffId = this.m2s.getCurrentMei().getElementById(this.scoreGraph.getNextClass(["note","rest","mRest"], "right")?.getId())?.closest("staff").id || newNote.staffId
+          }
           
           if(oldStaffId !== newNote.staffId){
             newNote.relPosX = "left"

@@ -76,6 +76,7 @@ class MusicPlayer{
             this.canvasMP.classList.add("canvas")
             this.canvasMP.setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))
         }      
+        this.canvasMP.innerHTML = "" // will delete followerRect if present (usually when score is loaded)
 
         this.interactionOverlay = cq.getInteractOverlay(this.containerId)
         this.interactionOverlay.insertBefore(this.canvasMP, this.interactionOverlay.firstChild)
@@ -192,6 +193,7 @@ class MusicPlayer{
 
     ///// LISTENERS ////
     setListeners(){
+        var that = this
         if(this.midiTimes == undefined){
             return 
         }
@@ -201,13 +203,15 @@ class MusicPlayer{
         while(!result.done){
             var arr: Array<any> = result.value
             arr.forEach(note => {
+                if(note == undefined) return
                 note.addEventListener("currentNote", this.setCurrentNoteHandler)
-                note.addEventListener("click", this.startPointHandler)
+                var id = note.querySelector(".notehead")?.id || note.id
+                var interactRect = cq.getInteractOverlay(that.containerId).querySelector("#scoreRects g[refId=\"" + id + "\"]")
+                interactRect.addEventListener("click", this.startPointHandler)
             })
             result = it.next()
         }
 
-        var that = this
         this.container.querySelector("#playBtn").addEventListener("click", this.playBtn)
 
         this.container.querySelector("#rewindBtn").addEventListener("click", this.rewindBtn)
@@ -224,6 +228,7 @@ class MusicPlayer{
     }).bind(this)
 
     removeListeners(){
+        var that = this
         if(this.midiTimes == undefined){
             return 
         }
@@ -233,7 +238,9 @@ class MusicPlayer{
             var arr: Array<any> = result.value
             arr.forEach(note => {
                 note.removeEventListener("currentNote", this.setCurrentNoteHandler)
-                note.removeEventListener("click", this.startPointHandler)
+                var id = note.querySelector(".notehead")?.id || note.id
+                var interactRect = cq.getInteractOverlay(that.containerId).querySelector("#scoreRects g[refId=\"" + id + "\"]")
+                interactRect.removeEventListener("click", this.startPointHandler)
             })
             result = it.next()
         }
@@ -284,6 +291,7 @@ class MusicPlayer{
     startPointHandler = (function startPointHandler(e: MouseEvent){
         if(!this.hasContainerFocus()) return
         var playingNote = e.target as Element
+        playingNote = cq.getVrvSVG(this.containerId).querySelector("#" + playingNote.closest("[refId]").getAttribute("refId"))
         playingNote = playingNote.closest(".note") || playingNote.closest(".rest") || playingNote.closest(".mRest")
         if(playingNote !== null){
             var it = this.durationMap.values()

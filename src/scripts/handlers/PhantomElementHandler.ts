@@ -106,7 +106,7 @@ class PhantomElementHandler implements Handler{
         var relX = pt.x
         var relY = pt.y
         var definitionScale = cq.getVrvSVG(this.containerId).querySelector("#" + this.m2s.getLastMouseEnter().staff?.getAttribute("refId"))?.closest(".definition-scale")
-        
+        if(definitionScale == undefined) return
         var dsCoords = coordinates.getDOMMatrixCoordinates(definitionScale, definitionScale.closest(".page"))
         if(relX < dsCoords.left || relX > dsCoords.right){
             this.isTrackingMouse = false

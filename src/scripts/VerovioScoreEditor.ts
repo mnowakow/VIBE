@@ -178,14 +178,16 @@ class VerovioScoreEditor{
 
             tb.setImportCallback(this.coreInstance.loadDataFunction)
             tb.setGetMEICallback(this.coreInstance.getMEI.bind(this.coreInstance))
-            //block everthing when firefox (use at least ff 114.0.2)
-            // if(navigator.userAgent.toLowerCase().includes("firefox")){
-            //     var div = document.createElement("div")
-            //     div.id = "ff_warning"
-            //     this.container.insertAdjacentElement("beforebegin", div)
-            //     div.append(this.container)
-            //     div.textContent = "This Application can't currently be used with Firefox.\n Please use another browser."
-            // }
+            //block everthing when firefox (use at least version 114.0.2)
+            if(navigator.userAgent.toLowerCase().includes("firefox")){
+                if(!navigator.userAgent.match("Firefox.*")[0].includes("114.0")){
+                    var div = document.createElement("div")
+                    div.id = "ff_warning"
+                    this.container.insertAdjacentElement("beforebegin", div)
+                    div.append(this.container)
+                    div.textContent = "This application can't be used with your current Firefox version (" + navigator.userAgent.match(/Firefox\/(\d+(\.\d+)?)/)[1] + ").\n Please update at least to version 114.0.2 or use another browser."
+                }
+            }
         })
         
     }

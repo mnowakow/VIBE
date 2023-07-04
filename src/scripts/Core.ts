@@ -86,7 +86,7 @@ class Core {
   /**
    * Load data into the verovio toolkit and update the cache.
   */
-  loadData(data: string | Document | HTMLElement, isUrl: boolean, options: LoadOptions = null): Promise<void> {
+  loadData(data: string | Document | HTMLElement, isUrl: boolean, options: LoadOptions = null): Promise<string> {
 
 
     this.verovioWrapper = this.verovioWrapper || new VerovioWrapper();
@@ -204,14 +204,20 @@ class Core {
         }     
       }
       
-      
+      //remove all pages, that do not exist anymore
+      cq.getVrvSVG(this.containerId).querySelectorAll(":scope > svg").forEach(svg => {
+        if(parseInt(svg.id.match(/\d+/)[0]) > pageCount){
+          svg.remove()
+        }
+      })
+
       var changeOnPage = optionPage || parseInt(cq.getVrvSVG(this.containerId).querySelector("#" + staffId)?.closest(".page")?.id.split("").reverse()[0])
       Array.from({length: pageCount}, (_, index) => index + 1 ).forEach(pageNo => {
         
         if(!isNaN(changeOnPage)){
           if(pageNo < changeOnPage) return
         }
-        renderPromises.push(setTimeout(function(){render(pageNo, options)}, 5))
+        renderPromises.push(setTimeout(function(){render(pageNo, options)}, 1))
 
       })
 
@@ -228,7 +234,7 @@ class Core {
             that.currentMEI = mei  
             that.currentMEIDoc = that.getCurrentMEI(true) as Document
             
-            console.log(that.currentMEIDoc)
+            //console.log(that.currentMEIDoc)
             that.svgFiller
               .setContainerId(that.containerId)
               .loadClasses()
@@ -246,7 +252,6 @@ class Core {
             if (that.meiChangedCallback != undefined) {
               that.meiChangedCallback(that.currentMEI)
             }
-            resolve()
           })
 
           //MusicPlayer stuff
@@ -262,7 +267,7 @@ class Core {
               that.scoreGraph = new ScoreGraph(that.currentMEIDoc, that.containerId, md)
               //the first condition should only occur at first starting the score editor
               if (that.container.querySelector(".lastAdded") === null && that.scoreGraph.getCurrentNode() == undefined) {
-                that.scoreGraph.setCurrentNodeById(that.container.querySelector(".staff > .layer").firstElementChild.id)
+                that.scoreGraph.setCurrentNodeById(that.container.querySelector(".staff > .layer :is(.note, .rest, .mRest").id)
               } else { //second condition always sets lastAdded Note
                 that.scoreGraph.setCurrentNodeById(that.container.querySelector(".lastAdded")?.id)
               }
@@ -270,9 +275,11 @@ class Core {
               that.musicplayer.setScoreGraph(that.scoreGraph)
               document.getElementById(that.containerId).dispatchEvent(new Event("loadingEnd"))
               that.svg = new XMLSerializer().serializeToString(that.container.querySelector("#svgContainer"))
+              console.log(that.currentMEIDoc, that.m2s.getMeasureMatrix())
+              resolve(that.currentMEI)
             })
           })
-        }, 5)
+        }, 1)
       })
     })
   }
@@ -283,7 +290,7 @@ class Core {
     return this.loadData(this.currentMEI, false)
   }).bind(this)
 
-  loadDataFunction = (function loadDataFunction(pageURI: string, data: string | Document | HTMLElement, isUrl: boolean) {
+  loadDataFunction = (function loadDataFunction(pageURI: string, data: string | Document | HTMLElement, isUrl: boolean): Promise<string> {
     return this.loadData(data, isUrl, {changeOnPageNo: pageURI})
   }).bind(this)
 

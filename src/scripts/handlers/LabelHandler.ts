@@ -324,7 +324,6 @@ class LabelHandler implements Handler {
         var tHeigth = (t.getBoundingClientRect().height * factor).toString()
         parent.setAttribute("width", tWidth)
         parent.setAttribute("height", tHeigth)
-        console.log(parent)
     }).bind(this)
 
 

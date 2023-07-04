@@ -93,7 +93,7 @@ class Annotations implements Handler{
         // this.customAnnotationDrawer = new CustomAnnotationShapeDrawer(this.containerId)
         // this.customAnnotationDrawer.setUpdateCallback(this.resetTextListeners.bind(this))
 
-        this.annotationChangeHandler = new AnnotationChangeHandler(this.containerId)
+        this.annotationChangeHandler = this.annotationChangeHandler || new AnnotationChangeHandler(this.containerId)
         this.annotationChangeHandler
             .setUpdateCallback(this.resetTextListeners.bind(this))
             .setm2s(this.m2s)

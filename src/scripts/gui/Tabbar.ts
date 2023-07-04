@@ -232,14 +232,16 @@ class Tabbar {
             var text = c.querySelector(".annotDiv").textContent || c.querySelector(".annotDiv").getAttribute("data-text")
             var a = dc.makeNewAElement(text, "", "list-group-item list-group-item-action list-group-item-primary", "#")
             a.setAttribute("refId", c.id)
-            a.setAttribute("contenteditable", "true")
+            //a.setAttribute("contenteditable", "true")
             a.addEventListener("click", function () {
+                a.setAttribute("contenteditable", "true")
                 Array.from(cq.getContainer(that.containerId).querySelectorAll(".selected")).forEach(s => s.classList.remove(selectedFlag));
                 (<HTMLElement>cq.getContainer(that.containerId).querySelector("#" + c.id)).focus()
                 cq.getContainer(that.containerId).querySelector("#" + c.id).querySelector(".annotLinkedText, .annotStaticText")?.classList.add(selectedFlag)
             })
             a.addEventListener("blur", function (e: KeyboardEvent) {
                 var t = e.target as HTMLElement
+                a.setAttribute("contenteditable", "false")
                 cq.getContainer(that.containerId).querySelector("#" + t.getAttribute("refid")).querySelector(".annotDiv").textContent = t.textContent
             })
             a.addEventListener("keydown", function (e: KeyboardEvent) {
@@ -489,7 +491,10 @@ class Tabbar {
         cq.getContainer(this.containerId).querySelector("#importFile").addEventListener("change", function (e) {
             var fr = new FileReader()
             fr.onload = function () {
-                that.importCallback("", fr.result as string, false, c._TARGETDIVID_)
+                that.importCallback("", fr.result as string, false, c._TARGETDIVID_).then(mei => {
+                    var meiXml = meioperations.mergeSectionScoreDefToLayer(mei)
+                    that.importCallback("", meiXml, false, c._TARGETDIVID_)
+                })
             }
             fr.readAsText(this.files[0])
 

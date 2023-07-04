@@ -7,6 +7,7 @@ import { idxNoteMapFClef } from "../utils/mappings";
 import { Annotation, Coord } from "../utils/Types";
 import * as cq from "../utils/convenienceQueries"
 import * as coordinates from "../utils/coordinates"
+import { elementIsOverfilling } from "../utils/MEIOperations";
 
 
 /**
@@ -40,6 +41,7 @@ class AnnotationChangeHandler implements Handler{
     private container: Element
     private interactionOverlay: Element
     private annotationCanvas: Element
+    factor: number;
 
     constructor(containerId: string){
         this.setContainerId(containerId)
@@ -48,6 +50,7 @@ class AnnotationChangeHandler implements Handler{
         this.dragAnnotStartEvent = new Event("dragAnnotStart")
         this.dragAnnotEndEvent = new Event("dragAnnotEnd")
         this.isInteracting = false
+        this.factor = 100
     }
 
 
@@ -630,6 +633,44 @@ class AnnotationChangeHandler implements Handler{
 
     setAnnotations(annotations: Array<Annotation>){
         this.annotations = annotations
+        var newFactor = parseInt((cq.getContainer(this.containerId).querySelector("#svgContainer") as HTMLElement).style?.width?.split("%")[0]) || 100
+        if(newFactor === this.factor) return this
+        var that = this
+
+        function setXYWH(element){
+            var x = parseFloat(element.getAttribute("x")) / that.factor * newFactor
+            var y = parseFloat(element.getAttribute("y")) / that.factor * newFactor
+            var w = parseFloat(element.getAttribute("width")) / that.factor * newFactor
+            var h = parseFloat(element.getAttribute("height")) / that.factor * newFactor
+            
+            element.setAttribute("x", x.toString())
+            element.setAttribute("y", y.toString())
+            element.setAttribute("width", w.toString())
+            element.setAttribute("height", h.toString())
+        }
+
+        function setLineCoords(line){
+            var x1 = parseFloat(line.getAttribute("x1")) / that.factor * newFactor
+            var y1 = parseFloat(line.getAttribute("y1")) / that.factor * newFactor
+            var x2 = parseFloat(line.getAttribute("x2")) / that.factor * newFactor
+            var y2 = parseFloat(line.getAttribute("y2")) / that.factor * newFactor
+
+            line.setAttribute("x1", x1.toString())
+            line.setAttribute("y1", y1.toString())
+            line.setAttribute("x2", x2.toString())
+            line.setAttribute("y2", y2.toString())
+        }
+
+        this.annotationCanvas.querySelectorAll(":scope > *").forEach(a => {
+            if(a.tagName === "rect"){
+                setXYWH(a)
+            }else{
+                a.querySelectorAll("[x][y][width][height]").forEach(e => setXYWH(e))
+                a.querySelectorAll("line").forEach(l => setLineCoords(l))
+            }
+    
+        })
+        that.factor = parseInt((cq.getContainer(this.containerId).querySelector("#svgContainer") as HTMLElement).style?.width?.split("%")[0])
         return this
     }
 
