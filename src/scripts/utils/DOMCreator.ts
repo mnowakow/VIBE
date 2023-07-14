@@ -130,10 +130,18 @@ export function makeNewDatalist(id: string, optionValues: Array<string>): Elemen
     return dataList
 }
 
-export function makeNewSelect(id: string, optionValues: Array<string>): Element{
+export function makeNewSelect(id: string, optionValues: Array<string>, placeHolder: string = null): Element{
 
     var dataList = document.createElement("select")
     dataList.setAttribute("id", id)
+    if(placeHolder !== null){
+        var option = document.createElement("option")
+        option.setAttribute("value", " ")
+        option.textContent = placeHolder
+        option.setAttribute("disabled", "")
+        option.setAttribute("selected", "")
+        dataList.append(option)
+    }
     optionValues.forEach(value => {
         var option = document.createElement("option")
         option.setAttribute("value", value)

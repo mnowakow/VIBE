@@ -1,8 +1,8 @@
 import * as d3 from 'd3';
 import { Mouse2SVG } from '../utils/Mouse2SVG';
 import Handler from './Handler';
-import MusicPlayer from '../MusicPlayer';
-import { numToNoteButtonId, numToDotButtonId, accidToModButtonId } from '../utils/mappings'
+import MusicProcessor from '../MusicProcessor';
+import { numToNoteButtonId, numToDotButtonId, attrToModButtonId } from '../utils/mappings'
 import { constants as c } from "../constants"
 import LabelHandler from './LabelHandler';
 import * as coordinates from "../utils/coordinates"
@@ -123,9 +123,11 @@ class SelectionHandler implements Handler {
             var meiNote = that.m2s.getCurrentMei().getElementById(firstMarkedNote)
             document.getElementById(that.containerId)?.querySelectorAll(".lastAdded")?.forEach(la => la.classList.remove("lastAdded"))
             if (firstMarkedNote?.length > 0) {
-                document.getElementById(that.containerId)?.querySelectorAll("#noteGroup *, #dotGroup *, #modGroup *").forEach(b => b.classList.remove("selected"))
+                document.getElementById(that.containerId)?.querySelectorAll("#noteGroup *, #dotGroup *, #modGroup *, #articGroup *").forEach(b => b.classList.remove("selected"))
+                
                 //select buttons for given note state
-                document.getElementById(that.containerId)?.querySelector("#" + accidToModButtonId.get(meiNote?.getAttribute("accid")))?.classList.add("selected")
+                var modBtnId = that.container.querySelector("#customToolbar #articGroup") !== null ? "artic" : "accid"
+                document.getElementById(that.containerId)?.querySelector("#" + attrToModButtonId.get(meiNote?.getAttribute(modBtnId)))?.classList.add("selected")
                 if(meiNote?.closest("chord") !== null){
                     meiNote = meiNote.closest("chord")
                 }
@@ -137,7 +139,7 @@ class SelectionHandler implements Handler {
         this.setListeners()
         //this.canvas.call(dragSelectAction);
     }
-    musicPlayer?: MusicPlayer;
+    musicPlayer?: MusicProcessor;
     currentMEI?: string | Document;
 
 
@@ -213,10 +215,11 @@ class SelectionHandler implements Handler {
             meiNote = meiNote.closest("chord")
         }
         if (firstMarkedNote?.length > 0) {
-            document.getElementById(this.containerId)?.querySelectorAll("#noteGroup *, #dotGroup *, #modGroup *").forEach(b => b.classList.remove("selected"))
+            document.getElementById(this.containerId)?.querySelectorAll("#noteGroup *, #dotGroup *, #modGroup *, #articGroup *").forEach(b => b.classList.remove("selected"))
             document.getElementById(this.containerId)?.querySelectorAll(".lastAdded")?.forEach(la => la.classList.remove("lastAdded"))
             //select buttons for given note state
-            document.getElementById(this.containerId)?.querySelector("#" + accidToModButtonId.get(meiNote?.getAttribute("accid")))?.classList.add("selected")
+            var modBtnId = cq.getContainer(this.containerId).querySelector("#customToolbar #articGroup") !== null ? "artic" : "accid"
+            document.getElementById(this.containerId)?.querySelector("#" + attrToModButtonId.get(meiNote?.getAttribute(modBtnId)))?.classList.add("selected")
             if(meiNote?.closest("chord") !== null){
                 meiNote = meiNote.closest("chord")
             }

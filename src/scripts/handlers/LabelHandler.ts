@@ -7,16 +7,17 @@ import { constants as c } from "../constants"
 import { uuidv4 } from "../utils/random";
 import HarmonyLabel from "../gui/HarmonyLabel";
 import TempoLabel from "../gui/TempoLabel"
-import MusicPlayer from "../MusicPlayer";
+import MusicProcessor from "../MusicProcessor";
 import Label from '../gui/Label'
 import * as cq from "../utils/convenienceQueries"
+import { keyToUnicode, unicodeToKey } from "../utils/mappings";
 
 const labelClasses = ["harm", "tempo", "note", "chord", "fb"]
 const labelSelectors = "." + labelClasses.join(",.")
 
 class LabelHandler implements Handler {
     m2s?: Mouse2SVG;
-    musicPlayer?: MusicPlayer
+    musicPlayer?: MusicProcessor
     currentMEI?: Document;
 
     private labelCanvas: SVGElement
@@ -64,10 +65,17 @@ class LabelHandler implements Handler {
         this.labels = new Map()
         this.vrvSVG.querySelectorAll(labelSelectors).forEach(el => {
             var className = labelClasses.filter(l => this.vrvSVG.querySelector("#" + el.id).classList.contains(l))[0]
-            var inputString: string
+            var inputString = ""
             switch (className) {
-                case "harm":
-                    inputString = Array.from(this.vrvSVG.querySelector("#" + el.id).querySelectorAll(".text")).filter(el => el.textContent !== null)[0]?.textContent.trim()
+                case "harm": 
+                    if(el.querySelector(".fb") !== null){
+                        this.currentMEI.querySelectorAll("#" + el.id + " f").forEach(f => {
+                            inputString += " " + f.textContent
+                        })
+                        inputString = inputString.trim()
+                    }else{
+                        inputString = this.currentMEI.getElementById(el.id).textContent
+                    }
                     this.labels.set(el.id, new HarmonyLabel(inputString, el.id, this.currentMEI))
                     break;
                 case "tempo":
@@ -397,7 +405,15 @@ class LabelHandler implements Handler {
 
         switch (targetClass) {
             case "harm":
-                textDiv.textContent = this.labels.get(targetId)?.getInput() || ""
+                if(this.labels.get(targetId) != undefined){
+                    var t = this.labels.get(targetId).getInput()
+                    for (const [key, value] of unicodeToKey.entries()){
+                        t = t.replace(key, value)
+                    }
+                    textDiv.textContent = t
+                }else{
+                    textDiv.textContent = ""
+                }
                 break;
             case "tempo":
                 textDiv.textContent = Array.from(this.container.querySelector("#" + targetId).querySelectorAll(".text")).filter(el => /\d+/.test(el.textContent))[0].textContent.match(/\d+/).join("") || ""
@@ -437,12 +453,14 @@ class LabelHandler implements Handler {
             that.setListeners()
             that.musicPlayer.setPlayListener()
         })
-
+       
         textDiv.addEventListener("keydown", this.submitLabelHandler)
         textDiv.addEventListener("keydown", this.typeLabelHandler)
 
         textDiv.focus()
     }
+
+
 
     getTimestamp(note: Element) {
         var layer = note.closest("layer")
@@ -483,7 +501,7 @@ class LabelHandler implements Handler {
         return this
     }
 
-    setMusicPlayer(musicPlayer: MusicPlayer) {
+    setMusicPlayer(musicPlayer: MusicProcessor) {
         this.musicPlayer = musicPlayer
         return this
     }

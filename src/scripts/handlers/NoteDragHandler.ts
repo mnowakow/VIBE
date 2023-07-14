@@ -1,7 +1,7 @@
 import { Attributes, EditorAction, NewNote } from '../utils/Types'
 import { constants as c } from '../constants';
 import MeasureMatrix from '../datastructures/MeasureMatrix'
-import MusicPlayer from '../MusicPlayer';
+import MusicProcessor from '../MusicProcessor';
 import DeleteHandler from './DeleteHandler';
 import Handler from './Handler';
 import { Mouse2SVG } from '../utils/Mouse2SVG';
@@ -16,7 +16,7 @@ import { uuidv4 } from '../utils/random';
 class NoteDragHandler implements Handler {
   private containerId: string
 
-  musicPlayer: MusicPlayer;
+  musicPlayer: MusicProcessor;
   m2s?: Mouse2SVG;
   currentMEI: Document
 
@@ -104,7 +104,7 @@ class NoteDragHandler implements Handler {
 
   //////////////// GETTER/ SETTER ////////////
 
-  setMusicPlayer(musicPlayer: MusicPlayer) {
+  setMusicPlayer(musicPlayer: MusicProcessor) {
     this.musicPlayer = musicPlayer
     return this
   }

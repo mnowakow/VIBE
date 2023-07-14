@@ -295,19 +295,21 @@ export const numToDotButtonId: Map<string, string> = new Map;
 numToDotButtonId.set("1", "oneDot")
 numToDotButtonId.set("2", "twoDot")
 
-export const accidToModButtonId: Map<string, string> = new Map;
-accidToModButtonId.set("s", "alterUp")
-accidToModButtonId.set("f", "alterDown")
-accidToModButtonId.set("n", "alterNeutral")
-accidToModButtonId.set("ff", "alterDDown")
-accidToModButtonId.set("ss", "alterDUp")
+export const attrToModButtonId: Map<string, string> = new Map;
+attrToModButtonId.set("s", "alterUp")
+attrToModButtonId.set("f", "alterDown")
+attrToModButtonId.set("n", "alterNeutral")
+attrToModButtonId.set("ff", "alterDDown")
+attrToModButtonId.set("ss", "alterDUp")
+attrToModButtonId.set("acc", "accentBtn")
+attrToModButtonId.set("stacc", "staccatoBtn")
+attrToModButtonId.set("marc", "marcatoBtn")
+attrToModButtonId.set("ten", "tenutoBtn")
 
-export const modButtonToAccid: Map<string, string> = new Map;
-modButtonToAccid.set("alterUp", "s")
-modButtonToAccid.set("alterDown", "f")
-modButtonToAccid.set("alterNeutral", "n")
-modButtonToAccid.set("alterDDown", "ff")
-modButtonToAccid.set("alterDUp", "ss")
+
+export const modButtonToAttr: Map<string, string> = new Map;
+attrToModButtonId.forEach((v, k) => modButtonToAttr.set(v, k))
+
 
 export const octToNum: Map<string, string> = new Map;
 octToNum.set("subkontraOct", "0")
@@ -336,3 +338,23 @@ unicodeToTimesig.set("E086", "6")
 unicodeToTimesig.set("E087", "7")
 unicodeToTimesig.set("E088", "8")
 unicodeToTimesig.set("E089", "9")
+
+export const unicodeToKey: Map<string, string> = new Map;
+unicodeToKey.set("&#x266D;", "b")
+unicodeToKey.set("&#x266E;", "n")
+unicodeToKey.set("&#x266F;", "#")
+unicodeToKey.set("&#xE870;", "°")
+unicodeToKey.set("&#xE871;", "/°")
+unicodeToKey.set("&#xE873;", "\\^")
+
+export const keyToUnicode: Map<string, string> = new Map;
+unicodeToKey.forEach((v, k) => keyToUnicode.set(v, k))
+
+export const midiToNote: Map<number, string> = new Map;
+var j = 12
+for(let i=0; i <= 9; i++){
+    ["c", "cs", "d", "ds", "e", "f", "fs", "g", "gs", "a", "as", "b"].forEach(x => {
+        if(j >= 21 && j <= 127) midiToNote.set(j, x + i.toString())
+        j++
+    })
+}

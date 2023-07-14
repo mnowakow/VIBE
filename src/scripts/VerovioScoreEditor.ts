@@ -136,6 +136,9 @@ class VerovioScoreEditor{
             //parentElement for zoom
             this.container.append(dc.makeNewDiv("zoomGroup", btnGrpClass, {role: "group"}))
 
+            //parentElement for midi device selection
+            this.container.append(dc.makeNewDiv("midiSelectGroup", btnGrpClass, {role: "group"}))
+
             //parentElement for fileselect group
             this.container.append(dc.makeNewDiv("fileSelectGroup", btnGrpClass, {role: "group"}))
 
@@ -150,8 +153,8 @@ class VerovioScoreEditor{
 
             // and now the tabs
             this.container.append(dc.makeNewDiv("notationTabGroup", btnGrpClass, {role: "group"}))
-            this.container.append(dc.makeNewDiv("annotationTabGroup", btnGrpClass, {role: "group"}))
             this.container.append(dc.makeNewDiv("articulationTabGroup", btnGrpClass, {role: "group"}))
+            this.container.append(dc.makeNewDiv("annotationTabGroup", btnGrpClass, {role: "group"}))
             this.container.append(dc.makeNewDiv("melismaTabGroup", btnGrpClass, {role: "group"}))
 
 

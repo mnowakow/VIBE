@@ -1,13 +1,15 @@
 import * as Tone from 'tone';
 import { NewNote, NoteTime } from './utils/Types';
-import {noteToCross, noteToB} from './utils/mappings'
+import { noteToCross, noteToB } from './utils/mappings'
 import MidiPlayer from 'midi-player-js';
 import * as Soundfont from 'soundfont-player'
 import { constants as c } from './constants'
 import ScoreGraph from './datastructures/ScoreGraph';
 import * as coordinates from "./utils/coordinates"
 import * as cq from "./utils/convenienceQueries"
-import { isThrowStatement } from 'typescript';
+import { Buffer } from 'buffer';
+import { WebMidi } from 'web-midi-api';
+import { prototype } from 'compression-webpack-plugin';
 
 const currentlyPlayingFlag = "currentlyPlaying"
 const followerRectID = "followerRect"
@@ -15,7 +17,7 @@ const followerRectID = "followerRect"
 const ac = window.AudioContext
 const synth = new Tone.Synth().toDestination()
 
-class MusicPlayer{
+class MusicProcessor {
     private player: MidiPlayer.Player;
     private context: AudioContext;
     private midi: string;
@@ -38,15 +40,15 @@ class MusicPlayer{
     private markedNote: Element
 
     private instruments: Array<Soundfont.Player>
-    private durationMap: Map<string, {note: Element, duration: number, tick: number}> // key: tracknumber,byteindex;
-    private durationMapByNote: Map<Element, {duration: number, tick: number}>
+    private durationMap: Map<string, { note: Element, duration: number, tick: number }> // key: tracknumber,byteindex;
+    private durationMapByNote: Map<Element, { duration: number, tick: number }>
 
     private scoreGraph: ScoreGraph
     private isFirefox: boolean
     private playStartEvent: Event;
     private playEndEvent: Event;
 
-    constructor(containerId: string){
+    constructor(containerId: string) {
         this.setContainerId(containerId)
         this.noteEvent = new Event("currentNote")
         this.playStartEvent = new Event("playStart")
@@ -54,28 +56,30 @@ class MusicPlayer{
         this.restartTime = 0
 
         this.setPlayListener()
-        if(navigator.userAgent.toLocaleLowerCase().indexOf("firefox") > 0){
+        if (navigator.userAgent.toLocaleLowerCase().indexOf("firefox") > 0) {
             this.isFirefox = true
-        }else{
+        } else {
             this.isFirefox = false
         }
+
+        this.getMidiInput()
     }
 
     /**
      * Add Canvas in which all MusicPlayer SVGs are contained
      */
-    addCanvas(){
+    addCanvas() {
         //this.root = this.interactionOverlay //document.getElementById(c._vrvSVGID_)
         this.rootBBox = this.interactionOverlay.getBoundingClientRect()
         var rootWidth = this.rootBBox.width.toString()
         var rootHeigth = this.rootBBox.height.toString()
 
-        if(this.canvasMP == undefined){
+        if (this.canvasMP == undefined) {
             this.canvasMP = document.createElementNS(c._SVGNS_, "svg")
             this.canvasMP.setAttribute("id", "canvasMusicPlayer")
             this.canvasMP.classList.add("canvas")
             this.canvasMP.setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))
-        }      
+        }
         this.canvasMP.innerHTML = "" // will delete followerRect if present (usually when score is loaded)
 
         this.interactionOverlay = cq.getInteractOverlay(this.containerId)
@@ -85,70 +89,70 @@ class MusicPlayer{
     /**
      * Initialize Player
      */
-    initPlayer(){
+    initPlayer() {
         var that = this
 
         //@ts-ignore
-        this.player = new MidiPlayer.Player(function(event) {
-            if(event.name === "Set Tempo"){
+        this.player = new MidiPlayer.Player(function (event) {
+            if (event.name === "Set Tempo") {
                 that.tempo = event.data
                 //that.pulse = (60000/ (event.data / 2 * 24))/10 //(60000/ (event.data * 24))/10000 //duration is in seconds
-                that.pulse = ((60/event.data)*1000)/120
+                that.pulse = ((60 / event.data) * 1000) / 120
             }
             if (event.name === 'Note on' && event.velocity !== 0) {
                 var track = event.track
                 var time = event.tick
                 var key = track.toString() + "," + event.byteIndex.toString()
-                if(!that.durationMap.has(key)){
+                if (!that.durationMap.has(key)) {
                     return
                 }
                 var duration = that.durationMap.get(key).duration
                 that.restartTime = event.tick
                 that.highlight(time, duration * 1000)
-                if(!that.isFirefox){
+                if (!that.isFirefox) {
                     that.drawFollowerRect()
                 }
 
-                if(that.instruments != undefined){
+                if (that.instruments != undefined) {
                     var instr = that.instruments[track - 2]
-                    instr.play(event.noteName, that.context.currentTime, {gain:event.velocity/100, duration: duration}); 
-                }                  
-            } 
+                    instr.play(event.noteName, that.context.currentTime, { gain: event.velocity / 100, duration: duration });
+                }
+            }
         })
 
         this.player.loadArrayBuffer(Buffer.from(this.midi, "base64"))
         this.mapDurations()
 
-        if(this.instruments == undefined){ // instruments only have to be updated, when new instrument (= track) is added
+        if (this.instruments == undefined) { // instruments only have to be updated, when new instrument (= track) is added
             this.context = new ac()
             this.instruments = new Array(this.player.getEvents().length - 1)
             this.initInstruments()
         }
-    } 
+    }
     //some change
 
     /**
      * Stop playing
      */
-    stopInstruments(){
+    stopInstruments() {
         document.dispatchEvent(this.playEndEvent)
         this.player.stop()
         this.instruments?.forEach(instr => instr.stop(this.context.currentTime))
         this.player = undefined
         this.stopTimeouts()
-        if(this.restartTime === 0){
-            if(document.getElementById(followerRectID) !== null){
+        if (this.restartTime === 0) {
+            if (document.getElementById(followerRectID) !== null) {
                 document.getElementById(followerRectID).remove()
             }
             Array.from(document.getElementsByClassName(currentlyPlayingFlag)).forEach(element => {
-                element.classList.remove(currentlyPlayingFlag) 
+                element.classList.remove(currentlyPlayingFlag)
             });
         }
         this.initPlayer()
     }
 
-    rewind(){
-        if(this.player != undefined){
+    rewind() {
+        if (this.player != undefined) {
             this.restartTime = 0
             this.stopInstruments()
         }
@@ -157,14 +161,14 @@ class MusicPlayer{
     /**
      * Initialize Instrument for 
      */
-    initInstruments(){
+    initInstruments() {
         this.setSoundfontsRecursive()
     }
 
-    setSoundfontsRecursive(counter = 0){
+    setSoundfontsRecursive(counter = 0) {
         var i = counter
         var that = this
-        if(i < this.instruments.length){
+        if (i < this.instruments.length) {
             Soundfont.instrument(this.context, "acoustic_grand_piano").then((instrument) => {
                 that.instruments[i] = instrument
                 i += 1
@@ -173,12 +177,12 @@ class MusicPlayer{
         }
     }
 
-    playMidi(){
-        if(!cq.hasActiveElement(this.containerId)) return
-        if(this.player.isPlaying()){
+    playMidi() {
+        if (!cq.hasActiveElement(this.containerId)) return
+        if (this.player.isPlaying()) {
             this.stopInstruments()
-            
-        }else{
+
+        } else {
             this.player.on("endOfFile", () => {
                 this.rewind()
             })
@@ -186,24 +190,24 @@ class MusicPlayer{
             //this.player.tempo = this.tempo
             this.player.tick = this.restartTime
             this.player.skipToTick(this.restartTime)
-            this.player.play() 
+            this.player.play()
             document.dispatchEvent(this.playStartEvent)
         }
     }
 
     ///// LISTENERS ////
-    setListeners(){
+    setListeners() {
         var that = this
-        if(this.midiTimes == undefined){
-            return 
+        if (this.midiTimes == undefined) {
+            return
         }
 
         var it = this.midiTimes.values()
         var result = it.next()
-        while(!result.done){
+        while (!result.done) {
             var arr: Array<any> = result.value
             arr.forEach(note => {
-                if(note == undefined) return
+                if (note == undefined) return
                 note.addEventListener("currentNote", this.setCurrentNoteHandler)
                 var id = note.querySelector(".notehead")?.id || note.id
                 var interactRect = cq.getInteractOverlay(that.containerId).querySelector("#scoreRects g[refId=\"" + id + "\"]")
@@ -217,24 +221,24 @@ class MusicPlayer{
         this.container.querySelector("#rewindBtn").addEventListener("click", this.rewindBtn)
     }
 
-    playBtn = (function playBtn(e: MouseEvent){
+    playBtn = (function playBtn(e: MouseEvent) {
         e.preventDefault()
         this.context.resume().then(() => this.playMidi())
     }).bind(this)
 
-    rewindBtn = (function rewindBtn(e: MouseEvent){
+    rewindBtn = (function rewindBtn(e: MouseEvent) {
         e.preventDefault()
         this.rewind()
     }).bind(this)
 
-    removeListeners(){
+    removeListeners() {
         var that = this
-        if(this.midiTimes == undefined){
-            return 
+        if (this.midiTimes == undefined) {
+            return
         }
         var it = this.midiTimes.values()
         var result = it.next()
-        while(!result.done){
+        while (!result.done) {
             var arr: Array<any> = result.value
             arr.forEach(note => {
                 note.removeEventListener("currentNote", this.setCurrentNoteHandler)
@@ -246,7 +250,7 @@ class MusicPlayer{
         }
     }
 
-    resetListeners(){
+    resetListeners() {
         this.removeListeners()
         this.setListeners()
     }
@@ -254,50 +258,50 @@ class MusicPlayer{
     /**
      * Separate Listeners to set player options externally
      */
-    setPlayListener(){
-        document.addEventListener("keydown",this.playHandler)
+    setPlayListener() {
+        document.addEventListener("keydown", this.playHandler)
     }
 
-    removePlayListener(){
-        document.removeEventListener("keydown",this.playHandler)
+    removePlayListener() {
+        document.removeEventListener("keydown", this.playHandler)
     }
 
-    playHandler = (function playHandler(e: KeyboardEvent){
-        if(!this.hasContainerFocus()) return
+    playHandler = (function playHandler(e: KeyboardEvent) {
+        if (!this.hasContainerFocus()) return
         this.playFunction(e)
-        
+
     }).bind(this)
 
-    playFunction(e: KeyboardEvent){
-        if(!this.hasContainerFocus()) return
-        if(e.code === "Space"){
+    playFunction(e: KeyboardEvent) {
+        if (!this.hasContainerFocus()) return
+        if (e.code === "Space") {
             e.preventDefault()
-            if(e.shiftKey || document.getElementById("followerRect") !== null){
+            if (e.shiftKey || document.getElementById("followerRect") !== null) {
                 this.context.resume().then(() => this.playMidi())
-            }else if(typeof this.player != undefined ){
+            } else if (typeof this.player != undefined) {
                 this.stopInstruments()
             }
         }
-    
+
     }
 
-    setCurrentNoteHandler = (function setCurrentNoteHandler(e: Event){
+    setCurrentNoteHandler = (function setCurrentNoteHandler(e: Event) {
         this.currentNote = e.target
     }).bind(this)
 
     /**
      *  Set last clicked element to restartpoint
      */
-    startPointHandler = (function startPointHandler(e: MouseEvent){
-        if(!this.hasContainerFocus()) return
+    startPointHandler = (function startPointHandler(e: MouseEvent) {
+        if (!this.hasContainerFocus()) return
         var playingNote = e.target as Element
         playingNote = cq.getVrvSVG(this.containerId).querySelector("#" + playingNote.closest("[refId]").getAttribute("refId"))
         playingNote = playingNote.closest(".note") || playingNote.closest(".rest") || playingNote.closest(".mRest")
-        if(playingNote !== null){
+        if (playingNote !== null) {
             var it = this.durationMap.values()
             var res = it.next()
-            while(!res.done){
-                if(playingNote.id === res.value.note.id){
+            while (!res.done) {
+                if (playingNote.id === res.value.note.id) {
                     this.restartTime = res.value.tick
                     break;
                 }
@@ -309,42 +313,42 @@ class MusicPlayer{
     /**
      * Map all durations and notes to make them available asynchronically
      */
-    mapDurations(){
-        var durationMap = new Map<string, {note: Element, duration: number, tick: number}>() // key: tracknumber,byteindex
-        var mapByNote = new Map<Element, {duration: number, tick: number}>()
+    mapDurations() {
+        var durationMap = new Map<string, { note: Element, duration: number, tick: number }>() // key: tracknumber,byteindex
+        var mapByNote = new Map<Element, { duration: number, tick: number }>()
         var eventTracks = this.player.getEvents()
         eventTracks.forEach(eventArray => {
             //@ts-ignore
-            Array.from(eventArray).forEach((event, eventIdx) => { 
+            Array.from(eventArray).forEach((event, eventIdx) => {
                 var e: any = event
-                if(e.name === "Set Tempo"){
+                if (e.name === "Set Tempo") {
                     this.tempo = e.data
-                    this.pulse = ((60/e.data)*1000)/120
+                    this.pulse = ((60 / e.data) * 1000) / 120
                 }
-                else if(e.name === "Note on"){
+                else if (e.name === "Note on") {
                     var time = e.tick //* this.pulse //* 1000 * 2
                     var notes = this.getClosestEntry(time)
-                    if(notes == undefined){
+                    if (notes == undefined) {
                         return
                     }
                     //iterate because notes can be in a chord
                     notes.forEach(note => {
                         var meiNote = this.mei.getElementById(note.id)
                         var staffNumber = parseInt(meiNote.closest("staff").getAttribute("n")) + 1
-                        if(!meiNote.hasAttribute("grace")){
+                        if (!meiNote.hasAttribute("grace")) {
                             var key = e.track.toString() + "," + e.byteIndex.toString()
-                            if(!durationMap.has(key) && e.track === staffNumber){
-                                if(!meiNote.hasAttribute("dur")){
+                            if (!durationMap.has(key) && e.track === staffNumber) {
+                                if (!meiNote.hasAttribute("dur")) {
                                     meiNote = meiNote.closest("chord")
                                 }
-                                var baseDur = this.getDur(parseInt(meiNote.getAttribute("dur")), parseInt(meiNote.getAttribute("dots")) || 0 , 4)
+                                var baseDur = this.getDur(parseInt(meiNote.getAttribute("dur")), parseInt(meiNote.getAttribute("dots")) || 0, 4)
 
                                 //find any prolongated Notes
-                                var tie = this.mei.querySelector("tie[startid='#" + note.id +"']") 
-                                if(tie !== null){
+                                var tie = this.mei.querySelector("tie[startid='#" + note.id + "']")
+                                if (tie !== null) {
                                     var endid = tie.getAttribute("endid") //endid alway includes # at beginnig
                                     var prolongNote = this.mei.querySelector(endid)
-                                    if(prolongNote !== null){
+                                    if (prolongNote !== null) {
                                         var pnDur = prolongNote.getAttribute("dur")
                                         var pnDot = prolongNote.getAttribute("dots")
                                         baseDur += this.getDur(parseInt(pnDur), parseInt(pnDot) || 0, 4)
@@ -352,24 +356,24 @@ class MusicPlayer{
                                 }
 
                                 //concat duration
-                                var dur =  baseDur * 60/this.tempo
+                                var dur = baseDur * 60 / this.tempo
                                 var valueFound = false
-                                var it = durationMap.values()  
+                                var it = durationMap.values()
                                 var res = it.next()
-                                
-                                if(!valueFound ){ // why do I check here?
-                                    durationMap.set(key, {note: note, duration: dur, tick: e.tick as number})
-                                    mapByNote.set(note, {duration: dur, tick: e.tick as number})
-                                }else{
+
+                                if (!valueFound) { // why do I check here?
+                                    durationMap.set(key, { note: note, duration: dur, tick: e.tick as number })
+                                    mapByNote.set(note, { duration: dur, tick: e.tick as number })
+                                } else {
                                     //console.log(key, note, dur, e.tick)
                                     //console.log(durationMap.get(key))
                                 }
                             }
                         }
                     })
-                    
+
                 }
-            }) 
+            })
         })
         this.durationMap = durationMap
         this.durationMapByNote = mapByNote
@@ -382,12 +386,12 @@ class MusicPlayer{
      * @param time 
      * @returns 
      */
-    getClosestEntry(time: number){
+    getClosestEntry(time: number) {
         var targetEntry
         var temp = Infinity
-        for(const [key, value] of this.midiTimes.entries()){
+        for (const [key, value] of this.midiTimes.entries()) {
             var diff = Math.abs(time - key)
-            if(diff < temp ){
+            if (diff < temp) {
                 targetEntry = value
                 temp = diff
             }
@@ -395,12 +399,12 @@ class MusicPlayer{
         return targetEntry
     }
 
-    getDur(dur: number, dots: number, base: number): number{
-        var baseDur = base/ dur
+    getDur(dur: number, dots: number, base: number): number {
+        var baseDur = base / dur
         var add = baseDur
-        if(dots > 0){
-            for(var i = 0; i < dots ; i++){
-                add = add/2
+        if (dots > 0) {
+            for (var i = 0; i < dots; i++) {
+                add = add / 2
                 baseDur += add
             }
         }
@@ -408,16 +412,16 @@ class MusicPlayer{
     }
 
 
-    setAudioContext(): Promise<void>{
+    setAudioContext(): Promise<void> {
         var that = this
-        return new Promise<void>((resolve, reject):void => {
-            window.onload = function(){
-                resolve() 
+        return new Promise<void>((resolve, reject): void => {
+            window.onload = function () {
+                resolve()
             }
         })
     }
 
-    setMidi(midi: string){
+    setMidi(midi: string) {
         this.midi = midi;
         return this
     }
@@ -427,12 +431,12 @@ class MusicPlayer{
      * @param time Time at which Element is played (in ms)
      * @param duration Duration of Element (in ms)
      */
-    highlight(time: number, duration: number){
+    highlight(time: number, duration: number) {
         var notes = this.getClosestEntry(time)
         this.timeouts = new Array()
         notes.forEach(n => {
             this.addClass(n, currentlyPlayingFlag).then(() => {
-                var to = setTimeout(() => {n.classList.remove(currentlyPlayingFlag)}, duration)
+                var to = setTimeout(() => { n.classList.remove(currentlyPlayingFlag) }, duration)
                 this.timeouts.push(to)
             })
         })
@@ -443,7 +447,7 @@ class MusicPlayer{
      * Adds Class to be highlighted. 
      * Dispatches event for every Note which was started most currently
      */
-    addClass = (function addClass(n: Element, className: string){
+    addClass = (function addClass(n: Element, className: string) {
         return new Promise(resolve => {
             n.classList.add(className)
             n.dispatchEvent(this.noteEvent)
@@ -451,20 +455,20 @@ class MusicPlayer{
         })
     }).bind(this)
 
-    
+
 
     /**
      * Draw follower rectangle over all staves for last sounding element
      */
-    drawFollowerRect(){
+    drawFollowerRect() {
 
         // var canvas =  document.getElementById(this.containerId).querySelector("#canvasMusicPlayer") //document.getElementById("canvasMusicPlayer")
         // var canvasBBox = canvas.getBoundingClientRect();
 
         var followerRect: Element
-        if(document.getElementById(followerRectID) !== null){
+        if (document.getElementById(followerRectID) !== null) {
             followerRect = document.getElementById(followerRectID)
-        }else{
+        } else {
             followerRect = document.createElementNS(c._SVGNS_, "rect")
             this.canvasMP.appendChild(followerRect)
         }
@@ -474,8 +478,8 @@ class MusicPlayer{
         var parentMeasureRect = this.currentNote.closest(".measure").getBoundingClientRect()
         var ptParentMeasure = coordinates.getDOMMatrixCoordinates(parentMeasureRect, this.canvasMP)
 
-        var upperBound = (ptParentMeasure.top - margin) 
-        var lowerBound = (ptParentMeasure.bottom + margin) 
+        var upperBound = (ptParentMeasure.top - margin)
+        var lowerBound = (ptParentMeasure.bottom + margin)
         var leftBound = (ptCurrentNote.left - margin)
         var rightBound = (ptCurrentNote.right + margin)
 
@@ -486,48 +490,48 @@ class MusicPlayer{
         followerRect.setAttribute("height", (lowerBound - upperBound).toString())
     }
 
-    hasContainerFocus(){
+    hasContainerFocus() {
         return document.getElementById(this.containerId).classList.contains("activeContainer")
     }
 
 
     ///SYNTH////
 
-    generateTone(newNote: NewNote): void{
-        if(newNote.rest){
+    generateTone(newNote: NewNote): void {
+        if (newNote.rest) {
             return
         }
-        
+
         let note = newNote.pname
         let dur = newNote.dur + "n"
-        if(typeof newNote.keysig !== "undefined" && newNote.keysig !== "0"){
+        if (typeof newNote.keysig !== "undefined" && newNote.keysig !== "0") {
             let signMap
-           if(newNote.keysig.charAt(1) === "s"){
+            if (newNote.keysig.charAt(1) === "s") {
                 signMap = noteToCross
-            }else if(newNote.keysig.charAt(1) === "f"){
-                signMap  = noteToB
+            } else if (newNote.keysig.charAt(1) === "f") {
+                signMap = noteToB
             }
 
             let signCount = parseInt(newNote.keysig.charAt(0))
             let submap = new Map<string, string>()
             let i = 0;
-            for(const [key, value] of signMap.entries()){
-                if(i < signCount){
+            for (const [key, value] of signMap.entries()) {
+                if (i < signCount) {
                     submap.set(key, value)
                 }
                 i += 1
             }
-            if(submap.has(note)){
+            if (submap.has(note)) {
                 note = submap.get(note)
                 note = note.charAt(0).toUpperCase() + note.charAt(1).toUpperCase() + newNote.oct
-            }else{
+            } else {
                 note = note.toUpperCase() + newNote.oct;
             }
-        }else{
+        } else {
             note = note.toUpperCase() + newNote.oct;
         }
 
-        if(!note.includes("undefined") && !dur.includes("undefined")){
+        if (!note.includes("undefined") && !dur.includes("undefined")) {
             dur = "16n"
             synth.triggerAttackRelease(note, dur);
             Tone.start();
@@ -537,30 +541,30 @@ class MusicPlayer{
 
     // UTILS
 
-    setMEI(mei: Document){
+    setMEI(mei: Document) {
         this.mei = mei
         return this
     }
 
-    setMidiTimes(midiTimes: Map<number, Array<any>>){
+    setMidiTimes(midiTimes: Map<number, Array<any>>) {
         this.midiTimes = midiTimes
         return this
     }
 
-    setScoreGraph(scoreGraph: ScoreGraph){
+    setScoreGraph(scoreGraph: ScoreGraph) {
         this.scoreGraph = scoreGraph
         return this
     }
 
-    stopTimeouts(){
-        if(typeof this.timeouts !== "undefined"){
+    stopTimeouts() {
+        if (typeof this.timeouts !== "undefined") {
             this.timeouts.forEach(to => {
                 clearTimeout(to)
             })
         }
     }
 
-    setContainerId(containerId: string){
+    setContainerId(containerId: string) {
         this.containerId = containerId
         this.interactionOverlay = cq.getInteractOverlay(containerId)
         this.vrvSVG = cq.getVrvSVG(containerId)
@@ -568,32 +572,132 @@ class MusicPlayer{
         return this
     }
 
-    resetInstruments(){
+    resetInstruments() {
         this.instruments = undefined
     }
 
-    getRestartTime(){
+    getRestartTime() {
         return this.restartTime
     }
 
-    setRestartTimeBySeconds(time: number){
+    setRestartTimeBySeconds(time: number) {
         return this.restartTime = time
     }
 
-    setRestartTimeByElement(el: Element){
+    setRestartTimeByElement(el: Element) {
         throw Error("Not yet implemented")
     }
 
-    getIsPlaying(){
+    getIsPlaying() {
         return this.player?.isPlaying()
     }
 
-    update(){
+    update() {
         this.resetInstruments()
         this.resetListeners()
         this.initPlayer()
         return this
     }
+
+
+
+    //// Experimantal
+
+    getMidiInput() {
+        var that = this
+        var navigator = require('web-midi-api');
+        // consider using var navigator = require('jzz');
+
+        var midi;
+        var inputs;
+        var outputs;
+
+        function onMIDIFailure(msg) {
+            console.log('Failed to get MIDI access - ' + msg);
+            //process?.exit(1);
+        }
+
+        function onMIDISuccess(midiAccess) {
+            midi = midiAccess;
+            inputs = midi.inputs;
+            outputs = midi.outputs;
+            console.log("general midi info:", midi)
+            setTimeout(testOutputs, 100);
+        }
+
+        function testOutputs() {
+            console.log('Testing MIDI-Out ports...');
+            outputs.forEach(function (port) {
+                console.log('id:', port.id, 'manufacturer:', port.manufacturer, 'name:', port.name, 'version:', port.version);
+                port.open();
+                port.send([0x90, 60, 0x7f])
+            });
+            setTimeout(stopOutputs, 1000);
+        }
+
+        function stopOutputs() {
+            outputs.forEach(function (port) {
+                port.send([0x80, 60, 0]);
+            });
+            testInputs();
+        }
+
+        function onMidiIn(ev) {
+            document.dispatchEvent(new CustomEvent("midiin", { detail: ev.data })) // goes to KeyModeHandler since there already most of the logic is implemented
+        }
+
+        function testInputs() {
+            console.log('Testing MIDI-In ports...');
+            inputs.forEach(function (port) {
+                console.log('id:', port.id, 'manufacturer:', port.manufacturer, 'name:', port.name, 'version:', port.version);
+                port.onmidimessage = onMidiIn;
+            });
+            //setTimeout(stopInputs, 5000);
+        }
+
+        function fillDeviceList(e) {
+            var deviceList = cq.getContainer(that.containerId)?.querySelector("#midiDeviceSelect")
+            if (deviceList === null) return
+            var value = e.port.name
+            if (e.port.type === "input" && !e.port.name.includes("EDITOR")) {
+                var optionEntry = deviceList.querySelector("option[value='" + value + "']")
+                if (optionEntry !== null) {
+                    optionEntry.remove()
+                    console.log("Removed MIDI Device", e.port)
+                } else {
+                    var option = document.createElement("option")
+                    option.setAttribute("value", value)
+                    option.textContent = e.port.manufacturer + " " + e.port.name
+                    deviceList.append(option)
+                    console.log("Added MIDI Device", e.port)
+                }
+                deviceList.removeEventListener("change", chooseInput)
+                deviceList.addEventListener("change", chooseInput)
+            }
+        }
+
+        function chooseInput(e: Event) {
+            var target = e.target as Element
+            console.log(e, (target as any).value)
+            inputs.forEach(port => {
+                if ((target as any).value === port.name) {
+                    port.onmidimessage = onMidiIn;
+                    console.log("Chosen MIDI Device", port)
+                } else {
+                    port.close()
+                }
+            })
+        }
+
+        navigator.requestMIDIAccess().then(access => {
+            console.log(access)
+            access.onstatechange = (e) => {
+                fillDeviceList(e)
+            }
+            onMIDISuccess(access);
+            onMIDIFailure(access);
+        });
+    }
 }
 
-export default MusicPlayer;
+export default MusicProcessor;

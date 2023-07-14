@@ -1,7 +1,7 @@
 import { constants as c } from '../constants';
 import { Mouse2SVG } from '../utils/Mouse2SVG';
 import Cursor from '../gui/Cursor';
-import MusicPlayer from '../MusicPlayer';
+import MusicProcessor from '../MusicProcessor';
 import PhantomElement from '../gui/PhantomElement';
 import SelectionHandler from './SelectionHandler';
 import Handler from './Handler';
@@ -31,7 +31,7 @@ class InsertModeHandler implements Handler {
   type: string;
   selector: string;
   m2s: Mouse2SVG;
-  musicPlayer: MusicPlayer;
+  musicPlayer: MusicProcessor;
   cursor: Cursor;
   clickInsertMode: boolean;
   keyMode: boolean;
@@ -250,6 +250,7 @@ class InsertModeHandler implements Handler {
       .setLoadDataCallback(this.loadDataCallback)
       .drawElements()
 
+    // create some more measures at start
     if (this.firstCall) {
       for (let i = 0; i < 13; i++) {
         this.interactionOverlay.querySelector("#measureAdder").dispatchEvent(new MouseEvent("click"))
@@ -267,6 +268,7 @@ class InsertModeHandler implements Handler {
         e.preventDefault()
         switch (this.id) {
           case "notationTabBtn":
+          case "articulationTabBtn":
           case "clickInsert":
             that.activateInsertMode(true)
             break;
@@ -373,7 +375,7 @@ class InsertModeHandler implements Handler {
     return this
   }
 
-  setMusicPlayer(musicPlayer: MusicPlayer) {
+  setMusicPlayer(musicPlayer: MusicProcessor) {
     this.musicPlayer = musicPlayer
     return this
   }

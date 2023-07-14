@@ -1,5 +1,5 @@
 import ScoreManipulator from "../gui/ScoreManipulator";
-import MusicPlayer from "../MusicPlayer";
+import MusicProcessor from "../MusicProcessor";
 import { Mouse2SVG } from "../utils/Mouse2SVG";
 import Handler from "./Handler";
 import { constants as c } from '../constants'
@@ -15,7 +15,7 @@ const canvasId = "manipulatorCanvas"
  */
 class ScoreManipulatorHandler implements Handler {
     m2s?: Mouse2SVG;
-    musicPlayer?: MusicPlayer;
+    musicPlayer?: MusicProcessor;
     currentMEI?: string | Document;
     private containerId: string
     private interactionOverlay: Element
@@ -148,7 +148,7 @@ class ScoreManipulatorHandler implements Handler {
         return this
     }
 
-    setMusicPlayer(mp: MusicPlayer) {
+    setMusicPlayer(mp: MusicProcessor) {
         this.musicPlayer = mp
         return this
     }

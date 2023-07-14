@@ -7,19 +7,18 @@ import DeleteHandler from './handlers/DeleteHandler';
 import NoteDragHandler from './handlers/NoteDragHandler';
 import { Mouse2SVG } from './utils/Mouse2SVG';
 import GlobalKeyboardHandler from './handlers/GlobalKeyboardHandler';
-import MusicPlayer from './MusicPlayer';
+import MusicProcessor from './MusicProcessor';
 import * as meiConverter from "./utils/MEIConverter"
 import * as meiOperation from "./utils/MEIOperations"
 import MeiTemplate from './assets/mei_template';
-import SVGFiller from "./utils/SVGFiller"
+import SVGEditor from "./utils/SVGEditor"
 import ScoreGraph from './datastructures/ScoreGraph';
 import WindowHandler from "./handlers/WindowHandler"
 import SidebarHandler from './handlers/SidebarHandler';
 import LabelHandler from './handlers/LabelHandler';
-import ModHandler from './handlers/ModHandler';
+import CustomToolbarHandler from './handlers/CustomToolbarHandler';
 import * as cq from "./utils/convenienceQueries"
 import * as coordinates from "./utils/coordinates"
-import * as ffbb from "./utils/firefoxBBoxes"
 import TooltipHandler from './handlers/TooltipHandler';
 
 
@@ -44,15 +43,15 @@ class Core {
   private windowHandler: WindowHandler;
   private labelHandler: LabelHandler;
   private tooltipHandler: TooltipHandler
-  private modHandler: ModHandler;
+  private modHandler: CustomToolbarHandler;
   private currentMEI: string;
   private currentMEIDoc: Document
   private svg: string
   private currentMidi: string;
   private globalKeyboardHandler: GlobalKeyboardHandler;
-  private musicplayer: MusicPlayer;
+  private musicplayer: MusicProcessor;
   private scoreGraph: ScoreGraph;
-  private svgFiller: SVGFiller;
+  private svgEditor: SVGEditor;
   private lastInsertedNoteId: string
   private containerId: string
   private container: Element
@@ -80,14 +79,13 @@ class Core {
     this.redoAnnotationStacks = new Array<Array<Element>>();
     //this.redoAnnotationStacks.push(new Array<Element>())
     this.windowHandler = new WindowHandler()
-    this.svgFiller = new SVGFiller()
+    this.svgEditor = new SVGEditor()
   }
 
   /**
    * Load data into the verovio toolkit and update the cache.
   */
   loadData(data: string | Document | HTMLElement, isUrl: boolean, options: LoadOptions = null): Promise<string> {
-
 
     this.verovioWrapper = this.verovioWrapper || new VerovioWrapper();
     var waitingFlag = "waiting"
@@ -98,6 +96,7 @@ class Core {
     document.getElementById(this.containerId).dispatchEvent(new Event("loadingStart"))
 
     var that = this
+    this.svgEditor.setContainerId(this.containerId)
     async function render(pageNo: number = 1, options: LoadOptions = null): Promise<void> {
       return new Promise((resolve, reject): void => {
 
@@ -120,7 +119,7 @@ class Core {
         try {
           // delete old svg
           if (cq.getVrvSVG(that.containerId).querySelector("#" + pageId) !== null) {
-            that.svgFiller.cacheClasses().cacheScales()
+            that.svgEditor.cacheClasses().cacheScales()
             cq.getVrvSVG(that.containerId).querySelector("#" + pageId).innerHTML = "" //.remove()
           }
           //insert new complete svg
@@ -130,7 +129,7 @@ class Core {
           document.querySelector("#" + that.containerId + " #vrvSVG").append(pageElement)
           
         }
-        that.svgFiller.distributeIds(pageElement.querySelector(".definition-scale"))
+        that.svgEditor.distributeIds(pageElement.querySelector(".definition-scale"))
         
         pageElement.setAttribute("preserveAspectRatio", "xMinYMin meet")
         var systemHeigth = pageElement.querySelector(".system").getBoundingClientRect().height
@@ -156,7 +155,7 @@ class Core {
           break;
         case 'XMLDocument':
           data = meiOperation.disableFeatures(["grace", "arpeg"], (data as Document)) // for Debugging
-          that.svgFiller.copyClassesFromMei(data)
+          that.svgEditor.copyClassesFromMei(data)
           d = new XMLSerializer().serializeToString(data as Document);
           u = false;
           break;
@@ -186,7 +185,7 @@ class Core {
       pageGroup.setAttribute("id", "vrvSVG")
 
       if (cq.getVrvSVG(that.containerId) !== null) {
-        that.svgFiller.cacheClasses().cacheScales()
+        that.svgEditor.cacheClasses().cacheScales()
         //cq.getVrvSVG(that.containerId).remove()
       }
 
@@ -226,16 +225,17 @@ class Core {
         var that = this
         setTimeout(function(){ // timeout after the vrv rendering completed to render the DOM first
           
+          that.svgEditor.drawLinesUnderSystems()
+          that.svgEditor.modifyHarm()
           that.createSVGOverlay(true)
-
-          that.svgFiller.setXY(that.windowHandler?.getX(), that.windowHandler?.getY())
+          that.svgEditor.setXY(that.windowHandler?.getX(), that.windowHandler?.getY())
 
           that.getMEI("").then(mei => {
             that.currentMEI = mei  
             that.currentMEIDoc = that.getCurrentMEI(true) as Document
             
             //console.log(that.currentMEIDoc)
-            that.svgFiller
+            that.svgEditor
               .setContainerId(that.containerId)
               .loadClasses()
               .fillSVG(that.currentMEIDoc)
@@ -256,7 +256,7 @@ class Core {
 
           //MusicPlayer stuff
           that.getMidi().then(midi => {
-            that.musicplayer = that.musicplayer || new MusicPlayer(that.containerId)
+            that.musicplayer = that.musicplayer || new MusicProcessor(that.containerId)
             that.musicplayer
               .setMEI(that.currentMEIDoc)
               .setMidi(midi)
@@ -317,7 +317,7 @@ class Core {
     this.globalKeyboardHandler = this.globalKeyboardHandler || new GlobalKeyboardHandler(this.containerId)
     this.sidebarHandler = this.sidebarHandler || new SidebarHandler()
     this.labelHandler = this.labelHandler || new LabelHandler(this.containerId)
-    this.modHandler = this.modHandler || new ModHandler(this.containerId)
+    this.modHandler = this.modHandler || new CustomToolbarHandler(this.containerId)
     this.tooltipHandler = this.tooltipHandler || new TooltipHandler()
 
     this.dispatchFunctions()
@@ -706,11 +706,7 @@ class Core {
             if (cc.height === 0) h = 2
             rect.setAttribute("height", h?.toString() || cc.height.toString())
             g.appendChild(rect)
-
             scoreRects.append(g)
-            if (navigator.userAgent.toLowerCase().includes("firefox")) {
-              ffbb.adjustBBox(g)
-            }
             resolve(true)
           })
         }
@@ -887,7 +883,7 @@ class Core {
     return this.currentMidi;
   }
 
-  getMusicPlayer(): MusicPlayer {
+  getMusicPlayer(): MusicProcessor {
     return this.musicplayer;
   }
 

@@ -1,6 +1,6 @@
 import * as d3 from 'd3';
 import Handler from "./Handler";
-import MusicPlayer from "../MusicPlayer";
+import MusicProcessor from "../MusicProcessor";
 import { Mouse2SVG } from "../utils/Mouse2SVG";
 import {uuidv4} from '../utils/random'
 import { constants as c } from "../constants"
@@ -10,7 +10,7 @@ import { textSpanIntersectsWithTextSpan } from 'typescript';
 
 class CustomAnnotationShapeDrawer implements Handler{
     m2s?: Mouse2SVG;
-    musicPlayer?: MusicPlayer;
+    musicPlayer?: MusicProcessor;
     currentMEI?: string | Document;
 
     private canvas;

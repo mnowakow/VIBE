@@ -1,5 +1,5 @@
 import Handler from "../handlers/Handler";
-import MusicPlayer from "../MusicPlayer";
+import MusicProcessor from "../MusicProcessor";
 import { Mouse2SVG } from "../utils/Mouse2SVG";
 import { constants as c} from "../constants"
 import { NoteBBox } from "../utils/Types";
@@ -13,7 +13,7 @@ import * as coordinates from "../utils/coordinates"
 
 class Annotations implements Handler{
     m2s?: Mouse2SVG;
-    musicPlayer?: MusicPlayer;
+    musicPlayer?: MusicProcessor;
     currentMEI?: string | Document;
     private annotationCanvas: SVGSVGElement
     private rootBBox: DOMRect
@@ -492,7 +492,7 @@ class Annotations implements Handler{
         return this
     }
 
-    setMusicPlayer(musicPlayer: MusicPlayer){
+    setMusicPlayer(musicPlayer: MusicProcessor){
         this.musicPlayer = musicPlayer
         return this
     }

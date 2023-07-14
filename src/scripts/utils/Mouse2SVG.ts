@@ -1,13 +1,11 @@
 import { constants as c } from '../constants';
 import { NoteBBox, StaffLineBBox, NewNote, Staff } from './Types';
 import { uuidv4 } from './random';
-import { idxNoteMapGClef, idxNoteMapFClef, idxNotePhantomMapBelowG, idxNotePhantomMapAboveG, idxNotePhantomMapBelowF, idxNotePhantomMapAboveF, idxNotePhantomMapBelowC, idxNotePhantomMapAboveC, keysigToNotes, idxNoteMapCClef, modButtonToAccid } from './mappings';
+import { idxNoteMapGClef, idxNoteMapFClef, idxNotePhantomMapBelowG, idxNotePhantomMapAboveG, idxNotePhantomMapBelowF, idxNotePhantomMapAboveF, idxNotePhantomMapBelowC, idxNotePhantomMapAboveC, keysigToNotes, idxNoteMapCClef, modButtonToAttr } from './mappings';
 import MeasureMatrix from '../datastructures/MeasureMatrix'
 import * as meiOperation from "./MEIOperations"
 import * as coordinates from "./coordinates"
 import * as cq from "./convenienceQueries"
-import * as ffbb from "./firefoxBBoxes"
-import { collapseTextChangeRangesAcrossMultipleVersions } from 'typescript';
 
 export class Mouse2SVG {
 
@@ -481,7 +479,7 @@ export class Mouse2SVG {
         var keysig = this.measureMatrix.get(closestMeasureIdx, closestStaffIdx).keysig
         var accid
         if(this.container.querySelector(".alterBtn.selected") !== null){
-            accid = modButtonToAccid.get(this.container.querySelector(".alterBtn.selected").id)
+            accid = modButtonToAttr.get(this.container.querySelector(".alterBtn.selected").id)
         }else if (keysig != undefined) {
             accid = keysigToNotes.get(keysig)
             accid = accid.filter((s: string) => { return s === pname })
@@ -627,7 +625,7 @@ export class Mouse2SVG {
             additionalElements = additionalElements.filter((v, i) => i > additionalElements.indexOf(newMeiElement))
             //this.currentMEI = meiOperation.changeDuration(this.currentMEI, "reduce", additionalElements)
             //additionalElements.unshift(oldMeiElement) // we need this information to determine the new duration of an element that has to be shortened
-            this.currentMEI = meiOperation.changeDuration(this.currentMEI, additionalElements, newMeiElement) //this.currentMEI = meiOperation.changeDuration(this.currentMEI, additionalElements)
+            this.currentMEI = meiOperation.changeDurationsInLayer(this.currentMEI, additionalElements, newMeiElement) //this.currentMEI = meiOperation.changeDuration(this.currentMEI, additionalElements)
             //}
             this.currentMEI.querySelectorAll(".changed").forEach(c => c.classList.remove("changed"))
 
@@ -673,7 +671,7 @@ export class Mouse2SVG {
             additionalElements = additionalElements.filter((v, i) => i > additionalElements.indexOf(newMeiElement))
             //this.currentMEI = meiOperation.changeDuration(this.currentMEI, "reduce", additionalElements)
             //additionalElements.unshift(oldMeiElement) // we need this information to determine the new duration of an element that has to be shortened
-            this.currentMEI = meiOperation.changeDuration(this.currentMEI, additionalElements, newMeiElement, meiOperation.getAbsoluteRatio(newMeiElement) - meiOperation.getAbsoluteRatio(oldMeiElement)) //this.currentMEI = meiOperation.changeDuration(this.currentMEI, additionalElements)
+            this.currentMEI = meiOperation.changeDurationsInLayer(this.currentMEI, additionalElements, newMeiElement, meiOperation.getAbsoluteRatio(newMeiElement) - meiOperation.getAbsoluteRatio(oldMeiElement)) //this.currentMEI = meiOperation.changeDuration(this.currentMEI, additionalElements)
             //}
             this.currentMEI.querySelectorAll(".changed").forEach(c => c.classList.remove("changed"))
 

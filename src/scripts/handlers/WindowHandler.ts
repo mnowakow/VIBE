@@ -1,4 +1,4 @@
-import MusicPlayer from "../MusicPlayer";
+import MusicProcessor from "../MusicProcessor";
 import { Mouse2SVG } from "../utils/Mouse2SVG";
 import Handler from "./Handler";
 import Annotations from "../gui/Annotations";
@@ -13,7 +13,7 @@ import { isWhiteSpaceLike } from "typescript";
 class WindowHandler implements Handler{
 
     m2s?: Mouse2SVG;
-    musicPlayer?: MusicPlayer;
+    musicPlayer?: MusicProcessor;
     currentMEI?: string | Document;
     annotations: Annotations;
     loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean) => Promise<string>;

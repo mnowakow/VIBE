@@ -27,6 +27,7 @@ class Tabbar {
     private soundGroup: HTMLElement;
     private zoomGroup: HTMLElement;
     private fileSelectGroup: HTMLElement;
+    private midiSelectGroup: HTMLElement
 
     private notationTab: HTMLElement
     private annotationTab: HTMLElement
@@ -37,6 +38,7 @@ class Tabbar {
     private chordGroupKM: HTMLElement
     private octaveGroupKM: HTMLElement
     private annotGroupKM: HTMLElement
+    private articGroup: HTMLElement
     private insertSelectGroup: HTMLElement
     private options: customType.InstanceOptions
 
@@ -103,27 +105,27 @@ class Tabbar {
         var keyListCMaj = dc.makeNewDiv("keyListC", "list-group flex-fill col")
         keySelectItem.querySelector("#selectKeyDiv").appendChild(keyListCMajRow)
         keyListCMajRow.appendChild(keyListCMaj)
-        keyListCMaj.appendChild(dc.makeNewAElement("=&#xE01A;&#xE050;&#xE014;=&#xE014;=&#xE014;=&#xE014;=&#xE014;=&#xE014;", "KeyCMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        keyListCMaj.appendChild(dc.makeNewAElement("=&#xE01A;&#xE050;&#xE014;", "KeyCMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
 
         var keyListSignedRow = dc.makeNewDiv("keyListCrossDIV", "col row g-0")
         var keyListCross = dc.makeNewDiv("keyListCross", "list-group flex-fill col")
         keySelectItem.querySelector("#selectKeyDiv").appendChild(keyListSignedRow)
         keyListSignedRow.appendChild(keyListCross)
-        keyListCross.appendChild(dc.makeNewAElement("=&#xE01A;&#xE050;&#xE014;&#xEB93;&#xE262;=&#xE014;=&#xE014;=&#xE014;=&#xE014;=&#xE014;", "KeyGMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
-        keyListCross.appendChild(dc.makeNewAElement("=&#xE01A;&#xE050;&#xE014;&#xEB93;&#xE262;=&#xE014;&#xEB90;&#xE262;=&#xE014;=&#xE014;=&#xE014;=&#xE014;", "KeyDMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
-        keyListCross.appendChild(dc.makeNewAElement("=&#xE01A;&#xE050;&#xE014;&#xEB93;&#xE262;=&#xE014;&#xEB90;&#xE262;=&#xE014;&#xEB94;&#xE262;=&#xE014;=&#xE014;=&#xE014;", "KeyAMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
-        keyListCross.appendChild(dc.makeNewAElement("=&#xE01A;&#xE050;&#xE014;&#xEB93;&#xE262;=&#xE014;&#xEB90;&#xE262;=&#xE014;&#xEB94;&#xE262;=&#xE014;&#xEB91;&#xE262;=&#xE014;=&#xE014;", "KeyEMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
-        keyListCross.appendChild(dc.makeNewAElement("=&#xE01A;&#xE050;&#xE014;&#xEB93;&#xE262;=&#xE014;&#xEB90;&#xE262;=&#xE014;&#xEB94;&#xE262;=&#xE014;&#xEB91;&#xE262;=&#xE014;&#xEB98;&#xE262;=&#xE014;", "KeyBMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
-        keyListCross.appendChild(dc.makeNewAElement("=&#xE01A;&#xE050;&#xE014;&#xEB93;&#xE262;=&#xE014;&#xEB90;&#xE262;=&#xE014;&#xEB94;&#xE262;=&#xE014;&#xEB91;&#xE262;=&#xE014;&#xEB98;&#xE262;=&#xE014;&#xEB92;&#xE262;", "KeyF#Maj", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        keyListCross.appendChild(dc.makeNewAElement("&#xE01A;&#xE050;&#xE014;&#xEB93;&#xE262;&#xE014;&#xE014;&#xE014;&#xE014;&#xE014;", "KeyGMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        keyListCross.appendChild(dc.makeNewAElement("&#xE01A;&#xE050;&#xE014;&#xEB93;&#xE262;&#xE014;&#xEB90;&#xE262;&#xE014;&#xE014;&#xE014;&#xE014;", "KeyDMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        keyListCross.appendChild(dc.makeNewAElement("&#xE01A;&#xE050;&#xE014;&#xEB93;&#xE262;&#xE014;&#xEB90;&#xE262;&#xE014;&#xEB94;&#xE262;&#xE014;&#xE014;&#xE014;", "KeyAMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        keyListCross.appendChild(dc.makeNewAElement("&#xE01A;&#xE050;&#xE014;&#xEB93;&#xE262;&#xE014;&#xEB90;&#xE262;&#xE014;&#xEB94;&#xE262;&#xE014;&#xEB91;&#xE262;&#xE014;&#xE014;", "KeyEMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        keyListCross.appendChild(dc.makeNewAElement("&#xE01A;&#xE050;&#xE014;&#xEB93;&#xE262;&#xE014;&#xEB90;&#xE262;&#xE014;&#xEB94;&#xE262;&#xE014;&#xEB91;&#xE262;&#xE014;&#xEB98;&#xE262;&#xE014;", "KeyBMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        keyListCross.appendChild(dc.makeNewAElement("&#xE01A;&#xE050;&#xE014;&#xEB93;&#xE262;&#xE014;&#xEB90;&#xE262;&#xE014;&#xEB94;&#xE262;&#xE014;&#xEB91;&#xE262;&#xE014;&#xEB98;&#xE262;&#xE014;&#xEB92;&#xE262;", "KeyF#Maj", "list-group-item list-group-item-action " + smuflFont, "#", true))
 
         var keyListB = dc.makeNewDiv("keyListB", "list-group flex-fill col")
         keyListSignedRow.appendChild(keyListB)
-        keyListB.appendChild(dc.makeNewAElement("=&#xE01A;&#xE050;&#xE01A;&#xE260;=&#xE014;=&#xE014;=&#xE014;=&#xE014;=&#xE014;", "KeyFMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
-        keyListB.appendChild(dc.makeNewAElement("=&#xE01A;&#xE050;&#xE01A;&#xE260;=&#xE014;&#xEB92;&#xE260;=&#xE014;=&#xE014;=&#xE014;=&#xE014;", "KeyBbMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
-        keyListB.appendChild(dc.makeNewAElement("=&#xE01A;&#xE050;&#xE01A;&#xE260;=&#xE014;&#xEB92;&#xE260;=&#xE014;&#xEB98;&#xE260;=&#xE014;=&#xE014;=&#xE014;", "KeyEbMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
-        keyListB.appendChild(dc.makeNewAElement("=&#xE01A;&#xE050;&#xE01A;&#xE260;=&#xE014;&#xEB92;&#xE260;=&#xE014;&#xEB98;&#xE260;=&#xE014;&#xEB91;&#xE260;=&#xE014;=&#xE014;", "KeyAbMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
-        keyListB.appendChild(dc.makeNewAElement("=&#xE01A;&#xE050;&#xE01A;&#xE260;=&#xE014;&#xEB92;&#xE260;=&#xE014;&#xEB98;&#xE260;=&#xE014;&#xEB91;&#xE260;=&#xE014;&#xEB99;&#xE260;=&#xE014;", "KeyDbMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
-        keyListB.appendChild(dc.makeNewAElement("=&#xE01A;&#xE050;&#xE01A;&#xE260;=&#xE014;&#xEB92;&#xE260;=&#xE014;&#xEB98;&#xE260;=&#xE014;&#xEB91;&#xE260;=&#xE014;&#xEB99;&#xE260;=&#xE014;&#xEB90;&#xE260;", "KeyGbMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        keyListB.appendChild(dc.makeNewAElement("&#xE01A;&#xE050;&#xE01A;&#xE260;&#xE014;&#xE014;&#xE014;&#xE014;&#xE014;", "KeyFMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        keyListB.appendChild(dc.makeNewAElement("&#xE01A;&#xE050;&#xE01A;&#xE260;&#xE014;&#xEB92;&#xE260;&#xE014;&#xE014;&#xE014;&#xE014;", "KeyBbMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        keyListB.appendChild(dc.makeNewAElement("&#xE01A;&#xE050;&#xE01A;&#xE260;&#xE014;&#xEB92;&#xE260;&#xE014;&#xEB98;&#xE260;&#xE014;&#xE014;&#xE014;", "KeyEbMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        keyListB.appendChild(dc.makeNewAElement("&#xE01A;&#xE050;&#xE01A;&#xE260;&#xE014;&#xEB92;&#xE260;&#xE014;&#xEB98;&#xE260;&#xE014;&#xEB91;&#xE260;&#xE014;&#xE014;", "KeyAbMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        keyListB.appendChild(dc.makeNewAElement("&#xE01A;&#xE050;&#xE01A;&#xE260;&#xE014;&#xEB92;&#xE260;&#xE014;&#xEB98;&#xE260;&#xE014;&#xEB91;&#xE260;&#xE014;&#xEB99;&#xE260;&#xE014;", "KeyDbMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        keyListB.appendChild(dc.makeNewAElement("&#xE01A;&#xE050;&#xE01A;&#xE260;&#xE014;&#xEB92;&#xE260;&#xE014;&#xEB98;&#xE260;&#xE014;&#xEB91;&#xE260;&#xE014;&#xEB99;&#xE260;&#xE014;&#xEB90;&#xE260;", "KeyGbMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
 
         return keySelectItem
     }
@@ -274,23 +276,15 @@ class Tabbar {
         this.notationTab = cq.getContainer(this.containerId).querySelector("#notationTabGroup")
         this.notationTab.append(dc.makeNewButton("Notation", "notationTabBtn", buttonStyleDarkOutline + " " + tabFlag))
 
-        this.annotationTab = cq.getContainer(this.containerId).querySelector("#annotationTabGroup")
-        this.annotationTab.append(dc.makeNewButton("Annotation", "annotationTabBtn", buttonStyleDarkOutline + " " + tabFlag))
-
         this.articulationTab = cq.getContainer(this.containerId).querySelector("#articulationTabGroup")
         this.articulationTab.append(dc.makeNewButton("Articulation", "articulationTabBtn", buttonStyleDarkOutline + " " + tabFlag))
 
         this.melismaTab = cq.getContainer(this.containerId).querySelector("#melismaTabGroup")
         //this.melismaTab.append(dc.makeNewButton("Melisma", "melismaTabBtn", buttonStyleDarkOutline + " " + tabFlag))
 
-        // var handlerDropdown = dc.makeNewDiv("insertDropdown", "dropdown-menu")
-        // handlerDropdown.append(dc.makeNewAElement("Mouse Input", "clickInsert", "dropdown-item", "#"))
-        // handlerDropdown.append(dc.makeNewAElement("Keyboard Input", "keyMode", "dropdown-item", "#"))
-        // handlerDropdown.append(dc.makeNewAElement("Annotations", "activateAnnot", "dropdown-item", "#"))
-    
-        // this.handlerGroup = cq.getContainer(this.containerId).querySelector("#handlerGroup")
-        // this.handlerGroup.append(dc.makeNewButton("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;", "insertMode", buttonStyleDarkOutline + " empty", "dropdown"))
-        // this.handlerGroup.append(handlerDropdown)
+
+        this.annotationTab = cq.getContainer(this.containerId).querySelector("#annotationTabGroup")
+        this.annotationTab.append(dc.makeNewButton("Annotation", "annotationTabBtn", buttonStyleDarkOutline + " " + tabFlag))
 
         this.noteButtonGroup = cq.getContainer(this.containerId).querySelector("#noteGroup")
         this.noteButtonGroup.append(dc.makeNewButton("&#x1D15D", "fullNote", buttonStyleDarkOutline + " " + smuflFont, "", true))
@@ -305,7 +299,8 @@ class Tabbar {
         this.dotButtonGroup.append(dc.makeNewButton(". .", "twoDot", buttonStyleDarkOutline + " " + smuflFont, "", true))
 
         this.modButtonGroup = cq.getContainer(this.containerId).querySelector("#modGroup")
-        this.modButtonGroup.appendChild(dc.makeNewButton("&#x1D13D;&#x1D13E;", "pauseNote", buttonStyleDarkOutline + " " + smuflFont, "", true))
+        this.modButtonGroup.appendChild(dc.makeNewButton("____", "tupletBtn", buttonStyleDarkOutline + " " + smuflFont, "", true))
+        //this.modButtonGroup.appendChild(dc.makeNewButton("&#x1D13D;&#x1D13E;", "pauseNote", buttonStyleDarkOutline + " " + smuflFont, "", true))
         this.modButtonGroup.appendChild(dc.makeNewButton("&#8256", "tieNotes", buttonStyleDarkOutline + " " + smuflFont, "", true))
         this.modButtonGroup.appendChild(dc.makeNewButton("&#9835;", "organizeBeams", buttonStyleDarkOutline + " " + smuflFont, "", true))
         this.modButtonGroup.appendChild(dc.makeNewButton("&#x266D;", "alterDown", buttonStyleDarkOutline + " " + smuflFont + " " + alterBtn, "", true))
@@ -324,7 +319,9 @@ class Tabbar {
         this.zoomGroup.append(dc.makeNewButton("", "zoomOutBtn", buttonStyleDarkOutline))
         this.zoomGroup.append(dc.makeNewButton("", "zoomInBtn", buttonStyleDarkOutline))
         
-        
+        this.midiSelectGroup = cq.getContainer(this.containerId).querySelector("#midiSelectGroup")
+        this.midiSelectGroup.append(dc.makeNewSelect("midiDeviceSelect", [], "MIDI Input Device"))
+
         this.fileSelectGroup = cq.getContainer(this.containerId).querySelector("#fileSelectGroup")
         this.fileSelectGroup.append(dc.makeNewInput("importFile", "file", ""))
         this.fileSelectGroup.append(dc.makeNewButton("Import File", "importFileBtn", buttonStyleDarkOutline))
@@ -397,6 +394,16 @@ class Tabbar {
         this.annotGroupKM.addEventListener("click", this.exclusiveSelectHandler)
     }
 
+    createArticualtionButtons(){
+        this.articGroup = dc.makeNewDiv("articGroup", "customGroup btn-group-sm me-2 h-100", { role: "group" }) as HTMLElement
+        this.articGroup.append(dc.makeNewButton(".", "staccatoBtn", buttonStyleDarkOutline))
+        this.articGroup.append(dc.makeNewButton("_", "tenutoBtn", buttonStyleDarkOutline))
+        this.articGroup.append(dc.makeNewButton("&#x1D17F;", "marcatoBtn", buttonStyleDarkOutline + " " + smuflFont, "", true))
+        this.articGroup.append(dc.makeNewButton("&#x1D17B;", "accentBtn", buttonStyleDarkOutline + " " + smuflFont, "", true))
+        this.articGroup.addEventListener("click", this.exclusiveSelectHandler)
+
+    }
+
     createMainToolbar() {
         this.createButtons();
 
@@ -407,21 +414,24 @@ class Tabbar {
         
         //tabs
         btnToolbar.appendChild(this.notationTab)
-        btnToolbar.appendChild(this.annotationTab)
         btnToolbar.appendChild(this.articulationTab)
         //btnToolbar.appendChild(this.melismaTab)
+
+        btnToolbar.appendChild(this.annotationTab)
         
         //further utils
         btnToolbar.appendChild(this.soundGroup)
         btnToolbar.appendChild(this.zoomGroup)
+        btnToolbar.appendChild(this.midiSelectGroup)
         btnToolbar.appendChild(this.fileSelectGroup)
         
     }
 
     createCustomToolbar() {
         this.customToolbar = cq.getContainer(this.containerId).querySelector("#customToolbar")
-        this.createInsertSelect()
+        //this.createInsertSelect()
         this.createButtonsAnnotationMode()
+        this.createArticualtionButtons()
     }
 
     removeAllCustomGroups() {
@@ -493,6 +503,7 @@ class Tabbar {
             fr.onload = function () {
                 that.importCallback("", fr.result as string, false, c._TARGETDIVID_).then(mei => {
                     var meiXml = meioperations.mergeSectionScoreDefToLayer(mei)
+                    meiXml = meioperations.mergeArticToParent(meiXml)
                     that.importCallback("", meiXml, false, c._TARGETDIVID_)
                 })
             }
@@ -601,8 +612,7 @@ class Tabbar {
         this.exclusiveSelect(e)
     }).bind(this)
 
-    exclusiveSelect(e: MouseEvent) {
-        var select
+    exclusiveSelect(e: MouseEvent) {1
         var target = e.target as Element
         var tagname = "button"
         if (target.tagName.toLowerCase() === tagname) {
@@ -613,7 +623,7 @@ class Tabbar {
             })
             if (!target.classList.contains(selectedFlag)) {
                 target.classList.add(selectedFlag)
-            }else if(["modGroup", "dotGroup", "chordGroupKM"].some(id => id === target.parentElement.id) && target.classList.contains(selectedFlag)){
+            }else if(["modGroup", "dotGroup", "chordGroupKM", "articGroup"].some(id => id === target.parentElement.id) && target.classList.contains(selectedFlag)){
                 target.classList.remove(selectedFlag)
             }
 
@@ -657,8 +667,13 @@ class Tabbar {
      * Creates second toolbar depending on selected option
      */
     customToolbarHandler = (function customToolbarHandler(e: MouseEvent) {
+        var cont = cq.getContainer(this.containerId)
+        cont.querySelectorAll(["#insertDropdown a", "." + tabFlag].join(",")).forEach(a => {
+            a.classList.remove("selected")
+        })
         var target = e.target as Element
         var tID = target.id
+        cont.querySelector("#" + tID).classList.add("selected")
         this.removeAllCustomGroups()
         switch (tID) {
             case "notationTabBtn":
@@ -674,22 +689,21 @@ class Tabbar {
                 break;
             case "activateHarm":
                 this.harmHandler()
+            case "articulationTabBtn":
+                this.articulationHandler()
                 break;
         }
-        // if (target.textContent === cq.getContainer(this.containerId).querySelector("#insertMode").textContent) {
-        //     this.removeAllCustomGroups()
-        // }
     }).bind(this)
 
     clickInsertHandler() {
-        this.customToolbar.appendChild(this.insertSelectGroup)
+        //this.customToolbar.appendChild(this.insertSelectGroup)
         this.customToolbar.appendChild(this.noteButtonGroup)
         this.customToolbar.appendChild(this.dotButtonGroup)
         this.customToolbar.appendChild(this.modButtonGroup)
     }
 
     keyModeHandler() {
-        this.customToolbar.appendChild(this.insertSelectGroup)
+        //this.customToolbar.appendChild(this.insertSelectGroup)
         this.customToolbar.appendChild(this.chordGroupKM)
         this.customToolbar.appendChild(this.octaveGroupKM)
     }
@@ -701,6 +715,10 @@ class Tabbar {
     annotHandler() {
         //this.removeAllCustomGroups()
         this.customToolbar.append(this.annotGroupKM)
+    }
+    
+    articulationHandler(){
+        this.customToolbar.append(this.articGroup)
     }
 
     /**

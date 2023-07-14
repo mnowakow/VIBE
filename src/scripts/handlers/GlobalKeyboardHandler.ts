@@ -2,10 +2,11 @@ import Handler from "./Handler";
 import * as meiOperation from "../utils/MEIOperations"
 import * as meiConverter from "../utils/MEIConverter"
 import { constants as c } from "../constants"
-import MusicPlayer from "../MusicPlayer";
+import MusicProcessor from "../MusicProcessor";
 import ScoreGraph from "../datastructures/ScoreGraph";
 import LabelHandler from "./LabelHandler";
 import * as cq from "../utils/convenienceQueries"
+import { isJSDocThisTag } from "typescript";
 
 const marked = "marked"
 const lastAdded = "lastAdded"
@@ -21,7 +22,7 @@ class GlobalKeyboardHandler implements Handler {
     private loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean) => Promise<string>;
 
     currentMEI: Document
-    musicPlayer: MusicPlayer
+    musicPlayer: MusicProcessor
 
     scoreGraph: ScoreGraph
     copiedIds: Array<string>
@@ -58,13 +59,17 @@ class GlobalKeyboardHandler implements Handler {
         }
     }.bind(this)
 
+    private tempKey: string
+    private keyTimeOuts: Array<NodeJS.Timeout>
     keydownHandler = (function keydownHandler(e: KeyboardEvent) {
+        if(e.code === "Space") return
         if (this.hasContainerFocus()) {
             if (e.key == undefined) {
                 return
             }
             if(this.hasEditableOpen()) return 
 
+            var that = this
             var isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
             var ctrl = e.ctrlKey
             if(isMac){
@@ -80,11 +85,39 @@ class GlobalKeyboardHandler implements Handler {
                 // if(e.key === "k" && Array.from(document.querySelectorAll(".note, .chord, .rest, .mrest")).some(el => el.classList.contains(marked))){
                 //      this.handleHarmony(e)
                 // }
-            } else if (e.key.includes("Arrow")) {
+            }else if (e.key.includes("Arrow")) {
                 //document.removeEventListener("keydown", this.keydownHandler)
                 this.transposeHandler(e)
             } else if (e.key === "Escape") {
                 this.resetHandler(e)
+            }else if(e.key.match(/F\d/) !== null){ // interact with F-Keys
+                this.changeTab(e.key)
+            }else if(e.key.match(/^\d+$/) !== null){ // interaction with numbers
+                this.changeCustomBtn(e.key)
+            }else if(e.shiftKey){
+                if(e.key !== "Shift" && cq.getContainer(this.containerId).classList.contains("clickMode")){ // may only be used during Notation Tab is open
+                    // wait for a double keydown and cache input information
+                    if(this.tempKey == undefined){
+                        this.tempKey = e.key
+                    }else{
+                        this.tempKey += e.key
+                    }
+                    if(this.keyTimeOuts == undefined) this.keyTimeOuts = new Array()
+                    this.keyTimeOuts.forEach(to => { // get sure to just execute latest timeout
+                        clearTimeout(to)
+                    });
+                    var to = setTimeout(function(){
+                        if(["B", "BB", "'", "''", "N", "T", "_"].some(k => that.tempKey === k)){
+                            that.changeCustomBtn(that.tempKey) 
+                        }
+                        that.tempKey = undefined
+                        that.keyTimeOuts.forEach(to => {
+                            clearTimeout(to)
+                        });
+                        that.keyTimeOuts = undefined
+                    },100)
+                    this.keyTimeOuts.push(to)
+                }
             }
         }
     }).bind(this)
@@ -201,6 +234,73 @@ class GlobalKeyboardHandler implements Handler {
         }
     }
 
+    /**
+     * Change tab according to F-Key. The mapping is based on the displayed order
+     * @param fkey 
+     */
+    changeTab(fkey: string){
+        var cont =  cq.getContainer(this.containerId)
+        var target: string
+        switch(fkey){
+            case "F1":
+                target = "notationTabBtn"
+                break;
+            case "F2":
+                target = "annotationTabBtn"
+                break;
+            case "F3":
+                target = "articulationTabBtn"
+                break;
+            default:
+                console.log("There is no Tab to be selected for KEY " + fkey)
+        }
+        try{
+            cont.querySelector("#" + target).dispatchEvent(new MouseEvent("click"))
+        }catch(error){
+            console.log(this.constructor.name, " has no implementation for " + target)
+        }
+    }
+
+    /**
+     * Change to the button in custom tool bar based on the key input.
+     * In the case of numbers: mapping is based on the displayed order. Everything else is mapped by key combinations
+     * @param key 
+     */
+    changeCustomBtn(key: string){
+        if(key.match(/^\d+$/) !== null){
+            var i = parseInt(key)
+            i = i === 0 ? 9 : i-1
+            var btn = cq.getContainer(this.containerId).querySelectorAll("#customToolbar button.btn")
+            btn[i]?.dispatchEvent(new MouseEvent("click"))
+        }else{ 
+            var id = ""
+            switch(key){
+                case "B": //b
+                    id = "alterDown"
+                    break;
+                case "'": //#
+                    id = "alterUp"
+                    break;
+                case "BB": //bb
+                    id = "alterDDown"
+                    break;
+                case "''": //x
+                    id = "alterDUp"
+                    break;
+                case "N": //neutral
+                    id = "alterNeutral"
+                    break;
+                case "T": //tie /slur
+                    id = "tieNotes"
+                    break;
+                case "_": //beam
+                    id = "organizeBeams"
+                    break;
+            }
+            cq.getContainer(this.containerId).querySelector("#" + id)?.dispatchEvent(new MouseEvent("click"))
+        }
+    }
+
     handleHarmony(e: KeyboardEvent) {
         if (!this.hasContainerFocus()) return
         this.harmonyHandlerCallback(e)
@@ -211,7 +311,7 @@ class GlobalKeyboardHandler implements Handler {
         var additionalElements = new Array<Element>();
         additionalElements.push(document.getElementById(this.scoreGraph.nextRight().getId()))
         //meiOperation.changeDuration(this.currentMEI, "reduce", additionalElements)
-        meiOperation.changeDuration(this.currentMEI, additionalElements)
+        meiOperation.changeDurationsInLayer(this.currentMEI, additionalElements)
         var mei = meiConverter.restoreXmlIdTags(this.currentMEI)
         this.loadDataCallback("", mei, false)
     }
@@ -220,7 +320,7 @@ class GlobalKeyboardHandler implements Handler {
         var additionalElements = new Array<Element>();
         additionalElements.push(document.getElementById(this.scoreGraph.nextRight().getId()))
         //meiOperation.changeDuration(this.currentMEI, "prolong", additionalElements)
-        meiOperation.changeDuration(this.currentMEI, additionalElements)
+        meiOperation.changeDurationsInLayer(this.currentMEI, additionalElements)
         var mei = meiConverter.restoreXmlIdTags(this.currentMEI)
         this.loadDataCallback("", mei, false)
     }
@@ -255,7 +355,7 @@ class GlobalKeyboardHandler implements Handler {
         return this
     }
 
-    setMusicPlayer(musicPlayer: MusicPlayer) {
+    setMusicPlayer(musicPlayer: MusicProcessor) {
         this.musicPlayer = musicPlayer
         return this
     }

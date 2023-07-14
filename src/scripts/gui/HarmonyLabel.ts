@@ -1,6 +1,7 @@
 import { uuidv4 } from "../utils/random"
 import { constants as c } from "../constants"
 import Label from "./Label"
+import { keyToUnicode } from "../utils/mappings"
 
 
 class HarmonyLabel implements Label{
@@ -28,7 +29,7 @@ class HarmonyLabel implements Label{
     checkFormat(inputString: string){
         this.isBassoContinuo = false
         this.isText = false
-        var letters = /[Aa]|[C-Zc-z]+$/ // b is allowed character in bc
+        var letters = /[AaBC-Zc-z].*/ // b is allowed character in bc
         if(inputString.match(letters)){
             this.isText = true
         }else{
@@ -69,16 +70,19 @@ class HarmonyLabel implements Label{
     }
 
     parseText(inputString: string){
-
-        inputString = inputString.replace("b", "♭")
-        inputString = inputString.replace("#", "♯")
-        inputString = inputString.replace("|", "♮")
+        inputString = inputString.replace("b", keyToUnicode.get("b"))
+        inputString = inputString.replace(/(?<!&)#/g, keyToUnicode.get("#"))
+        inputString = inputString.replace("n", keyToUnicode.get("n"))
+        inputString = inputString.replace("\\^", keyToUnicode.get("\\^"))
+        inputString = inputString.replace("/(?<!\/)°\/g", keyToUnicode.get("°"))
+        inputString = inputString.replace("/°", keyToUnicode.get("/°"))
+    
         this.element.textContent = inputString
     }
 
     
-    parseFB(inputString: string){
-        var splitArray: Array<string> = inputString.split(" ")
+    parseFB(sa: string){
+        var splitArray: Array<string> = sa.split(" ")
         splitArray = splitArray.filter(s => s !== "")
         var fb = this.currentMEI.createElementNS(c._MEINS_, "fb")
         this.element.textContent = ""
@@ -86,9 +90,9 @@ class HarmonyLabel implements Label{
 
         splitArray.forEach(sa => {
             var f = this.currentMEI.createElementNS(c._MEINS_, "f")
-            sa = sa.replace("b", "♭")
-            sa = sa.replace("#", "♯")
-            sa = sa.replace("|", "♮")
+            sa = sa.replace("b", keyToUnicode.get("b"))
+            sa = sa.replace(/(?<!&)#/g, keyToUnicode.get("#"))
+            sa = sa.replace("n", keyToUnicode.get("n"))
             f.textContent = sa
             fb.appendChild(f)
         }) 

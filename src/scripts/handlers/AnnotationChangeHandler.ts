@@ -1,4 +1,4 @@
-import MusicPlayer from "../MusicPlayer";
+import MusicProcessor from "../MusicProcessor";
 import { Mouse2SVG } from "../utils/Mouse2SVG";
 import { constants as c } from "../constants"
 import Handler from "./Handler";
@@ -15,7 +15,7 @@ import { elementIsOverfilling } from "../utils/MEIOperations";
  */
 class AnnotationChangeHandler implements Handler{
     m2s?: Mouse2SVG;
-    musicPlayer?: MusicPlayer;
+    musicPlayer?: MusicProcessor;
     currentMEI?: string | Document;
 
     private customShapes: Array<Element>

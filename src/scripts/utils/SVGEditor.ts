@@ -1,10 +1,13 @@
 /**
- * Class to fill SVG of Score in HTML with information from underlying mei
+ * Class to edit the rendered svg.
+ * E.g. Cache and Load Information from previous version of the SVG; Copy information form MEI to SVG (and vice versa); Edit DOM structure of Elements
  */
 
+import * as cq from "../utils/convenienceQueries"
+import * as coords from "../utils/coordinates"
 import { uuidv4 } from "./random"
 
-class SVGFiller {
+class SVGEditor {
 
     private classListMap: Map<string, Array<string>>
     private scaleListMap: Map<string, string>
@@ -222,6 +225,74 @@ class SVGFiller {
         return this
     }
 
+    drawLinesUnderSystems(){
+        this.container.querySelectorAll(".systemLine").forEach(sl => sl.remove())
+        this.container.querySelectorAll(".system").forEach(sys => {
+            var line = document.createElementNS('http://www.w3.org/2000/svg', 'line')
+            line.classList.add("systemLine")
+            var systemCoords = coords.getDOMMatrixCoordinates(sys.getBoundingClientRect(), sys.closest("svg"))
+            var y = systemCoords.bottom
+            line.setAttribute("x1", systemCoords.left.toString())
+            line.setAttribute("y1", y.toString())
+            line.setAttribute("x2", systemCoords.right.toString())
+            line.setAttribute("y2", y.toString())
+            var defScale = sys.closest(".definition-scale")
+            defScale.prepend(line)
+        })
+    }
+
+    /**
+     * Modify the harm elements so that they have proper sub- and superscript numbers based on their used symbols (^ or _)
+     */
+    modifyHarm(){
+         // 0, 1 applies for sup; 2, 3 applies for sub
+        // create as <sup> element from ^{} or just ^
+        // create as <sub> element from _{} or just _
+        var indexingRegex = [/\^\{(.*?)\}/g, /\^\s*([^(]*)/g, /\_\{(.*?)\}/g, /\_\s*([^(]*)/g]
+       
+        var sameParent: Element // cache for parent to not replace elements multiple times
+        this.container.querySelectorAll("[id].harm tspan").forEach(el => {
+            //mustn't be in figured base, and no need for trim indicates that text content node is leaf of tree
+            if(el.closest(".fb") !== null || el.textContent != el.textContent.trim()) return
+            
+            var elSiblings = el.querySelectorAll(":scope ~ tspan")
+            if(sameParent === el.parentElement) {
+                el.remove()
+                return
+            }
+            if(elSiblings !== null) sameParent = el.parentElement
+            var inputString = elSiblings === null ? el.textContent : el.parentElement.textContent.replace(/[\n\s]/g, "")
+            el.textContent = ""
+            indexingRegex.forEach((reg, i) => {
+                var shift: string
+                if(i < 2){
+                    shift = "super"
+                }else if(i >= 2 && i < 4){
+                    shift = "sub"
+                }
+                var findStrings = inputString.match(reg)
+                if(findStrings!== null){
+                    findStrings.forEach(fs => {
+                        var modPart = fs;
+                        ["^", "_", "{", "}"].forEach(s => modPart = modPart.replace(s, ""))
+                        if(modPart === "") return
+                        modPart = "<tspan class=\"indexBase\" baseline-shift=\"" + shift + "\">" + modPart + "</tspan>"
+                        inputString = inputString.replace(fs, modPart)
+                    })
+                }
+            })
+            el.innerHTML = inputString
+            // shift all tspans a little to the left so that they are all aligned vertically
+            el.querySelectorAll("tspan").forEach((t, i) => {
+                t.style.fontSize = "0.7em"
+                if(i > 0){
+                    t.setAttribute("dx", (-(0.5) * i).toString() + "em")
+                }
+            })
+        })
+
+    }
+
     countBarlines() {
         this.container.querySelectorAll(".barLine").forEach(bl => {
             bl.querySelectorAll("path").forEach((p, idx) => {
@@ -264,4 +335,4 @@ class SVGFiller {
     }
 }
 
-export default SVGFiller
+export default SVGEditor

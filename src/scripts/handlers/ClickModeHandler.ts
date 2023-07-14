@@ -1,4 +1,4 @@
-import MusicPlayer from "../MusicPlayer";
+import MusicProcessor from "../MusicProcessor";
 import { Mouse2SVG } from "../utils/Mouse2SVG";
 import Handler from "./Handler";
 import * as coordinates from "../utils/coordinates";
@@ -12,7 +12,7 @@ import * as cq from "../utils/convenienceQueries"
 
 class ClickModeHandler implements Handler {
     m2s?: Mouse2SVG;
-    musicPlayer?: MusicPlayer;
+    musicPlayer?: MusicProcessor;
     currentMEI?: string | Document;
     annotations: Annotations;
     private phantomElementHandler: PhantomElementHandler
@@ -136,7 +136,7 @@ class ClickModeHandler implements Handler {
         }
 
         if (!pitchExists) {
-            var replace = (this.container.querySelector("#insertToggle") as HTMLInputElement).checked && newNote.chordElement == undefined
+            var replace = true //(this.container.querySelector("#insertToggle") as HTMLInputElement).checked && newNote.chordElement == undefined
             this.insertCallback(this.m2s.getNewNote(), replace).then(() => {
                 this.musicPlayer.generateTone(this.m2s.getNewNote())
             }).catch(() => {
@@ -271,7 +271,7 @@ class ClickModeHandler implements Handler {
         return this
     }
 
-    setMusicPlayer(musicPlayer: MusicPlayer) {
+    setMusicPlayer(musicPlayer: MusicProcessor) {
         this.musicPlayer = musicPlayer
         return this
     }

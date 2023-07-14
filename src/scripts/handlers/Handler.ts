@@ -1,10 +1,10 @@
-import MusicPlayer from "../MusicPlayer";
+import MusicProcessor from "../MusicProcessor";
 import { Mouse2SVG } from "../utils/Mouse2SVG";
 
 interface Handler{
 
     m2s?: Mouse2SVG
-    musicPlayer?: MusicPlayer
+    musicPlayer?: MusicProcessor
     currentMEI?: Document | string
 
     setListeners(): void

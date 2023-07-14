@@ -1,4 +1,4 @@
-import MusicPlayer from "../MusicPlayer";
+import MusicProcessor from "../MusicProcessor";
 import { Mouse2SVG } from "../utils/Mouse2SVG";
 import Handler from "./Handler";
 import { keyIdToSig, clefToLine, unicodeToTimesig } from "../utils/mappings"
@@ -20,7 +20,7 @@ import { Interval } from "tone/build/esm/core/type/Units";
 class SidebarHandler implements Handler {
 
     m2s?: Mouse2SVG;
-    musicPlayer?: MusicPlayer;
+    musicPlayer?: MusicProcessor;
     currentMEI?: Document;
     loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean) => Promise<string>;
     containerId: string;

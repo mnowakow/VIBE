@@ -1,7 +1,7 @@
 
 import { constants as c } from "../constants"
 import PhantomElement from "../gui/PhantomElement";
-import MusicPlayer from "../MusicPlayer";
+import MusicProcessor from "../MusicProcessor";
 import { Mouse2SVG } from "../utils/Mouse2SVG";
 import Handler from "./Handler";
 import * as coordinates from "../utils/coordinates"
@@ -12,7 +12,7 @@ import MeasureMatrix from "../datastructures/MeasureMatrix";
 
 class PhantomElementHandler implements Handler{
     m2s?: Mouse2SVG;
-    musicPlayer?: MusicPlayer;
+    musicPlayer?: MusicProcessor;
     currentMEI?: string | Document;
 
     private phantomLines: Array<PhantomElement>
