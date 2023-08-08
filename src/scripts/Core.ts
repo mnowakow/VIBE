@@ -224,7 +224,6 @@ class Core {
         document.body.classList.remove(waitingFlag)
         var that = this
         setTimeout(function(){ // timeout after the vrv rendering completed to render the DOM first
-          
           that.svgEditor.drawLinesUnderSystems()
           that.svgEditor.modifyHarm()
           that.createSVGOverlay(true)
@@ -233,6 +232,7 @@ class Core {
           that.getMEI("").then(mei => {
             that.currentMEI = mei  
             that.currentMEIDoc = that.getCurrentMEI(true) as Document
+            that.svgEditor.markOverfilledMeasures(that.currentMEIDoc)
             
             //console.log(that.currentMEIDoc)
             that.svgEditor

@@ -4,8 +4,10 @@
  */
 
 import * as cq from "../utils/convenienceQueries"
+import * as meiOperation from "./MEIOperations"
 import * as coords from "../utils/coordinates"
 import { uuidv4 } from "./random"
+import {constants as c} from "../constants"
 
 class SVGEditor {
 
@@ -127,16 +129,16 @@ class SVGEditor {
             return this
         }
 
-        
-        if(element !== null){
+
+        if (element !== null) {
             var value = this.classListMap.get(element.id)
-            if(value == undefined) return this
+            if (value == undefined) return this
             value.forEach(v => {
                 if (v !== "") {
                     element.classList.add(v)
                 }
             })
-        }else{
+        } else {
             for (const [key, value] of this.classListMap.entries()) {
                 var el = this.container.querySelector("#" + key)
                 if (el !== null) {
@@ -157,12 +159,12 @@ class SVGEditor {
             return this
         }
 
-        if(element !==  null){
+        if (element !== null) {
             var value = this.scaleListMap.get(element.id);
-            if(value == undefined) return this;
+            if (value == undefined) return this;
             (element as HTMLElement).style.transform = value
             element.setAttribute("transform", value)
-        }else{
+        } else {
             for (const [key, value] of this.scaleListMap.entries()) {
                 var el = this.container.querySelector("#" + key)
                 if (el !== null) {
@@ -174,27 +176,27 @@ class SVGEditor {
         return this
     }
 
-    repositionSVG(svg: HTMLElement){
+    repositionSVG(svg: HTMLElement) {
         var transformList = svg.getAttribute("transform")?.split(") ") || new Array()
         console.log(svg.getAttribute("transform"), transformList)
         var hasTranslate = false
         transformList.forEach((t, i) => {
-            if(t.includes("translate")){
+            if (t.includes("translate")) {
                 transformList[i] = "translate(" + this.x + " " + this.y + ")"
                 hasTranslate = true
             }
-            if(t.slice(-1) !== ")"){
+            if (t.slice(-1) !== ")") {
                 transformList[i] = transformList[i] + ")"
             }
         })
-        if(!hasTranslate){
+        if (!hasTranslate) {
             transformList.push("translate(" + this.x + " " + this.y + ")")
         }
-        
+
         var trattr = transformList.join(" ")
         console.log(trattr)
         svg.setAttribute("transform", trattr)
-        
+
         return this
     }
 
@@ -225,7 +227,7 @@ class SVGEditor {
         return this
     }
 
-    drawLinesUnderSystems(){
+    drawLinesUnderSystems() {
         this.container.querySelectorAll(".systemLine").forEach(sl => sl.remove())
         this.container.querySelectorAll(".system").forEach(sys => {
             var line = document.createElementNS('http://www.w3.org/2000/svg', 'line')
@@ -244,38 +246,38 @@ class SVGEditor {
     /**
      * Modify the harm elements so that they have proper sub- and superscript numbers based on their used symbols (^ or _)
      */
-    modifyHarm(){
-         // 0, 1 applies for sup; 2, 3 applies for sub
+    modifyHarm() {
+        // 0, 1 applies for sup; 2, 3 applies for sub
         // create as <sup> element from ^{} or just ^
         // create as <sub> element from _{} or just _
         var indexingRegex = [/\^\{(.*?)\}/g, /\^\s*([^(]*)/g, /\_\{(.*?)\}/g, /\_\s*([^(]*)/g]
-       
+
         var sameParent: Element // cache for parent to not replace elements multiple times
         this.container.querySelectorAll("[id].harm tspan").forEach(el => {
             //mustn't be in figured base, and no need for trim indicates that text content node is leaf of tree
-            if(el.closest(".fb") !== null || el.textContent != el.textContent.trim()) return
-            
+            if (el.closest(".fb") !== null || el.textContent != el.textContent.trim()) return
+
             var elSiblings = el.querySelectorAll(":scope ~ tspan")
-            if(sameParent === el.parentElement) {
+            if (sameParent === el.parentElement) {
                 el.remove()
                 return
             }
-            if(elSiblings !== null) sameParent = el.parentElement
+            if (elSiblings !== null) sameParent = el.parentElement
             var inputString = elSiblings === null ? el.textContent : el.parentElement.textContent.replace(/[\n\s]/g, "")
             el.textContent = ""
             indexingRegex.forEach((reg, i) => {
                 var shift: string
-                if(i < 2){
+                if (i < 2) {
                     shift = "super"
-                }else if(i >= 2 && i < 4){
+                } else if (i >= 2 && i < 4) {
                     shift = "sub"
                 }
                 var findStrings = inputString.match(reg)
-                if(findStrings!== null){
+                if (findStrings !== null) {
                     findStrings.forEach(fs => {
                         var modPart = fs;
                         ["^", "_", "{", "}"].forEach(s => modPart = modPart.replace(s, ""))
-                        if(modPart === "") return
+                        if (modPart === "") return
                         modPart = "<tspan class=\"indexBase\" baseline-shift=\"" + shift + "\">" + modPart + "</tspan>"
                         inputString = inputString.replace(fs, modPart)
                     })
@@ -285,12 +287,53 @@ class SVGEditor {
             // shift all tspans a little to the left so that they are all aligned vertically
             el.querySelectorAll("tspan").forEach((t, i) => {
                 t.style.fontSize = "0.7em"
-                if(i > 0){
+                if (i > 0) {
                     t.setAttribute("dx", (-(0.5) * i).toString() + "em")
                 }
             })
         })
 
+    }
+
+    /**
+ * Mark the current Measere as overfilled by writing "+!" over the barline
+ * @param currentMEI 
+ */
+    markOverfilledMeasures(currentMEI: Document) {
+        currentMEI.querySelectorAll("measure").forEach(m => {
+            m.querySelectorAll("layer").forEach(l => {
+                var layerRatio = meiOperation.getAbsoluteRatio(l)
+                var targetRatio = meiOperation.getMeterRatioLocal(currentMEI, l)
+                if (layerRatio > targetRatio) {
+                    var measureSVG = document.querySelector("#vrvSVG #" + m.id)
+                    if (measureSVG === null) return
+                    var barLine = measureSVG.querySelector(".barLine")
+                    var coordinates = coords.getDOMMatrixCoordinates(barLine, barLine.closest("g"))
+
+                    var textGroup = document.createElementNS(c._SVGNS_, "g")
+                    textGroup.setAttribute("id", uuidv4())
+                    textGroup.setAttribute("targetId", barLine.id)
+
+                    var text = document.createElementNS(c._SVGNS_, "svg")
+
+                    var textForeignObject = document.createElementNS(c._SVGNS_, "foreignObject")
+                    textForeignObject.classList.add("overfillMark")
+
+                    var textDiv = document.createElement("div")
+                    textDiv.setAttribute("contenteditable", "false")
+                    textDiv.textContent = "+!"
+                    text.append(textForeignObject)
+
+                    textForeignObject.setAttribute("x", (coordinates.x * 0.95).toString())
+                    textForeignObject.setAttribute("y", (-coordinates.y * 0.55).toString())
+                    textForeignObject.setAttribute("height", (coordinates.height * 2).toString())
+                    textForeignObject.setAttribute("width", (300).toString())
+                    textForeignObject.append(textDiv)
+                    textGroup.appendChild(text)
+                    barLine.insertAdjacentElement("afterend", textGroup)
+                }
+            })
+        })
     }
 
     countBarlines() {

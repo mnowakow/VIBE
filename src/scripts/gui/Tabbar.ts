@@ -111,22 +111,23 @@ class Tabbar {
         var keyListCross = dc.makeNewDiv("keyListCross", "list-group flex-fill col")
         keySelectItem.querySelector("#selectKeyDiv").appendChild(keyListSignedRow)
         keyListSignedRow.appendChild(keyListCross)
-        keyListCross.appendChild(dc.makeNewAElement("&#xE01A;&#xE050;&#xE014;&#xEB93;&#xE262;&#xE014;&#xE014;&#xE014;&#xE014;&#xE014;", "KeyGMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
-        keyListCross.appendChild(dc.makeNewAElement("&#xE01A;&#xE050;&#xE014;&#xEB93;&#xE262;&#xE014;&#xEB90;&#xE262;&#xE014;&#xE014;&#xE014;&#xE014;", "KeyDMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
-        keyListCross.appendChild(dc.makeNewAElement("&#xE01A;&#xE050;&#xE014;&#xEB93;&#xE262;&#xE014;&#xEB90;&#xE262;&#xE014;&#xEB94;&#xE262;&#xE014;&#xE014;&#xE014;", "KeyAMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
-        keyListCross.appendChild(dc.makeNewAElement("&#xE01A;&#xE050;&#xE014;&#xEB93;&#xE262;&#xE014;&#xEB90;&#xE262;&#xE014;&#xEB94;&#xE262;&#xE014;&#xEB91;&#xE262;&#xE014;&#xE014;", "KeyEMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
-        keyListCross.appendChild(dc.makeNewAElement("&#xE01A;&#xE050;&#xE014;&#xEB93;&#xE262;&#xE014;&#xEB90;&#xE262;&#xE014;&#xEB94;&#xE262;&#xE014;&#xEB91;&#xE262;&#xE014;&#xEB98;&#xE262;&#xE014;", "KeyBMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
-        keyListCross.appendChild(dc.makeNewAElement("&#xE01A;&#xE050;&#xE014;&#xEB93;&#xE262;&#xE014;&#xEB90;&#xE262;&#xE014;&#xEB94;&#xE262;&#xE014;&#xEB91;&#xE262;&#xE014;&#xEB98;&#xE262;&#xE014;&#xEB92;&#xE262;", "KeyF#Maj", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        
+        keyListCross.appendChild(dc.makeNewAElement("&#xE01A;&#xE050;&#xE014;&#xEB93;&#xE262;-&#xE014;&#xE014;&#xE014;&#xE014;&#xE014;", "KeyGMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        keyListCross.appendChild(dc.makeNewAElement("&#xE01A;&#xE050;&#xE014;&#xEB93;&#xE262;-&#xE014;&#xEB90;&#xE262;-&#xE014;&#xE014;&#xE014;&#xE014;", "KeyDMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        keyListCross.appendChild(dc.makeNewAElement("&#xE01A;&#xE050;&#xE014;&#xEB93;&#xE262;-&#xE014;&#xEB90;&#xE262;-&#xE014;&#xEB94;&#xE262;-&#xE014;&#xE014;&#xE014;", "KeyAMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        keyListCross.appendChild(dc.makeNewAElement("&#xE01A;&#xE050;&#xE014;&#xEB93;&#xE262;-&#xE014;&#xEB90;&#xE262;-&#xE014;&#xEB94;&#xE262;-&#xE014;&#xEB91;&#xE262;-&#xE014;&#xE014;", "KeyEMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        keyListCross.appendChild(dc.makeNewAElement("&#xE01A;&#xE050;&#xE014;&#xEB93;&#xE262;-&#xE014;&#xEB90;&#xE262;-&#xE014;&#xEB94;&#xE262;-&#xE014;&#xEB91;&#xE262;-&#xE014;&#xEB98;&#xE262;-&#xE014;", "KeyBMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        keyListCross.appendChild(dc.makeNewAElement("&#xE01A;&#xE050;&#xE014;&#xEB93;&#xE262;-&#xE014;&#xEB90;&#xE262;-&#xE014;&#xEB94;&#xE262;-&#xE014;&#xEB91;&#xE262;-&#xE014;&#xEB98;&#xE262;-&#xE014;&#xEB92;&#xE262;-", "KeyF#Maj", "list-group-item list-group-item-action " + smuflFont, "#", true))
 
         var keyListB = dc.makeNewDiv("keyListB", "list-group flex-fill col")
         keyListSignedRow.appendChild(keyListB)
         keyListB.appendChild(dc.makeNewAElement("&#xE01A;&#xE050;&#xE01A;&#xE260;&#xE014;&#xE014;&#xE014;&#xE014;&#xE014;", "KeyFMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
-        keyListB.appendChild(dc.makeNewAElement("&#xE01A;&#xE050;&#xE01A;&#xE260;&#xE014;&#xEB92;&#xE260;&#xE014;&#xE014;&#xE014;&#xE014;", "KeyBbMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
-        keyListB.appendChild(dc.makeNewAElement("&#xE01A;&#xE050;&#xE01A;&#xE260;&#xE014;&#xEB92;&#xE260;&#xE014;&#xEB98;&#xE260;&#xE014;&#xE014;&#xE014;", "KeyEbMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
-        keyListB.appendChild(dc.makeNewAElement("&#xE01A;&#xE050;&#xE01A;&#xE260;&#xE014;&#xEB92;&#xE260;&#xE014;&#xEB98;&#xE260;&#xE014;&#xEB91;&#xE260;&#xE014;&#xE014;", "KeyAbMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
-        keyListB.appendChild(dc.makeNewAElement("&#xE01A;&#xE050;&#xE01A;&#xE260;&#xE014;&#xEB92;&#xE260;&#xE014;&#xEB98;&#xE260;&#xE014;&#xEB91;&#xE260;&#xE014;&#xEB99;&#xE260;&#xE014;", "KeyDbMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
-        keyListB.appendChild(dc.makeNewAElement("&#xE01A;&#xE050;&#xE01A;&#xE260;&#xE014;&#xEB92;&#xE260;&#xE014;&#xEB98;&#xE260;&#xE014;&#xEB91;&#xE260;&#xE014;&#xEB99;&#xE260;&#xE014;&#xEB90;&#xE260;", "KeyGbMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
-
+        keyListB.appendChild(dc.makeNewAElement("&#xE01A;&#xE050;&#xE01A;&#xE260;&#xE014;&#xEB92;&#xE260;-&#xE014;&#xE014;&#xE014;&#xE014;", "KeyBbMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        keyListB.appendChild(dc.makeNewAElement("&#xE01A;&#xE050;&#xE01A;&#xE260;&#xE014;&#xEB92;&#xE260;-&#xE014;&#xEB98;&#xE260;-&#xE014;&#xE014;&#xE014;", "KeyEbMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        keyListB.appendChild(dc.makeNewAElement("&#xE01A;&#xE050;&#xE01A;&#xE260;&#xE014;&#xEB92;&#xE260;-&#xE014;&#xEB98;&#xE260;-&#xE014;&#xEB91;&#xE260;-&#xE014;&#xE014;", "KeyAbMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        keyListB.appendChild(dc.makeNewAElement("&#xE01A;&#xE050;&#xE01A;&#xE260;&#xE014;&#xEB92;&#xE260;-&#xE014;&#xEB98;&#xE260;-&#xE014;&#xEB91;&#xE260;-&#xE014;&#xEB99;&#xE260;-&#xE014;", "KeyDbMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        keyListB.appendChild(dc.makeNewAElement("&#xE01A;&#xE050;&#xE01A;&#xE260;&#xE014;&#xEB92;&#xE260;-&#xE014;&#xEB98;&#xE260;-&#xE014;&#xEB91;&#xE260;-&#xE014;&#xEB99;&#xE260;-&#xE014;&#xEB90;&#xE260;-", "KeyGbMaj", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        
         return keySelectItem
     }
 

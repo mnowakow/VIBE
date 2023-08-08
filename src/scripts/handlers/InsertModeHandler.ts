@@ -250,13 +250,13 @@ class InsertModeHandler implements Handler {
       .setLoadDataCallback(this.loadDataCallback)
       .drawElements()
 
-    // create some more measures at start
-    if (this.firstCall) {
-      for (let i = 0; i < 13; i++) {
-        this.interactionOverlay.querySelector("#measureAdder").dispatchEvent(new MouseEvent("click"))
-      }
-      this.firstCall = false
-    }
+    // create some more measures at start for debugging purposes
+    // if (this.firstCall) {
+    //   for (let i = 0; i < 13; i++) {
+    //     this.interactionOverlay.querySelector("#measureAdder").dispatchEvent(new MouseEvent("click"))
+    //   }
+    //   this.firstCall = false
+    // }
 
     return this
   }

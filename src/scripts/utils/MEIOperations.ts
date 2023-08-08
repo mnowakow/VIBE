@@ -2,12 +2,12 @@ import * as meiConverter from './MEIConverter'
 import { uuidv4 } from './random'
 import { constants as c } from '../constants'
 import { NewChord, NewNote, NewClef } from './Types'
-import { keysigToNotes, nextStepUp, nextStepDown, clefToLine, keyIdToSig } from './mappings'
+import { keysigToNotes, nextStepUp, nextStepDown, clefToLine, keyIdToSig, midiToNote } from './mappings'
 import MeiTemplate from '../assets/mei_template'
 import ScoreGraph from '../datastructures/ScoreGraph'
 import MeasureMatrix from '../datastructures/MeasureMatrix'
 import HarmonyLabel from '../gui/HarmonyLabel'
-import { createTupleTypeNode, isFunctionTypeNode } from 'typescript'
+import * as coordinates from './coordinates'
 
 
 const countableNoteUnitSelector: string =
@@ -47,8 +47,8 @@ export function removeFromMEI(scoreElements: Array<Element>, currentMEI: Documen
 
         // remove all tie when startid is no more a note or is deleted
         currentMEI.querySelectorAll("tie").forEach(t => {
-          if(t.getAttribute("startid") === "#" + se.id){
-            if(currentMEI.getElementById(se.id) === null){
+          if (t.getAttribute("startid") === "#" + se.id) {
+            if (currentMEI.getElementById(se.id) === null) {
               currentMEI.querySelector(t.getAttribute("endid"))?.remove()
             }
             t.remove()
@@ -65,9 +65,9 @@ export function removeFromMEI(scoreElements: Array<Element>, currentMEI: Documen
           if (attrName === "accid") {
             closestNote.removeAttribute("accid.ges")
           }
-        }else if(se.closest(".tuplet") !== null){
+        } else if (se.closest(".tuplet") !== null) {
           var tuplet = currentMEI.querySelector("#" + se.closest(".tuplet").id)
-          tuplet.outerHTML = tuplet.innerHTML
+          if (tuplet !== null) tuplet.outerHTML = tuplet.innerHTML //the element could be gone in current mei, but se is still present
         }
       }
     })
@@ -133,7 +133,7 @@ function getMeterRatioGlobal(currentMEI: Document): number {
  * @param currentMEI  
  * @param refElement Must be a staff-Element at most
  */
-function getMeterRatioLocal(currentMEI: Document, refElement: Element): number {
+export function getMeterRatioLocal(currentMEI: Document, refElement: Element): number {
   var staffElement: Element
   if (refElement.tagName !== "staff") {
     if (refElement.closest("staff") === null) {
@@ -229,9 +229,9 @@ export function addToMEI(newSound: NewNote | NewChord, currentMEI: Document, rep
 
       // check for existing ties within the chord and make one for the new element as well
       currentMEI.querySelectorAll("tie").forEach(t => {
-        if(Array.from(chord.querySelectorAll("note")).some(n => t.getAttribute("startid") === "#" + n.id)){
-          if(!currentMEI.querySelector("tie[startid='#" + newNote.id + "']")){ // just make the tie once (since this can be called twice in recursion)
-            var addToChord = {... newNote}
+        if (Array.from(chord.querySelectorAll("note")).some(n => t.getAttribute("startid") === "#" + n.id)) {
+          if (!currentMEI.querySelector("tie[startid='#" + newNote.id + "']")) { // just make the tie once (since this can be called twice in recursion)
+            var addToChord = { ...newNote }
             addToChord.id = uuidv4()
             var tieEnd = currentMEI.querySelector(t.getAttribute("endid"))
             tieEnd = tieEnd.closest("chord") || tieEnd
@@ -327,7 +327,7 @@ export function addToMEI(newSound: NewNote | NewChord, currentMEI: Document, rep
       var lastElementRatio = getAbsoluteRatio(lastElement)
       var measureOverhead = newMeasureRatio - measureRatio
       var newRatio = lastElementRatio - measureOverhead
-      if(newRatio > 0){
+      if (newRatio > 0) {
         changeDur(lastElement, newRatio)
         // create new Element and if needed, new measure
         var splittedElement = lastElement.tagName === "note" ? convertToNewNote(lastElement) : convertToNewChord(lastElement)
@@ -344,6 +344,17 @@ export function addToMEI(newSound: NewNote | NewChord, currentMEI: Document, rep
         splittedElement.relPosX = "left"
         addToMEI(splittedElement, currentMEI, replace)
         connectNotes(lastElement, currentMEI.querySelector("#" + splittedElement.id), "tie")
+      } else if (newRatio == 0 && measureOverhead > 0) { // if the measure is perfectly fine and there should be no tie, modify the newsound (push it one position to the right) and compute again
+        currentMEI = currMeiClone as Document
+        if (currentLayer.closest("measure").nextElementSibling === null) { // add measure if there is none to extend into
+          addMeasure(currentMEI)
+        }
+        var cl = currentMEI.getElementById(currentLayer.id)
+        newSound.nearestNoteId = cl.closest("measure").nextElementSibling.querySelector("staff[n='" + cl.closest("staff").getAttribute("n") + "'] layer[n='" + cl.getAttribute("n") + "'] :is(chord, note, rest, mRest)")?.id
+        newSound.relPosX = "left"
+        if (newSound.nearestNoteId !== null) {
+          currentMEI = addToMEI(newSound, currentMEI, replace)
+        }
       }
     }
   }
@@ -548,14 +559,6 @@ export function getAbsoluteRatio(el: Element): number {
 
   if (el.tagName !== "layer") { //if single Element is given, eg. chord, note
     arr = [el]
-    //if element is tied to another
-    // el.closest("measure")?.querySelectorAll("tie").forEach(t => {
-    //   if(t.getAttribute("startid").includes(el.id)){
-    //     if(el.closest("layer").querySelector(t.getAttribute("endid")) !== null){
-    //       arr.push(el.closest("mei").querySelector(t.getAttribute("endid")))
-    //     }
-    //   }
-    // })
   } else {
     arr = Array.from(el.querySelectorAll(countableNoteUnitSelector))
   }
@@ -1413,7 +1416,6 @@ export function cleanUp(currentMEI: Document) {
   deleteDefSequences(currentMEI)
   reorganizeBeams(currentMEI)
   removeEmptyElements(currentMEI)
-  //fillWithRests(currentMEI)
   adjustRests(currentMEI)
   redistributeHarms(currentMEI)
 }
@@ -1774,12 +1776,12 @@ export function removeStaff(currentMEI: Document, referenceStaff: Element, relPo
  * E.g.: Selecting 3 Notes will make a triplet, 4 Notes will make a quadruplet, etc. The after the tuplet the missing durations will be added as rests
  * @param meiElements 
  */
-export function createTuplet(meiElements: Array<Element>, currentMEI: Document){
+export function createTuplet(meiElements: Array<Element>, currentMEI: Document) {
   meiElements = meiElements.filter(me => {
-    if(me != undefined){
+    if (me != undefined) {
       return me.getAttribute("dur") !== null
     }
-    return 
+    return
   })
   console.log("create tuplets:", meiElements)
   var arrCopy = [...meiElements]
@@ -1787,14 +1789,14 @@ export function createTuplet(meiElements: Array<Element>, currentMEI: Document){
   var ratioTotal = 0
   meiElements.forEach(me => ratioTotal += getAbsoluteRatio(me))
   var ratioMinElement = getAbsoluteRatio(minDurElement)
-  var numMinNotes = (ratioTotal/ratioMinElement)
+  var numMinNotes = (ratioTotal / ratioMinElement)
   var numTarget = numMinNotes - 1
   var ratio = numTarget * getAbsoluteRatio(minDurElement)
   var [dur, dots] = ratioToDur(ratio)
-  
+
   var tuplet = currentMEI.createElement("tuplet")
   tuplet.setAttribute("dur", dur.toString())
-  if(dots > 0){
+  if (dots > 0) {
     tuplet.setAttribute("dots.ges", dots.toString())
   }
   tuplet.setAttribute("num", numMinNotes.toString())
@@ -1804,12 +1806,12 @@ export function createTuplet(meiElements: Array<Element>, currentMEI: Document){
 
   // fill missing values with rest
   var [durRest, dotsRest] = ratioToDur((numMinNotes * getAbsoluteRatio(minDurElement)) - ratio)
-  if(ratio < 1){
-    if(durRest > 0){
+  if (ratio < 1) {
+    if (durRest > 0) {
       var rest = currentMEI.createElement("rest")
       rest.setAttribute("id", uuidv4())
       rest.setAttribute("dur", durRest.toString())
-      if(dotsRest > 0){
+      if (dotsRest > 0) {
         rest.setAttribute("dots", dotsRest.toString())
       }
       tuplet.insertAdjacentElement("afterend", rest)

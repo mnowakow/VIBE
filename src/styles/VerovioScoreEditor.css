@@ -589,6 +589,13 @@ text{
     display: none
 }
 
+.overfillMark{
+    color:rgba(0, 0, 0, 0.5);
+    font-size: 12em;
+    font-weight: bolder;
+    z-index: 100;
+
+}
 
 /*Disable interaction*/
 
