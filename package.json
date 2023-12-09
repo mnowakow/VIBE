@@ -1,6 +1,6 @@
 {
     "name": "vibe-editor",
-    "version": "0.0.0",
+    "version": "0.0.1-dev",
     "main": "src/scripts/js/VIBE.js",
     "keywords": [],
     "author": "Matthias Nowakowski",
