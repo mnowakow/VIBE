@@ -7,3 +7,4 @@ src/scripts/*/*deprecated
 h5p.code-workspace
 package-lock.json
 *.bak
+webpack.config.js

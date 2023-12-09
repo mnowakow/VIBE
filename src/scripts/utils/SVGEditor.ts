@@ -7,12 +7,13 @@ import * as cq from "../utils/convenienceQueries"
 import * as meiOperation from "./MEIOperations"
 import * as coords from "../utils/coordinates"
 import { uuidv4 } from "./random"
-import {constants as c} from "../constants"
+import { constants as c } from "../constants"
 
 class SVGEditor {
 
     private classListMap: Map<string, Array<string>>
     private scaleListMap: Map<string, string>
+    private styleListMap: Map<string, string>
     private allowedMeiClasses = ["marked"]
     private containerId: string
     private container: Element
@@ -63,7 +64,7 @@ class SVGEditor {
         this.classListMap = new Map();
         svg.querySelectorAll("*").forEach(el => {
             //if(el.tagName.toLowerCase() === "g" && el.getAttribute("id") !== null){
-            if (el.getAttribute("id") !== null) {
+            if (el.getAttribute("id") !== null && !el.classList.contains("lastAdded")) {
                 if (!this.classListMap.has(el.id)) {
                     this.classListMap.set(el.id, new Array())
                 }
@@ -75,6 +76,40 @@ class SVGEditor {
                 })
             }
         })
+        return this
+    }
+
+    cacheStyles(){
+        //var svg = document.querySelector("#"+this.containerId + " #vrvSVG")
+        var svg = document.querySelector("#" + this.containerId)
+        if (svg === null) {
+            return this
+        }
+
+        this.styleListMap = new Map();
+        svg.querySelectorAll("[style]").forEach(el => {
+            if (el.getAttribute("id")) {
+                const styles = el.getAttribute("style")
+                if (!this.styleListMap.has(el.id)) {
+                    this.styleListMap.set(el.id, "")
+                }
+                this.styleListMap.set(el.id, styles)
+            }
+        })
+        return this
+    }
+
+    loadStyles(){
+        if (this.styleListMap == undefined) {
+            return this
+        }
+
+        for (const [key, value] of this.styleListMap.entries()) {
+            var el = this.container.querySelector("#" + key)
+            if (el) {
+               el.setAttribute("style", value)
+            }
+        }
         return this
     }
 
@@ -129,11 +164,11 @@ class SVGEditor {
             return this
         }
 
-
-        if (element !== null) {
+        if (element) {
             var value = this.classListMap.get(element.id)
             if (value == undefined) return this
             value.forEach(v => {
+                if(v === "hideUI") return
                 if (v !== "") {
                     element.classList.add(v)
                 }
@@ -144,6 +179,7 @@ class SVGEditor {
                 if (el !== null) {
                     //el.removeAttribute("class")
                     value.forEach(v => {
+                        if(v === "hideUI") return
                         if (v !== "") {
                             el.classList.add(v)
                         }
@@ -296,7 +332,7 @@ class SVGEditor {
     }
 
     /**
- * Mark the current Measere as overfilled by writing "+!" over the barline
+ * Mark the current Measure as overfilled by writing "+!" over the barline
  * @param currentMEI 
  */
     markOverfilledMeasures(currentMEI: Document) {
@@ -344,6 +380,48 @@ class SVGEditor {
         })
     }
 
+
+    /**
+     * Hide Rests of same duration in parallel layers. Also hide rests, when layer (n >= 2) is just rests.
+     * @param currentMEI MEI to parse and compute relationships. Provides IDs for elements in SVG.
+     * @returns this
+     */
+    hideRedundantRests(currentMEI: Document) {
+        currentMEI.querySelectorAll("staff").forEach(s => {
+            var prevLayerElements: Array<Element>
+            const vrv = cq.getVrvSVG(this.containerId)
+            s.querySelectorAll("layer").forEach(l => {
+                if(parseInt(l.getAttribute("n")) === 1){
+                    prevLayerElements = Array.from(l.children)
+                    return
+                }
+                if (parseInt(l.getAttribute("n")) >= 2) {
+                    if(!prevLayerElements){
+                        prevLayerElements = Array.from(l.children)
+                        return
+                    }
+                    const notes = l.querySelectorAll("note")
+                    if (notes.length === 0) {
+                        Array.from(l.children).forEach(c => vrv.querySelectorAll(`#${c.id} use`).forEach(u => u.setAttribute("visibility", "hidden")))
+                    } else {
+                        Array.from(l.children).forEach(c => {
+                            prevLayerElements.forEach(ple => {
+                                const isRest = ple.tagName.toLowerCase().includes("rest") && c.tagName.toLowerCase().includes("rest")
+                                const sameDur = ple.getAttribute("dur") === c.getAttribute("dur");
+                                const sameTstamp = meiOperation.getTimestamp(ple) === meiOperation.getTimestamp(c)
+                                if(isRest && sameDur && sameTstamp){
+                                    vrv.querySelector(`#${c.id} use`)?.setAttribute("visibility", "hidden")
+                                }
+                            })
+                        })
+                    }
+                    prevLayerElements = Array.from(l.children)
+                }
+            })
+        })
+        return this
+    }
+
     distributeIds(element: Element, propagation = false) {
         if (propagation) {
             var id = element.id !== "" ? element.id : element.getAttribute("refId")
@@ -361,6 +439,22 @@ class SVGEditor {
                 }
             })
         }
+        return this
+    }
+
+    setActiveLayer() {
+        var container = cq.getContainer(this.containerId)
+        if (!container.querySelector(".layer.activeLayer")) {
+            container.querySelectorAll(".layer[n='1']").forEach(l => l.classList.add("activeLayer"))
+        }
+        container.querySelectorAll(".activeLayer").forEach(al => {
+            var staffN = al.closest(".staff").getAttribute("n")
+            var layerN = al.getAttribute("n")
+            container.querySelectorAll(`.staff[n='${staffN}'] > .layer[n='${layerN}']`).forEach(layer => {
+                layer.classList.add("activeLayer")
+            })
+
+        })
         return this
     }
 

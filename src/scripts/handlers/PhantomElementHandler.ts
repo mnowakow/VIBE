@@ -76,7 +76,7 @@ class PhantomElementHandler implements Handler{
             element.removeEventListener('click', this.trackMouseHandler)
             clearInterval(this.trackMouseHandler)
         })
-        if(this.phantom != undefined){
+        if(this.phantom){
             this.phantom.removePhantomNote()
             this.phantom = undefined
         }
@@ -102,12 +102,18 @@ class PhantomElementHandler implements Handler{
      */
     trackMouse(e: MouseEvent){
         if(this.m2s.getLastMouseEnter().staff === null) return
+        // var pt = coordinates.transformToDOMMatrixCoordinates(e.clientX, e.clientY, this.interactionOverlay)
+        // var relX = pt.x
+        // var relY = pt.y
+        var definitionScale = cq.getVrvSVG(this.containerId).querySelector("#" + this.m2s.getLastMouseEnter().staff?.getAttribute("refId"))?.closest(".definition-scale")
+        if(definitionScale == undefined || definitionScale == null) return
+
         var pt = coordinates.transformToDOMMatrixCoordinates(e.clientX, e.clientY, this.interactionOverlay)
         var relX = pt.x
         var relY = pt.y
-        var definitionScale = cq.getVrvSVG(this.containerId).querySelector("#" + this.m2s.getLastMouseEnter().staff?.getAttribute("refId"))?.closest(".definition-scale")
-        if(definitionScale == undefined) return
+
         var dsCoords = coordinates.getDOMMatrixCoordinates(definitionScale, definitionScale.closest(".page"))
+        //console.log(relX, dsCoords, definitionScale.getBoundingClientRect())
         if(relX < dsCoords.left || relX > dsCoords.right){
             this.isTrackingMouse = false
             return

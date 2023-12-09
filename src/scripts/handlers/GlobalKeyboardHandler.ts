@@ -165,17 +165,18 @@ class GlobalKeyboardHandler implements Handler {
     }
 
     /**
-     * Copy marked Elements
+     * Copy marked Elements only in active Layer (only monophonic copies are possible right now)
      * @param e 
      */
     copyHandler(e: KeyboardEvent) {
         if (!this.hasContainerFocus()) return
         e.preventDefault()
         this.copiedIds = new Array()
-        document.querySelectorAll(".marked").forEach(m => {
+        cq.getContainer(this.containerId).querySelectorAll(".activeLayer .marked").forEach(m => {
             this.copiedIds.push(m.id)
         })
         this.copiedIds.filter(n => n) //undefined and null Elements will be excluded
+        console.log("Copied", this.copiedIds)
     }
 
     /**
@@ -185,13 +186,15 @@ class GlobalKeyboardHandler implements Handler {
     pasteHandler(e: KeyboardEvent) {
         //if(!this.hasContainerFocus()) return
         //e.preventDefault()
-        var pastePosition = this.container.querySelector(".chord.marked, .note.marked, .rest.marked, .mRest.marked")?.id || this.container.querySelector("#cursor")?.getAttribute("refId")
-        if (this.copiedIds != undefined && pastePosition != undefined) {
-            var lastId = meiOperation.paste(this.copiedIds, pastePosition, this.currentMEI)
-            var mei = meiConverter.restoreXmlIdTags(this.currentMEI)
+        const pastePosition = this.container.querySelector(".chord.marked, .note.marked, .rest.marked, .mRest.marked")?.id || this.container.querySelector("#cursor")?.getAttribute("refId")
+        if (this.copiedIds && pastePosition) {
+            const pasteResult = meiOperation.paste(this.copiedIds, pastePosition, this.currentMEI)
+            this.currentMEI = pasteResult[0]
+            const lastId = pasteResult[1]
+            const mei = meiConverter.restoreXmlIdTags(this.currentMEI)
             this.loadDataCallback("", mei, false).then(mei => {
                 //Tell everyone that a past just occured to readjust certain elements e.g.
-                var pastedEvent = new CustomEvent("pasted", { detail: lastId })
+                const pastedEvent = new CustomEvent("pasted", { detail: lastId })
                 document.dispatchEvent(pastedEvent)
             })
         }
@@ -205,7 +208,7 @@ class GlobalKeyboardHandler implements Handler {
             })
 
         })
-        this.musicPlayer.rewind()
+        this.musicPlayer.rewindMidi()
         this.resetLastInsertedNoteId()
         this.container.querySelectorAll("#modGroup *").forEach(mg => mg.classList.remove("selected"))
     }
@@ -336,6 +339,7 @@ class GlobalKeyboardHandler implements Handler {
     }
 
     hasEditableOpen(){
+        if(!document.getElementById(this.containerId)) return false
         return document.getElementById(this.containerId).querySelector(".canvas *[contenteditable=true]") !== null
     }
 
@@ -355,7 +359,7 @@ class GlobalKeyboardHandler implements Handler {
         return this
     }
 
-    setMusicPlayer(musicPlayer: MusicProcessor) {
+    setMusicProcessor(musicPlayer: MusicProcessor) {
         this.musicPlayer = musicPlayer
         return this
     }

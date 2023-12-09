@@ -128,11 +128,14 @@ class MeiTemplate{
     createStaff(n: number = 1, layerCount: number = 1): Node{
         var newElem = document.createElement("staff");
         newElem.setAttribute("n", n.toString());
-        newElem.appendChild(this.createLayer(1))
+        for(let i = 0; i < layerCount; i++){
+            newElem.appendChild(this.createLayer(i+1))
+        }
         return newElem;
     }
 
-    createLayer(n: number = 1): Node{
+    createLayer(n: number | string = 1 ): Node{
+        if(typeof n === "string") n = parseInt(n)
         var newElem = document.createElement("layer");
         newElem.setAttribute("n", n.toString());
         if(this.isEmpty){

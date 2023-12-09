@@ -28,6 +28,7 @@ export function getBySelector(parent: string, parentModulator: string, target: s
 }
 
 export function hasActiveElement(containerId: string): boolean{
-    return  document.getElementById(containerId).classList.contains("activeContainer")
+    if(!document.getElementById(containerId)) return false
+    return document.getElementById(containerId).classList.contains("activeContainer")
 }
   

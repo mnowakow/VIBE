@@ -3,7 +3,6 @@ import { Mouse2SVG } from '../utils/Mouse2SVG';
 import Cursor from '../gui/Cursor';
 import MusicProcessor from '../MusicProcessor';
 import PhantomElement from '../gui/PhantomElement';
-import SelectionHandler from './SelectionHandler';
 import Handler from './Handler';
 import Annotations from '../gui/Annotations';
 import LabelHandler from './LabelHandler';
@@ -41,7 +40,6 @@ class InsertModeHandler implements Handler {
   phantom: PhantomElement;
   currentMEI: string;
   navBarLoaded: boolean
-  selectionHandler: SelectionHandler
   labelHandler: LabelHandler
   deleteHandler: DeleteHandler;
   scoreGraph: ScoreGraph;
@@ -83,14 +81,14 @@ class InsertModeHandler implements Handler {
     this.phantomNoteHandler = new PhantomElementHandler(this.containerId)
     this.setPhantomNote()
 
-    this.clickModeHandler = this.clickModeHandler == undefined ? new ClickModeHandler() : this.clickModeHandler
+    this.clickModeHandler = this.clickModeHandler || new ClickModeHandler()
     this.clickModeHandler
       .setContainerId(this.containerId)
       .setInsertCallback(this.insertCallback)
       .setDeleteCallback(this.deleteCallback)
       .setAnnotations(this.annotations)
       .setm2s(this.m2s)
-      .setMusicPlayer(this.musicPlayer)
+      .setMusicProcessor(this.musicPlayer)
       .setPhantomCursor(this.phantomNoteHandler)
       .resetListeners()
 
@@ -102,26 +100,15 @@ class InsertModeHandler implements Handler {
       .setDeleteCallback(this.deleteCallback)
       .setScoreGraph(this.scoreGraph)
       .setm2s(this.m2s)
-      .setMusicPlayer(this.musicPlayer)
+      .setMusicProcessor(this.musicPlayer)
       .resetListeners()
 
     this.deleteHandler.setListeners()
 
     this.annotations?.setm2s(this.m2s)
-    this.annotations?.updateCanvas()
+    //this.annotations?.updateCanvas()
     //this.annotations?.resetTextListeners() // annotations should also be interactable when in notation mode
-    this.activateSelectionMode()
-  }
-
-  activateSelectionMode() {
-    //this.insertDeactivate()
-
-    this.selectionHandler = new SelectionHandler(this.containerId)
-    this.selectionHandler
-      .setm2s(this.m2s)
-      .setScoreGraph(this.scoreGraph)
-      .resetListeners()
-    return this
+    //this.activateSelectionMode()
   }
 
   activateAnnotationMode() {
@@ -147,15 +134,17 @@ class InsertModeHandler implements Handler {
         } else {
           this.annotations.updateCanvas()
         }
-        this.annotations
-          .setContainerId(this.containerId)
-          .setm2s(this.m2s)
-          .setMusicPlayer(this.musicPlayer)
-          .setToFront()
-          .setMenuClickHandler()
+        this.annotations.setAnnotationCanvas(cq.getInteractOverlay(this.containerId).querySelector("#annotationCanvas"))
+        this.annotations.updateLinkedTexts()
         break;
     }
-
+    this.annotations
+          .setContainerId(this.containerId)
+          .setm2s(this.m2s)
+          .setMusicProcessor(this.musicPlayer)
+          //.setToFront()
+          .setListeners()
+          .setMenuClickHandler()
   }
 
   activateHarmonyMode() {
@@ -176,7 +165,7 @@ class InsertModeHandler implements Handler {
       .setGlobal(this.isGlobal)
       .setListeners()
       .setm2s(this.m2s)
-      .setMusicPlayer(this.musicPlayer)
+      .setMusicProcessor(this.musicPlayer)
       .setCurrentMEI(this.m2s.getCurrentMei())
       .setLoadDataCallback(this.loadDataCallback)
 
@@ -222,7 +211,7 @@ class InsertModeHandler implements Handler {
 
     if (this.annotations != undefined) {
       this.annotations.removeListeners()
-      this.annotations.setToBack()
+      //this.annotations.setToBack()
       this.annotationMode = false
     }
 
@@ -237,22 +226,23 @@ class InsertModeHandler implements Handler {
     }
 
   }
-
-  private firstCall = true
+ private firstCall = true
   setSMHandler() {
     if (this.smHandler == undefined) {
       this.smHandler = new ScoreManipulatorHandler()
     }
+    //var activeLayer = this.container.querySelector(".activeLayer")
     this.smHandler
       .setContainerId(this.containerId)
+      .setm2s(this.m2s)
       .setMEI(this.m2s.getCurrentMei())
-      .setMusicPlayer(this.musicPlayer)
+      .setMusicProcessor(this.musicPlayer)
       .setLoadDataCallback(this.loadDataCallback)
       .drawElements()
 
-    // create some more measures at start for debugging purposes
+    //create some more measures at start for debugging purposes
     // if (this.firstCall) {
-    //   for (let i = 0; i < 13; i++) {
+    //   for (let i = 0; i < 15; i++) {
     //     this.interactionOverlay.querySelector("#measureAdder").dispatchEvent(new MouseEvent("click"))
     //   }
     //   this.firstCall = false
@@ -270,8 +260,6 @@ class InsertModeHandler implements Handler {
           case "notationTabBtn":
           case "articulationTabBtn":
           case "clickInsert":
-            that.activateInsertMode(true)
-            break;
           case "keyMode":
             that.activateInsertMode(true)
             break;
@@ -298,6 +286,9 @@ class InsertModeHandler implements Handler {
       b.addEventListener("click", function (e) {
         let dur = 0
         switch (this.id) {
+          case "breveNote":
+            dur = 0.5
+            break;
           case "fullNote":
             dur = 1
             break;
@@ -326,6 +317,7 @@ class InsertModeHandler implements Handler {
       })
     })
 
+    //Sets dots according to button in dotGroup. If no Button is selected, the dots will be set to 0.
     Array.from(this.container.querySelectorAll("#dotGroup > *")).forEach(b => {
       b.addEventListener("click", function (e) {
         let dots = 0
@@ -375,7 +367,7 @@ class InsertModeHandler implements Handler {
     return this
   }
 
-  setMusicPlayer(musicPlayer: MusicProcessor) {
+  setMusicProcessor(musicPlayer: MusicProcessor) {
     this.musicPlayer = musicPlayer
     return this
   }
@@ -434,9 +426,9 @@ class InsertModeHandler implements Handler {
   }
 
   resetCanvas() {
-    if (this.annotations != undefined) {
-      this.annotations.addCanvas()
-    }
+    this.annotations
+      ?.addCanvas()
+      .resetListeners()
     return this
   }
 
@@ -450,6 +442,18 @@ class InsertModeHandler implements Handler {
 
   getPhantomNoteHandler() {
     return this.phantomNoteHandler
+  }
+
+  disableNoteInput(){
+    this.keyModeHandler?.removeListeners()
+    this.clickModeHandler?.removeListeners()
+  }
+
+  enableNoteInput(){
+    if(!(this.annotationMode || this.harmonyMode)){
+      this.keyModeHandler?.setListeners()
+      this.clickModeHandler?.setListeners()
+    }
   }
 
 }

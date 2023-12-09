@@ -146,7 +146,7 @@ class ScoreGraph {
         }
 
         //Assign up/down nodes
-        if (this.midiTimes == undefined) {
+        if (this.midiTimes) {
             // miditimes contain svg Elements (not mei Elements!!!)
             // first: direct up/down references
             for (const [key, value] of this.midiTimes.entries()) {

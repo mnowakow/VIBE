@@ -36,7 +36,7 @@ export default class VerovioWrapper {
       pageMarginTop: 50,
       adjustPageHeight: true,
       font: 'Bravura',
-      pageWidth: pageWidth / 2, // adjust size with window size
+      pageWidth: pageWidth, // adjust size with window size
       //pageHeight: pageWidth / 4,
       //justifyVertically: true,
       svgViewBox: true,
@@ -172,6 +172,10 @@ export default class VerovioWrapper {
     return new Midi(buffer)
   }
 
+  getTimemap(){
+    return this.vrvToolkit.renderToTimemap()
+  }
+
   /**
    * Get Toolkit instance to use any method of verovio outside of score editor.
    * FOr all available methods go to: https://book.verovio.org/toolkit-reference/toolkit-methods.html
@@ -185,7 +189,8 @@ export default class VerovioWrapper {
     return this.options
   }
 
-  setWidthValue(wv: number) {
+  setWidthValue(wv: number | string) {
+    if(typeof wv === "string") wv = parseFloat(wv as string)
     this.options.pageWidth = wv
     this.vrvToolkit.setOptions(this.options)
   }

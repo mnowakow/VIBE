@@ -79,9 +79,11 @@ export type NewNote = {
   oct?: string,
   keysig?: string,
   accid?: string,
+  artic?: string,
   relPosX?: string, //left right; relative to nearestNoteId
   nearestNoteId?: string //nearest element for referece
   staffId?: string,
+  layerId?: string,
   chordElement?: Element, // to what chord will it be attached? must be from svg (not mei)
   rest: boolean //will it be a rest?
 }
@@ -100,6 +102,8 @@ export type NewClef = {}
 
 export type Staff = {
   clef?: string,
+  clefline?: string,
+  clefdisplacement?: string,
   keysig?: string, 
   meterSig?: {count: string, unit: string}
 }
@@ -125,4 +129,14 @@ export type NoteTime = {
 export type LoadOptions = {
   deleteLastNoteInserted?: Boolean
   changeOnPageNo?: string
+  widthFactor?: number
 }
+
+export type timemapObject = {
+  on?: string[];
+  off?: string[];
+  length: number;
+  qstamp: number;
+  tempo: number;
+  tstamp: number;
+};

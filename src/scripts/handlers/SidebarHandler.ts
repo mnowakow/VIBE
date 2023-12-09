@@ -9,8 +9,6 @@ import * as coordinates from "../utils/coordinates"
 import * as cq from "../utils/convenienceQueries"
 import MeiTemplate from "../assets/mei_template"
 import interact from "interactjs"
-import { reduceEachTrailingCommentRange } from "typescript";
-import { Interval } from "tone/build/esm/core/type/Units";
 
 /**
  * Handles all Events when interacting with the sidebar.
@@ -159,6 +157,7 @@ class SidebarHandler implements Handler {
             //this.interactionOverlay.querySelectorAll(".clef, .keySig, .meterSig").forEach(c => {
             //this.interactionOverlay.querySelectorAll("*").forEach(c => {
             c.addEventListener("click", function (e) {
+                cq.getContainer(that.containerId).querySelectorAll(".marked").forEach(m => m.classList.remove("marked"))
                 if (c.classList.contains("marked")) {
                     c.classList.remove("marked")
                     that.getElementInSVG(c.getAttribute("refId"))?.classList.remove("marked")
@@ -186,7 +185,7 @@ class SidebarHandler implements Handler {
         var count: string = ""
         var unit: string = ""
         baseEl.querySelectorAll("use").forEach(u => {
-            var num = unicodeToTimesig.get(u.getAttribute("href").slice(1, 5))
+            var num = unicodeToTimesig.get(u.getAttribute("xlink:href").slice(1, 5))
 
             if (count === "") {
                 count = num
@@ -201,8 +200,9 @@ class SidebarHandler implements Handler {
             tempY = u.getAttribute("y")
         });
 
-        (this.container.querySelector("#timeCount") as any).value = count;
-        (this.container.querySelector("#timeUnit") as any).value = unit;
+        cq.getContainer(this.containerId).querySelectorAll("#timeDiv .selected").forEach(s => s.removeAttribute("selected"))
+        cq.getContainer(this.containerId).querySelector(`#timeCount > [value='${count}']`)?.setAttribute("selected", "")
+        cq.getContainer(this.containerId).querySelector(`#timeUnit > [value='${unit}']`)?.setAttribute("selected", "")
     }
 
     changeTimeHandler = (function changeTimeHandler(e: MouseEvent) {
@@ -408,7 +408,7 @@ class SidebarHandler implements Handler {
     /**
      * Find next possible element to drop element from sidebar on
      * @param e 
-     */s
+     */
     findDropTarget(e: MouseEvent) {
         /** TODO: dropflags müssen auch in scoreRects eigegeben werden */
         e.preventDefault()

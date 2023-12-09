@@ -265,7 +265,7 @@ class Toolbar {
 
     createAnnotListFunction = (function (e) {
         var t = e.target as Element
-        if (t.closest(".vse-container").id !== this.containerId) return
+        if (t.closest(".vibe-container").id !== this.containerId) return
         this.createAnnotList(e)
     }
     ).bind(this)
@@ -314,8 +314,8 @@ class Toolbar {
         this.soundGroup.appendChild(dc.makeNewButton("", "rewindBtn", buttonStyleDarkOutline))
 
         this.fileSelectGroup = cq.getContainer(this.containerId).querySelector("#fileSelectGroup")
-        this.fileSelectGroup.append(dc.makeNewInput("importFile", "file", ""))
-        this.fileSelectGroup.append(dc.makeNewButton("Import File", "importFileBtn", buttonStyleDarkOutline))
+        this.fileSelectGroup.append(dc.makeNewInput("importXML", "file", ""))
+        this.fileSelectGroup.append(dc.makeNewButton("Import File", "importXMLBtn", buttonStyleDarkOutline))
         this.fileSelectGroup.append(dc.makeNewButton("Export MEI", "exportFileBtn", buttonStyleDarkOutline))
         var showBBToggle = dc.makeNewToggle("showBB", buttonStyleDark, "BBoxes", "showBBDiv")
         this.setToggleLogic(
@@ -491,7 +491,7 @@ class Toolbar {
         // achtung: nie preventDefault in einem Document anwenden
         document.addEventListener("keydown", this.closeHandlerKey)
 
-        //document.getElementsByClassName("vse-container")[0]?.addEventListener("click", this.closeHandlerMouse)
+        //document.getElementsByClassName("vibe-container")[0]?.addEventListener("click", this.closeHandlerMouse)
 
         cq.getContainer(this.containerId).querySelectorAll("#dotGroup button, #noteGroup button, #modGroup button").forEach(el => {
             el.addEventListener("click", this.exclusiveSelectHandler)
@@ -530,14 +530,14 @@ class Toolbar {
         //     })
 
         //FileSelection
-        cq.getContainer(this.containerId).querySelector("#importFileBtn").addEventListener("click", function () {
-            var impF = this.parentElement.querySelector("#importFile")
+        cq.getContainer(this.containerId).querySelector("#importXMLBtn").addEventListener("click", function () {
+            var impF = this.parentElement.querySelector("#importXML")
             impF.setAttribute("accept", [".musicxml", ".mei"].join(", "))
             impF.click()
         })
 
         var that = this
-        cq.getContainer(this.containerId).querySelector("#importFile").addEventListener("change", function (e) {
+        cq.getContainer(this.containerId).querySelector("#importXML").addEventListener("change", function (e) {
             var fr = new FileReader()
             fr.onload = function () {
                 that.importCallback("", fr.result as string, false, c._TARGETDIVID_)
@@ -557,7 +557,7 @@ class Toolbar {
                     + ("0" + d.getMinutes()).slice(-2)
                     + ("0" + d.getSeconds()).slice(-2)
                     + "_"
-                    + "vseScore_" + that.containerId + ".mei"
+                    + "vibeScore_" + that.containerId + ".mei"
                 that.download(fileName, mei)
             })
         })
@@ -582,7 +582,7 @@ class Toolbar {
 
         document.removeEventListener("keydown", this.closeHandlerKey)
 
-        //document.getElementsByClassName("vse-container")[0].removeEventListener("click", this.closeHandlerMouse)
+        //document.getElementsByClassName("vibe-container")[0].removeEventListener("click", this.closeHandlerMouse)
 
         cq.getContainer(this.containerId).querySelectorAll(".btn-group-sm button").forEach(el => {
             el.removeEventListener("click", this.exclusiveSelectHandler)

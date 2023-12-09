@@ -29,86 +29,6 @@ class MeasureMatrix{
         }
     }
 
-    /**
-     * @deprecated
-     * @param svg 
-     */
-    populateFromSVG(svg: SVGGElement){
-        this.matrix =  new Array<Array<Staff>>();
-        this.cols = svg.querySelectorAll(".measure").length;
-        this.rows = svg.querySelector(".measure").querySelectorAll(".staff").length;
-
-        var measures = svg.querySelectorAll(".measure")
-        for(var i = 0; i < this.cols; i++){
-            let col = new Array<Staff>();
-            let measure = measures[i]
-            let prevMeasure: Element
-            if(i==0){
-                prevMeasure = measure
-            }else{
-                prevMeasure = measures[i-1]
-            }
-            let staves = measure.querySelectorAll(".staff")
-            let prevStaves = prevMeasure.querySelectorAll(".staff")
-            for(var j = 0; j < this.rows; j++){
-                let staff: Staff = {}
-                let clefs = prevStaves[j].querySelectorAll(".clef")
-                let keysigs = staves[j].querySelectorAll(".keySig")
-                let meterSigs = staves[j].querySelectorAll(".meterSig")
-                if(clefs.length > 0){
-                    let clefIdx: number
-                        if(i === 0){
-                            clefIdx = 0
-                        }else{
-                            clefIdx = clefs.length -1
-                        }
-                    let clefShape = clefs[clefIdx].querySelector("use").getAttribute("xlink:href")
-                    if(clefShape.includes("-")){
-                        let clefRegex = /^(.*?)-/g
-                        clefShape = clefRegex.exec(clefShape)[0]
-                        clefShape = clefShape.slice(0, -1)
-                    }
-                    clefShape = idToClef.get(clefShape);
-                    staff.clef = clefShape;
-                }else{
-                    staff.clef = this.matrix[i-1][j].clef;
-                }
-                
-                if(keysigs.length > 0){
-                    let lastIdx = keysigs.length -1
-                    let keysigcount = keysigs[lastIdx].querySelectorAll("use").length
-                    let keysig = keysigs[lastIdx].querySelector("use").getAttribute("xlink:href") === "#E262" ? "f" : "s"
-                    keysig = keysigcount.toString() + keysig
-                    staff.keysig = keysig
-                }else if(i>0) {
-                   staff.keysig = this.matrix[i-1][j].keysig;
-                }else{ // if first measure has no accidentials
-                    staff.keysig = "0"
-                }
-
-                if(meterSigs.length > 0){
-                    let lastIdx = meterSigs.length -1
-                    let unit = meterSigs[lastIdx].getAttribute("unit")
-                    let count = meterSigs[lastIdx].getAttribute("count")
-                    staff.meterSig = {unit: unit, count: count}
-                }else if(i>0) {
-                   staff.meterSig = this.matrix[i-1][j].meterSig;
-                }else{
-                    if(staves[j].querySelector("metersig") === null){
-                        staff.meterSig = null
-                    }else{
-                        staff.meterSig = {unit: staves[j].querySelector("metersig").getAttribute("unit"), count: staves[j].querySelector("metersig").getAttribute("count")}
-                    }
-                }
-
-                col.push(staff)
-            }
-            this.matrix.push(col)
-        }
-
-        //console.log(this.matrix)
-    }
-
     populateFromMEI(mei: Document){
         this.matrix =  new Array<Array<Staff>>();
         this.cols = mei.querySelectorAll("measure").length;
@@ -145,8 +65,12 @@ class MeasureMatrix{
                 }else{
                     if(i>0){
                         staff.clef = this.matrix[i-1][j].clef
+                        staff.clefline = this.matrix[i-1][j].clefline
+                        staff.clefdisplacement = this.matrix[i-1][j].clefdisplacement
                     }else{
-                        staff.clef = staffDef.querySelector("clef").getAttribute("shape")
+                        staff.clef = staffDef.querySelector("clef")?.getAttribute("shape") || staffDef.getAttribute("clef.shape")
+                        staff.clefline = staffDef.querySelector("clef")?.getAttribute("line") || staffDef.getAttribute("clef.line")
+                        staff.clefdisplacement = staffDef.querySelector("clef")?.getAttribute("dis") ? staffDef.querySelector("clef")?.getAttribute("dis") + staffDef.querySelector("clef")?.getAttribute("dis.place") : null
                     }
                 }
                 
@@ -160,7 +84,7 @@ class MeasureMatrix{
                     if(staffDef.querySelector("keySig") === null){
                         staff.keysig = "0"
                     }else{
-                        staff.keysig = staffDef.querySelector("keySig").getAttribute("sig")
+                        staff.keysig = staffDef.querySelector("keySig")?.getAttribute("sig") || staffDef.getAttribute("keysig")
                     }
                 }
 

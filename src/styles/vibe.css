@@ -17,12 +17,12 @@
     height: 100%;
 }
 
-.vse-container{    
+.vibe-container{    
     position: absolute;
     width: 100%;
     height: 100%;
     background: white;
-    overflow: scroll;
+    /* overflow: scroll; */
 }
 
 body.waiting * {
@@ -55,6 +55,18 @@ body.waiting * {
     flex-direction: column;
 }
 
+/* .layer:not(.activeLayer) *{
+    fill: rgba(0, 0 , 0, 0.2)
+} */
+
+/* .layer:not(.activeLayer) :is(.rest, .mRest) > use{
+    fill: rgba(0, 0 , 0, 0.0)
+} */
+
+.page{
+    translate: 0 10%;
+}
+
 #vrvSVG .systemLine{
     stroke: black;
     stroke-dasharray: 10rem;
@@ -77,6 +89,27 @@ Change fill-opacity and stroke-opacity to display boundsing boxes*/
     fill-opacity: 0.1;
     stroke-opacity: 1;
 }
+
+/* .debug > div#svgContainer > svg#interactionOverlay{
+    stroke-width: 2px;
+    stroke: red;
+    stroke-opacity: 1;
+    stroke-dasharray: 10px;
+} */
+
+/* .debug #vrvSVG{
+    stroke-width: 2px;
+    stroke: blue;
+    stroke-opacity: 1;
+    stroke-dasharray: 2px;
+} */
+
+/* .debug .page{
+    stroke-width: 2px;
+    stroke: green;
+    stroke-opacity: 1;
+    stroke-dasharray: 5px;
+} */
 
 #scoreRects *{
     stroke-width: 1px;
@@ -135,7 +168,8 @@ text{
 
 .smufl{
     font-family: "BravuraText";
-    font-size: xx-large;
+    /* font-size: xx-large; */
+    font-size: 160%;
 }
 
 .harm *{
@@ -179,14 +213,14 @@ text{
     background-position-y: center;
     outline: none;
     font-family: Bravura;
-    font-size: small;
+    font-size: larger;
 }
 
 .articulationGroup .btn{
     font-size: larger;
 }
 
-.btn-group-sm{
+.btn-group-md{
     display: flex;
 }
 
@@ -218,9 +252,31 @@ text{
  margin-left: 0.25em;
 }
 
+#customToolbar{
+    box-shadow: 0px 1px 3px lightgray;
+}
+
+#btnToolbar{
+    box-shadow: inset 0px -3px 3px lightgray;
+}
+
 .dropdown-item.selected{
     background-color: antiquewhite;
     font-weight: bold;
+}
+
+.accordion-item, .accordion-header{
+    border-bottom-style: solid;
+    border-bottom-color: black;
+    border-bottom-width: 1.5px;
+}
+
+.accordion-button{
+    padding: 1.5rem 1.25rem !important;
+}
+
+#midiDeviceSelect{
+ width: 100%;
 }
 
 #toggleSidebar{
@@ -246,17 +302,23 @@ text{
     display: none;
 }
 
-#fileSelectGroup, #midiSelectGroup{
+#fileSelectGroup{
   align-self: flex-end;
   margin-left: auto;
-  display:flex
+  display:flex;
 }
+
+/* #midiSelectGroup{
+    align-self:baseline;
+    margin-left: auto;
+  display:flex
+} */
 
 #handlerGroup{
     display: none
 }
 
-#importFile{
+#importXML, #importAudioFile{
     display: none;
 }
 
@@ -355,8 +417,44 @@ text{
 }
 
 .btn-toolbar:not(:empty){
-    border-style: outset;
+    border-top-color: rgba(0, 0, 0, 0);
+    border-right-color: rgba(0, 0, 0, 0);
+    border-left-color: rgba(0, 0, 0, 0);
+    border-bottom-color: black;
+    border-bottom-style: solid;
+    border-bottom-width: 3px;
 }
+
+.tabBtn{
+    border-bottom-color: rgba(0, 0, 0, 0.0);
+    border-bottom-left-radius: 0% !important;
+    border-bottom-right-radius: 0% !important;
+    margin-bottom: -3px;
+}
+[role="group"]{
+    margin-top: 3px;
+    margin-bottom: 3px;
+}
+
+#customToolbar [role="group"]{
+    margin-top: 1%;
+    margin-bottom: 1%;
+}
+
+[role="group"] button:first-of-type{
+    border-bottom-left-radius: .2rem;
+    border-top-left-radius: .2rem;
+}
+
+[role="group"] button:last-of-type{
+    border-bottom-right-radius: .2rem;
+    border-top-right-radius: .2rem;
+}
+
+.btn-group-md>.btn, .btn-sm{
+    border-radius: 0%;
+}
+
 
 /*
 * ANNOTATIONS
@@ -367,13 +465,19 @@ text{
    opacity: 0.5;
 }*/
 
-#annotationCanvas.front *{
+/* #annotationCanvas.front *{
     opacity: 1;
-}
+} */
+
+
 
 .annotLinkedText .annotFO{
-    background-color: rgba(255, 255, 153, 0.8);
+    /*background-color: rgba(255, 255, 153, 0.8);*/
+    background-color: rgba(0, 0, 0, 0.1);
     border-radius: 0px 10px 10px 10px;
+    border-color: black;
+    border-style: solid;
+    border-width: 3px;
 }
 
 
@@ -397,42 +501,57 @@ text{
 .lineDragRect{
     stroke-width: 1px;
     stroke: black;
-    fill: whitesmoke;
-    height: 7px;
-    width: 7px;
-    transform: translate(-3.5, -3.5);
+    fill: wheat;
+    height: 10px;
+    width: 10px;
+    transform: translate(-5, -5);
 }
 
 .highlightAnnotation, .highlightChord{
-    fill-opacity: 0.2;
+    /*fill-opacity: 0.1;
     outline-style: dotted;
     outline-width: 0.5px;
-    outline-color: black;
+    outline-color: black; */
+    filter: drop-shadow( 0px 0px 3em teal)
+}
+
+#playCursor{
+    stroke-width: 10px;
+    stroke: orangered;
 }
 
 .layer[n="1"] .highlighted{
-    /**fill: rgb(255, 71, 255)*/
+    
     filter: drop-shadow(30px 10px 4px rgb(255, 71, 255));
-}
+} 
 
 #phantomNote.l1{
     fill: rgb(255, 71, 255)
 }
 
 
-.layer[n="2"] .highlighted, #phantomNote.l2{
-    /**fill: green*/
+.layer[n="2"] .highlighted{
     filter: drop-shadow(30px 10px 4px green);
 }
 
-.layer[n="3"]  .highlighted, #phantomNote.l3{
-    /*fill: blue*/
+#phantomNote.l2{
+    fill: green;
+}
+
+.layer[n="3"]  .highlighted{
     filter: drop-shadow(30px 10px 4px blue);
 }
 
-.layer[n="4"]  .highlighted, #phantomNote.l4{
-    /*fill: orange*/
+#phantomNote.l3{
+    fill: blue;
+}
+
+.layer[n="4"]  .highlighted{
     filter: drop-shadow(30px 10px 4px orange);
+}
+
+#phantomNote.l4{
+    fill: orange;
 }
 
 .customAnnotShape{
@@ -462,8 +581,8 @@ text{
     color: lightgray;
 }
 
-.currentlyPlaying{
-    fill:red;
+g.currentlyPlaying *{
+    fill:red !important;
     fill-opacity: 1;
 }
 
@@ -473,13 +592,14 @@ text{
     outline-style: none;
 }
 
-.marked, .lastAdded{
-    fill: red
+.marked, .marked *{
+    /* fill: red !important; */
+    filter: invert() drop-shadow(0 0 1rem crimson); 
 }
 
-/* .lastAdded{
-    fill: rgb(16, 100, 16)
-} */
+.lastAdded{
+    fill:darkcyan
+}
 
 .playing{
     fill: red
@@ -562,10 +682,34 @@ text{
     fill: antiquewhite;
 }
 
-.manipulator:hover * {
+.manipulator:hover *:not(.selected) , .manipulator.selected{
     filter: invert();
+    cursor: pointer;
 }
 
+.voiceBtn.inactive > rect{
+   fill: lightgray;
+}
+
+.voiceBtn.inactive > text{
+    fill: gray;
+ }
+
+
+.voiceBtn > rect{
+    stroke-width: 5%;
+    stroke: black;
+    width: 100%;
+    height: 100%;
+    fill: antiquewhite
+}
+
+.voiceBtn > text{
+    font-size: 100%;
+    width: 100%;
+    height: 100%;
+    fill: black;
+}
 
 .tooltip.show{
     display:contents;
@@ -628,4 +772,8 @@ text{
 
 foreignObject > [contenteditable]{
     font-family: Consolas, Menlo, Monaco, Lucida Console, Liberation Mono, DejaVu Sans Mono, Bitstream Vera Sans Mono, Courier New, monospace, serif;
+}
+
+button{
+    box-shadow: none !important;
 }

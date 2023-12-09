@@ -12,6 +12,7 @@ import ScoreNode from "../datastructures/ScoreNode";
 
 const marked = "marked"
 
+
 class KeyModeHandler implements Handler {
   m2s?: Mouse2SVG;
   musicPlayer?: MusicProcessor;
@@ -68,7 +69,7 @@ class KeyModeHandler implements Handler {
   }).bind(this)
 
   noteInput(e: KeyboardEvent) {
-    if (e.shiftKey) return
+    if (e.shiftKey || e.metaKey) return
     if (this.container.querySelector("[contenteditable=true]")) return
     var currentNode = this.scoreGraph.getCurrentNode()
     if (document.getElementById(currentNode.getId()) === null) return
@@ -79,71 +80,8 @@ class KeyModeHandler implements Handler {
       var pname = keyCodeNoteMap.get(e.code)
       var oct = octToNum.get(this.container.querySelector("#octaveGroupKM .selected")?.id) || "4"
       const newNote: NewNote = this.createNewNote(pname, oct, null)
-      if (newNote == undefined) return
+      if (!newNote) return
       this.processNewNote(newNote)
-      // var noteExists: Boolean = false
-      // var noteToDelete: Element
-      // if (document.getElementById(currentNode.getId()).closest(".chord") !== null) {
-      //   var chordNotes = Array.from(document.getElementById(currentNode.getId()).closest(".chord").querySelectorAll(".note"))
-      //   chordNotes.forEach((n: Element) => {
-      //     var meiNote = this.m2s.getCurrentMei().getElementById(n.id)
-      //     var sameOct = meiNote.getAttribute("oct") === newNote.oct
-      //     var samePname = meiNote.getAttribute("pname") === newNote.pname
-      //     if (sameOct && samePname) {
-      //       noteExists = true
-      //       noteToDelete = n
-      //     }
-      //   })
-      // }
-
-
-      // if (!noteExists) {
-      //   // check if new note should replace a rest
-      //   if (this.scoreGraph.getCurrentNode().getDocElement().classList.contains("rest")) {
-      //     newNote.relPosX = "left";
-      //     newNote.nearestNoteId = this.scoreGraph.getCurrentNode().getId()
-      //   } else if (!this.scoreGraph.getCurrentNode()?.getDocElement().classList.contains("mRest") && this.scoreGraph.lookUp(["note", "rest", "mRest"], "right") == null && newNote.chordElement == undefined) {
-      //     //check if new Measure must be created 
-      //     meiOperation.addMeasure(this.m2s.getCurrentMei())
-      //     var currentStaff = this.m2s.getCurrentMei().getElementById(newNote.staffId)
-      //     var staffN = currentStaff.getAttribute("n")
-      //     newNote.staffId = currentStaff.closest("measure").nextElementSibling.querySelector("staff[n=\"" + staffN + "\"]").id
-      //     newNote.relPosX = "left"
-      //     newNote.nearestNoteId = this.m2s.getCurrentMei().querySelector("#" + newNote.staffId).querySelector("mRest").id
-      //   } else {
-      //     //or if ne note must be rendered into the next bar
-      //     var oldStaffId = newNote.staffId
-      //     if (this.m2s.getCurrentMei().querySelector("#" + newNote.nearestNoteId) === null) return
-      //     if (this.m2s.getCurrentMei().querySelector("#" + newNote.nearestNoteId).tagName !== "mRest") {
-      //       newNote.staffId = this.m2s.getCurrentMei().getElementById(this.scoreGraph.getNextClass(["note", "rest", "mRest"], "right")?.getId())?.closest("staff").id || newNote.staffId
-      //     }
-
-      //     if (oldStaffId !== newNote.staffId) {
-      //       newNote.relPosX = "left"
-      //       newNote.nearestNoteId = this.scoreGraph.getCurrentNode()?.getId()
-      //     }
-      //   }
-      //   this.insertCallback(newNote, true).then(() => {
-      //     //this.m2s.update();
-      //     this.resetListeners()
-      //     var currentTargetId;
-      //     if (newNote.chordElement != undefined) {
-      //       currentTargetId = this.vrvSVG.querySelector("#" + newNote.chordElement.id).closest(".chord").id // new chord with own ID is created, if note is added
-      //     } else {
-      //       currentTargetId = newNote.id
-      //     }
-      //     this.scoreGraph.setCurrentNodeById(currentTargetId)
-      //     this.musicPlayer.generateTone(newNote)
-      //   }).catch(() => {
-      //     //alert("your bar is too small")
-      //   })
-      // } else {
-      //   this.deleteCallback([noteToDelete]).then(() => {
-      //     //this.m2s.update();
-      //     this.resetListeners()
-      //     this.scoreGraph.setCurrentNodeById(newNote.chordElement?.id)
-      //   })
-      // }
     }
   }
 
@@ -165,6 +103,7 @@ class KeyModeHandler implements Handler {
     }
 
     if (!noteExists) {
+      var currentStaff = this.m2s.getCurrentMei().getElementById(newNote.staffId)
       // check if new note should replace a rest
       if (this.scoreGraph.getCurrentNode().getDocElement().classList.contains("rest")) {
         newNote.relPosX = "left";
@@ -172,9 +111,10 @@ class KeyModeHandler implements Handler {
       } else if (!this.scoreGraph.getCurrentNode()?.getDocElement().classList.contains("mRest") && this.scoreGraph.lookUp(["note", "rest", "mRest"], "right") == null && newNote.chordElement == undefined) {
         //check if new Measure must be created 
         meiOperation.addMeasure(this.m2s.getCurrentMei())
-        var currentStaff = this.m2s.getCurrentMei().getElementById(newNote.staffId)
         var staffN = currentStaff.getAttribute("n")
-        newNote.staffId = currentStaff.closest("measure").nextElementSibling.querySelector("staff[n=\"" + staffN + "\"]").id
+        var layerN = this.m2s.getCurrentMei().getElementById(newNote.layerId).getAttribute("n")
+        newNote.staffId = currentStaff.closest("measure").nextElementSibling.querySelector(`staff[n='${staffN}']`).id
+        newNote.layerId = currentStaff.closest("measure").nextElementSibling.querySelector(`staff[n='${staffN}'] layer[n='${layerN}']`).id
         newNote.relPosX = "left"
         newNote.nearestNoteId = this.m2s.getCurrentMei().querySelector("#" + newNote.staffId).querySelector("mRest").id
       } else {
@@ -183,6 +123,7 @@ class KeyModeHandler implements Handler {
         if (this.m2s.getCurrentMei().querySelector("#" + newNote.nearestNoteId) === null) return
         if (this.m2s.getCurrentMei().querySelector("#" + newNote.nearestNoteId).tagName !== "mRest") {
           newNote.staffId = this.m2s.getCurrentMei().getElementById(this.scoreGraph.getNextClass(["note", "rest", "mRest"], "right")?.getId())?.closest("staff").id || newNote.staffId
+          newNote.layerId = this.m2s.getCurrentMei().getElementById(this.scoreGraph.getNextClass(["note", "rest", "mRest"], "right")?.getId())?.closest("layer").id || newNote.layerId
         }
 
         if (oldStaffId !== newNote.staffId) {
@@ -310,6 +251,7 @@ class KeyModeHandler implements Handler {
       nearestNoteId: nearestNodeId,
       relPosX: "right",
       staffId: this.vrvSVG.querySelector("#" + nearestNodeId)?.closest(".staff").id,
+      layerId: this.container.querySelector(`#${this.vrvSVG.querySelector("#" + nearestNodeId)?.closest(".staff").id} .activeLayer`)?.id,
       chordElement: targetChord,
       rest: this.container.querySelector("#pauseNote")?.classList.contains("selected")
     }
@@ -321,10 +263,12 @@ class KeyModeHandler implements Handler {
    * Event Handler for any Keyboard input (except inserting)
    */
   keyInputHandler = (function keyInputHandler(e: KeyboardEvent) {
+    
     if (!cq.hasActiveElement(this.containerId)) return
     if (e.ctrlKey || e.metaKey) return //prevent confusion with global keyboard functionalities
     if (this.interactionOverlay.querySelector("div[contenteditable=true]") !== null) return // prevent navigating in scrore, when label editor is open
     if (this.scoreGraph.getCurrentNode() == undefined) return
+
 
     if (e.shiftKey && e.key.includes("Arrow")) {
       e.preventDefault()
@@ -387,16 +331,6 @@ class KeyModeHandler implements Handler {
    * @param elementId Id of the current Element to be set in the ScoreGrap
    */
   setCurrentNodeScoreGraph(elementId: string = null) {
-    // if(this.scoreGraph.getCurrentNode() == undefined || elementId === null){
-    //   var nextEl = this.cursor.getNextElement()
-    //   if(nextEl == undefined) return
-    //   if(nextEl.classList.contains("staff")){
-    //     nextEl = nextEl.querySelector(".layer")
-    //   }
-    //   this.scoreGraph.setCurrentNodeById(nextEl.id)
-    // }else if(elementId !== null){
-    //   this.scoreGraph.setCurrentNodeById(elementId)
-    // }
     this.scoreGraph.setCurrentNodeById(elementId)
     return this
   }
@@ -407,7 +341,7 @@ class KeyModeHandler implements Handler {
   pastedHandler = (function pastedHandler(e: CustomEvent) {
     console.log("PASTED ", e)
     this.scoreGraph.setCurrentNodeById(e.detail)
-    this.cursor.definePosById(this.scoreGraph.getCurrentNode()?.getId())
+    //this.cursor.definePosById(this.scoreGraph.getCurrentNode()?.getId())
   }).bind(this)
 
   /**
@@ -440,13 +374,6 @@ class KeyModeHandler implements Handler {
     }
 
     currNodeId = this.scoreGraph.getCurrentNode().getId()
-    // if(this.vrvSVG.querySelector(".marked") === null){
-    //   this.deleteCallback([elementToDelete]).then(() => {
-    //     this.m2s.update();
-    //     this.resetListeners()
-    //     this.cursor.definePosById(currNodeId)
-    //   })
-    // }
   }
 
   ///// GETTER / SETTER////////////////
@@ -456,7 +383,7 @@ class KeyModeHandler implements Handler {
     return this
   }
 
-  setMusicPlayer(musicPlayer: MusicProcessor) {
+  setMusicProcessor(musicPlayer: MusicProcessor) {
     this.musicPlayer = musicPlayer
     return this
   }

@@ -46,13 +46,14 @@ class LabelHandler implements Handler {
         var rootHeigth = this.rootBBox.height.toString()
         var vb = this.interactionOverlay.getAttribute("viewBox")
 
-        if (this.labelCanvas == undefined) {
+        this.labelCanvas = this.interactionOverlay.querySelector("#labelCanvas")
+        if (!this.labelCanvas) {
             this.labelCanvas = document.createElementNS(c._SVGNS_, "svg")
             this.labelCanvas.setAttribute("id", "labelCanvas")
             this.labelCanvas.classList.add("canvas")
             //this.labelCanvas.setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))
         }
-        this.labelCanvas.setAttribute("viewBox", vb)
+        //this.labelCanvas.setAttribute("viewBox", vb)
         this.interactionOverlay.insertBefore(this.labelCanvas, this.interactionOverlay.firstChild)
 
         return this
@@ -106,7 +107,11 @@ class LabelHandler implements Handler {
             h.addEventListener("dblclick", this.modifyLabelHandler)
         })
 
-        this.interactionOverlay.querySelectorAll(".harm, .label, .manipulator").forEach(h => h.addEventListener("click", (e) => e.stopImmediatePropagation())) // prevent inseerting notes, wenn cursor is over a harm symbol
+        this.interactionOverlay.querySelectorAll(".harm, .label, .manipulator").forEach(h => h.addEventListener("click", (e) =>{
+            e.stopImmediatePropagation()
+            e.stopPropagation()
+        })
+        ) // prevent inseerting notes, wenn cursor is over a harm symbol
 
         return this
     }
@@ -501,7 +506,7 @@ class LabelHandler implements Handler {
         return this
     }
 
-    setMusicPlayer(musicPlayer: MusicProcessor) {
+    setMusicProcessor(musicPlayer: MusicProcessor) {
         this.musicPlayer = musicPlayer
         return this
     }

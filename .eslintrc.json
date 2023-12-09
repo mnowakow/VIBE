@@ -7,10 +7,16 @@
   "env": {
     "browser": true
   },
-  "extends": "eslint:recommended",
+  "extends": [
+    "eslint:recommended",
+    "plugin:react-hooks/recommended"
+  ],
   "parserOptions": {
     "sourceType": "module"
   },
+  "plugins": [
+    "react-hooks"
+  ],
   "rules": {
     "valid-jsdoc": "off",
     "semi": [2, "always"],
@@ -27,6 +33,10 @@
       "asyncArrow": "always"
     }],
     "no-extra-boolean-cast": "off",
-    "no-console": ["error", {"allow": ["warn", "error"]}]
+    "no-console": ["error", {"allow": ["warn", "error"]}],
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": ["warn", {
+      "additionalHooks": "(useMyCustomHook|useMyOtherCustomHook)"
+    }]
   }
 }

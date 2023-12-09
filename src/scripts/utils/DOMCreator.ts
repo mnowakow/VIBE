@@ -134,7 +134,7 @@ export function makeNewSelect(id: string, optionValues: Array<string>, placeHold
 
     var dataList = document.createElement("select")
     dataList.setAttribute("id", id)
-    if(placeHolder !== null){
+    if(placeHolder){
         var option = document.createElement("option")
         option.setAttribute("value", " ")
         option.textContent = placeHolder
@@ -168,4 +168,18 @@ export function makeNewToggle(id: string, classNames: string, labelText: string,
     div.append(label)
 
     return div
+}
+
+export function makeNewAudioSlider(id: string, classNames: string, audioFile: string){
+    var audioCtrl = document.createElement("audio")
+    audioCtrl.setAttribute("id", id)
+    audioCtrl.setAttribute("controls", "")
+    if(classNames?.length > 0){
+        var classList = classNames.split(" ")
+        classList.forEach(c =>  audioCtrl.classList.add(c))
+    }
+    var source = document.createElement("source")
+    source.setAttribute("src", audioFile)
+    audioCtrl.append(source)
+    return audioCtrl
 }

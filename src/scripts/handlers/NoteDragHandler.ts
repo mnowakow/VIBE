@@ -104,7 +104,7 @@ class NoteDragHandler implements Handler {
 
   //////////////// GETTER/ SETTER ////////////
 
-  setMusicPlayer(musicPlayer: MusicProcessor) {
+  setMusicProcessor(musicPlayer: MusicProcessor) {
     this.musicPlayer = musicPlayer
     return this
   }

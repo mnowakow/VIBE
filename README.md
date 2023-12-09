@@ -1,8 +1,8 @@
-# VerovioScoreEditor
+# VIBE = Verovio Interface for Browser-based Editing
 
-Current version in npm repo: ![npm](https://img.shields.io/npm/v/verovioscoreeditor)
+Current version in npm repo: ![npm](https://img.shields.io/npm/v/vibe-editor)
 
-Current version on github: ![GitHub package.json version](https://img.shields.io/github/package-json/v/mnowakow/VerovioScoreEditor)
+Current version on github: ![GitHub package.json version](https://img.shields.io/github/package-json/v/mnowakow/VIBE)
 
 A score editor using verovio as rendering engine
 
@@ -17,35 +17,38 @@ The data can be present in different forms. So to indicate which kind of process
 The `xmlData` can be passed either as String of the corresponding MusicXML or MEI, or as Document.
 
 ```
-var vse = new VerovioScoreEditor(container, {data: xmlData})
+var vibe = new VIBE(container, {data: xmlData})
 ```
 
 ### urls
 The `url` must include a source for MEI data.
 
 ```
-var vse = new VerovioScoreEditor(container, {meiURL: url})
+var vibe = new VIBE(container, {meiURL: url})
 ```
 
 ### empty score
 Initialization with an empty measure
 ```
-var vse = new VerovioScoreEditor(container, null)
+var vibe = new VIBE(container, null)
 ```
 
 ### callbacks
 A callback can be passed to return the changed data as MEI. The MEI is returned as String
 
 ```
-var vse = new VerovioScoreEditor(container, {data: xmlData}, callback)
+var vibe = new VIBE(container, {data: xmlData}, callback)
 ```
 or
 ```
-var vse = new VerovioScoreEditor(container, {meiURL: url}, callback)
+var vibe = new VIBE(container, {meiURL: url}, callback)
 ```
 or
 ```
-var vse = new VerovioScoreEditor(container, null, callback)
+var vibe = new VIBE(container, null, callback)
 ```
 
 
+## Sources
+
+Parts of the Code are based on the [Neon Editor](https://github.com/DDMAL/Neon) by DDMAL.

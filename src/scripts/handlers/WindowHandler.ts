@@ -7,16 +7,17 @@ import * as cq from "../utils/convenienceQueries"
 import * as meiConverter from "../utils/MEIConverter"
 import VerovioWrapper from "../utils/VerovioWrapper";
 import { loaded } from "tone";
-import { isWhiteSpaceLike } from "typescript";
+import { isWhiteSpaceLike, textSpanIntersectsWithTextSpan } from "typescript";
+import { LoadOptions } from "../utils/Types";
 
 
-class WindowHandler implements Handler{
+class WindowHandler implements Handler {
 
     m2s?: Mouse2SVG;
     musicPlayer?: MusicProcessor;
     currentMEI?: string | Document;
     annotations: Annotations;
-    loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean) => Promise<string>;
+    loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, options: LoadOptions) => Promise<string>;
     insertModeHandler: InsertModeHandler;
     containerId: string;
     container: Element;
@@ -28,19 +29,19 @@ class WindowHandler implements Handler{
     ctrlPressed: Boolean
     x: number
     y: number
-    divScrolls: Map<string, {sl: number, st: number}>
+    divScrolls: Map<string, { sl: number, st: number }>
 
-    constructor(){
+    constructor() {
         this.ctrlPressed = false
         this.w = window
-        while(this.w !== this.w.parent){
+        while (this.w !== this.w.parent) {
             this.w = this.w.parent
         }
     }
 
     svgReloadCallback: () => void
 
-    setListeners(){
+    setListeners() {
         this.eventContainer = this.container
         window.addEventListener("scroll", this.updateFunction)
         //window.addEventListener("resize", this.update)
@@ -70,16 +71,16 @@ class WindowHandler implements Handler{
         this.w.removeEventListener("resize", this.updateFunction)
         this.w.removeEventListener("resize", this.reloadSVGFunction)
         this.w.removeEventListener("deviceorientation", this.updateFunction)
-        this.eventContainer?.querySelector("#sidebarContainer").removeEventListener("transitionend",this.updateFunction)
+        this.eventContainer?.querySelector("#sidebarContainer").removeEventListener("transitionend", this.updateFunction)
         this.eventContainer?.querySelector("#sidebarContainer").removeEventListener("transitionend", this.reloadSVGFunction)
-        this.eventContainer?.querySelector("#sidebarContainer").removeEventListener("resizemove",this.updateFunction)
+        this.eventContainer?.querySelector("#sidebarContainer").removeEventListener("resizemove", this.updateFunction)
         this.eventContainer?.querySelector("#sidebarContainer").removeEventListener("resizemove", this.reloadSVGFunction)
         this.vrvSVG.removeEventListener("scroll", this.updateFunction)
         //this.vrvSVG.removeEventListener("resize", this.update)
         this.vrvSVG.removeEventListener("deviceorientation", this.updateFunction)
 
         document.removeEventListener("fullscreenchange", this.updateFunction)
-        this.eventContainer?.removeEventListener("wheel",this.wheelZoomFunction)
+        this.eventContainer?.removeEventListener("wheel", this.wheelZoomFunction)
         this.eventContainer?.querySelectorAll("#zoomGroup > button").forEach(b => b.removeEventListener("click", this.clickZoomFunction))
         document.removeEventListener("keydown", this.toggleCTRLFunction)
         document.removeEventListener("keyup", this.toggleCTRLFunction)
@@ -93,16 +94,16 @@ class WindowHandler implements Handler{
      * Update all elements that are affected by a window size change
      */
     private scrollingTimer = new Array()
-    update(e: Event){
+    update(e: Event) {
         // special rule for transition events since so much with different propertynames are fired
-        if(e instanceof TransitionEvent){
-            if(!e.propertyName.includes("width")) return
+        if (e instanceof TransitionEvent) {
+            if (!e.propertyName.includes("width")) return
         }
         var that = this
         this.scrollingTimer?.forEach(s => clearTimeout(s))
 
         this.scrollingTimer.push(
-            setTimeout(function(){
+            setTimeout(function () {
                 that.updateXY()
                 that.m2s?.update()
                 that.annotations?.updateCanvas()
@@ -117,27 +118,27 @@ class WindowHandler implements Handler{
      * Reload svg when registered events ended
      */
     private reloadTimer = new Array()
-    reloadSVG(e: Event){
+    reloadSVG(e: Event) {
         var t = e.target as HTMLElement
         var that = this
         this.reloadTimer?.forEach(r => clearTimeout(r))
-        if(t.id === "sidebarContainer" && !((e as TransitionEvent).propertyName.includes("width"))){
+        if (t.id === "sidebarContainer" && !((e as TransitionEvent).propertyName.includes("width"))) {
             // Timeout is needed to ensure, that transition has been completed and in eventphase 0
             // Must be a slighty longer than transitiontime
             this.reloadTimer.push(
-                setTimeout(function(){
+                setTimeout(function () {
                     that.updateXY()
                     var mei = meiConverter.restoreXmlIdTags(that.currentMEI as Document)
-                    that.loadDataCallback("", mei, false)
+                    that.loadDataCallback("", mei, false, null)
                     that.reloadTimer = new Array()
                 }, (e as TransitionEvent).elapsedTime * 1000 + 10)
             )
-        }else if(e.type === "resize" || e.type === "resizemove"){
+        } else if (e.type === "resize" || e.type === "resizemove" || t.id.startsWith("zoom")) {
             this.reloadTimer.push(
-                setTimeout(function(){
+                setTimeout(function () {
                     that.updateXY()
                     var mei = meiConverter.restoreXmlIdTags(that.currentMEI as Document)
-                    that.loadDataCallback("", mei, false)
+                    that.loadDataCallback("", mei, false, null)
                     that.reloadTimer = new Array()
                 }, 500)
             )
@@ -150,11 +151,11 @@ class WindowHandler implements Handler{
      * Toggle ctrl or meta button. Is used to activte zoom function
      * @param e 
      */
-    toggleCTRL(e: KeyboardEvent){
-        if(e.key === "Meta" || e.key === "Control"){
-            if(e.type === "keydown"){
+    toggleCTRL(e: KeyboardEvent) {
+        if (e.key === "Meta" || e.key === "Control") {
+            if (e.type === "keydown") {
                 this.ctrlPressed = true
-            }else{
+            } else {
                 this.ctrlPressed = false
             }
         }
@@ -171,10 +172,10 @@ class WindowHandler implements Handler{
      * @param e 
      * @returns 
      */
-    wheelZoom(e: WheelEvent){
+    wheelZoom(e: WheelEvent) {
         this.updateXY()
-        if(!cq.hasActiveElement(this.containerId)) return
-        if(!this.ctrlPressed) return
+        if (!cq.hasActiveElement(this.containerId)) return
+        if (!this.ctrlPressed) return
         e.preventDefault()
         this.deltaTemp = this.deltaTemp + e.deltaY / 1000
         this.zoomSVG(this.deltaTemp)
@@ -186,14 +187,15 @@ class WindowHandler implements Handler{
      * 
      * @param e 
      */
-    clickZoom(e: MouseEvent){
+    clickZoom(e: MouseEvent) {
         var t = e.target as HTMLElement
-        if(t.id === "zoomInBtn"){
+        if (t.id === "zoomInBtn") {
             this.deltaTemp = this.deltaTemp + 100 / 1000
-        }else if(t.id === "zoomOutBtn"){
+        } else if (t.id === "zoomOutBtn") {
             this.deltaTemp = this.deltaTemp - 100 / 1000
         }
         this.zoomSVG(this.deltaTemp)
+
     }
     private clickZoomFunction = this.clickZoom.bind(this)
 
@@ -201,15 +203,40 @@ class WindowHandler implements Handler{
      * General zoom logic for all top level svgs (interactionOverlay + vrvSVG (= rendered score by verovio))
      * @param delta 
      */
-    zoomSVG(delta: number){
+    zoomSVG(delta: number) {
         var that = this
         
         // ensure that with every call of all obsolete timeouts are deleted so that only one is left to be executed
         this.zoomTimer?.forEach(zt => clearTimeout(zt))
-        this.zoomTimer.push(setTimeout(function(){
+        this.zoomTimer.push(setTimeout(function () {
             var svgContainer = cq.getContainer(that.containerId).querySelector("#svgContainer") as HTMLElement
-            svgContainer.style.width = (100 * delta).toString() + "%"
+            svgContainer.querySelectorAll("#interactionOverlay, #vrvSVG").forEach((el: HTMLElement) => {
+                el.style.transformOrigin = "0 0"
+                el.style.transform = "scale(" + delta.toString() +")"
+
+                // if(el.id === "interactionOverlay"){
+                //     const transformValue = window.getComputedStyle(el).getPropertyValue('transform');
+                //     const matrix = new DOMMatrix(transformValue);
+                //     const scaleX = matrix.a;
+                //     const scaleY = matrix.d;
+
+                //     var vbsplit = el.getAttribute("viewBox").split(" ")
+                //     var newVb = new Array<string>()
+                //     vbsplit.forEach((n, i) => {
+                //         if(i === 2){
+                //             newVb.push((parseFloat(n)/scaleX).toString())
+                //         }else if(i === 3){
+                //             newVb.push((parseFloat(n)/scaleY).toString())
+                //         }else{
+                //             newVb.push((parseFloat(n)).toString())
+                //         }
+                       
+                //     })
+                //     el.setAttribute("viewBox", newVb.join(" "))
+                // }
+            })
         }, 10))
+
     }
 
     /**
@@ -219,11 +246,11 @@ class WindowHandler implements Handler{
      * Listens to "loadStart" Event in Core class
      * @param e Event
      */
-    cacheContainerAttr(e: Event){
+    cacheContainerAttr(e: Event) {
         this.divScrolls = new Map()
         var container = document.getElementById(this.containerId)
         container.querySelectorAll(":scope div").forEach(d => {
-            this.divScrolls.set(d.id, {sl: d.scrollLeft, st: d.scrollTop})
+            this.divScrolls.set(d.id, { sl: d.scrollLeft, st: d.scrollTop })
         })
     }
     private cacheContainerAttrFunction = this.cacheContainerAttr.bind(this)
@@ -234,41 +261,41 @@ class WindowHandler implements Handler{
      * @param e Event
      * @returns 
      */
-    loadContainerAttr(e: Event){
-        if(this.divScrolls == undefined) return
-        for (const [key, value] of this.divScrolls.entries()){
+    loadContainerAttr(e: Event) {
+        if (this.divScrolls == undefined) return
+        for (const [key, value] of this.divScrolls.entries()) {
             document.getElementById(key)?.scrollTo(value.sl, value.st)
-        } 
+        }
     }
     private loadContainerAttrFunction = this.loadContainerAttr.bind(this)
 
     /**
      * Set X and Y coordinates of the current boundingbox of the of the VerovioScore (#vrvSVG)
      */
-    updateXY(){
+    updateXY() {
         var bb = document.getElementById(this.containerId)?.querySelector("#vrvSVG").getBoundingClientRect()
         this.x = bb.x
         this.y = bb.y
     }
 
-    resetListeners(){
+    resetListeners() {
         this
             .removeListeners()
             .setListeners()
         return this
     }
 
-    setm2s(m2s: Mouse2SVG){
+    setm2s(m2s: Mouse2SVG) {
         this.m2s = m2s
         return this
     }
 
-    setAnnotations(annotations: Annotations){
+    setAnnotations(annotations: Annotations) {
         this.annotations = annotations
         return this
     }
 
-    setCurrentMEI(mei: Document){
+    setCurrentMEI(mei: Document) {
         this.currentMEI = mei
         return this
     }
@@ -281,26 +308,26 @@ class WindowHandler implements Handler{
         return this
     }
 
-    setInsertModeHandler(imh: InsertModeHandler){
+    setInsertModeHandler(imh: InsertModeHandler) {
         this.insertModeHandler = imh
         return this
     }
 
-    setLoadDataCallback(loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean) => Promise<string>){
+    setLoadDataCallback(loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, options: LoadOptions) => Promise<string>) {
         this.loadDataCallback = loadDataCallback
         return this
     }
 
-    setSVGReloadCallback(svgReloadCallback: () => Promise<boolean>){
+    setSVGReloadCallback(svgReloadCallback: () => Promise<boolean>) {
         this.svgReloadCallback = svgReloadCallback
         return this
     }
 
-    getX(){
+    getX() {
         return this.x
     }
 
-    getY(){
+    getY() {
         return this.y
     }
 

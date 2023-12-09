@@ -1,5 +1,5 @@
 import VerovioWrapper from './utils/VerovioWrapper';
-import { NewNote, VerovioMessage, VerovioResponse, EditorAction, Attributes, LoadOptions } from './utils/Types';
+import { NewNote, VerovioMessage, VerovioResponse, EditorAction, Attributes, LoadOptions, timemapObject } from './utils/Types';
 import { uuidv4 } from './utils/random';
 import { constants as c } from './constants';
 import InsertModeHandler from './handlers/InsertModeHandler';
@@ -21,10 +21,15 @@ import * as cq from "./utils/convenienceQueries"
 import * as coordinates from "./utils/coordinates"
 import TooltipHandler from './handlers/TooltipHandler';
 
+import * as ReactWrapper from './utils/ReactWrapper'
+import { Scale } from 'tone';
+import { constants } from 'buffer';
+
 
 /**
- * The core component the Editor. This manages the database,
- * the verovio toolkit, the cache, and undo/redo stacks.
+ * The core component the Editor. Manages the rendering with
+ * the verovio toolkit, sets bounding boxes and initializes all the interaction handlers.
+ * After each new load of the score, all handlers are reset and changed parametes (such as annotations or Mouse2SVG-Instance) are dispatched.
  */
 class Core {
   private verovioWrapper: VerovioWrapper;
@@ -49,7 +54,7 @@ class Core {
   private svg: string
   private currentMidi: string;
   private globalKeyboardHandler: GlobalKeyboardHandler;
-  private musicplayer: MusicProcessor;
+  private musicProcessor: MusicProcessor;
   private scoreGraph: ScoreGraph;
   private svgEditor: SVGEditor;
   private lastInsertedNoteId: string
@@ -63,6 +68,7 @@ class Core {
   private attributeOptions: {}
 
   private firstStart = true
+  private noteInputToggle = "on"
 
   constructor(containerId: string) {
     this.doHideUI = false
@@ -97,6 +103,9 @@ class Core {
 
     var that = this
     this.svgEditor.setContainerId(this.containerId)
+    this.svgEditor.cacheClasses().cacheScales().cacheStyles()
+
+    //this function renders the pages via the veroviowrapper
     async function render(pageNo: number = 1, options: LoadOptions = null): Promise<void> {
       return new Promise((resolve, reject): void => {
 
@@ -111,7 +120,7 @@ class Core {
         response = that.verovioWrapper.setMessage(message);
         svg = response.svg;
         var svgDoc = new DOMParser().parseFromString(svg, "image/svg+xml")
-        var pageElement  = svgDoc.querySelector("svg")
+        var pageElement = svgDoc.querySelector("svg")
         var pageId = "vrvPage" + pageNo.toString()
         pageElement.setAttribute("id", "vrvPage" + pageNo.toString())
         pageElement.classList.add("page")
@@ -119,23 +128,31 @@ class Core {
         try {
           // delete old svg
           if (cq.getVrvSVG(that.containerId).querySelector("#" + pageId) !== null) {
-            that.svgEditor.cacheClasses().cacheScales()
+            //that.svgEditor.cacheClasses().cacheScales()
             cq.getVrvSVG(that.containerId).querySelector("#" + pageId).innerHTML = "" //.remove()
           }
           //insert new complete svg
           //document.querySelector("#" + that.containerId + " #vrvSVG").append(pageElement)
           cq.getVrvSVG(that.containerId).querySelector("#" + pageId).replaceWith(pageElement)
         } catch (error) {
-          document.querySelector("#" + that.containerId + " #vrvSVG").append(pageElement)
-          
+          document.querySelector("#" + that.containerId + " #vrvSVG")?.append(pageElement)
+
         }
         that.svgEditor.distributeIds(pageElement.querySelector(".definition-scale"))
-        
+
         pageElement.setAttribute("preserveAspectRatio", "xMinYMin meet")
         var systemHeigth = pageElement.querySelector(".system").getBoundingClientRect().height
         systemHeigth += systemHeigth * 0.2
         that.verovioWrapper.setHeightValue(systemHeigth)
-        
+
+        if (options?.widthFactor) {
+          console.log("pageW before", that.verovioWrapper.getOptions().pageWidth)
+          that.verovioWrapper.setWidthValue(
+            parseFloat(that.verovioWrapper.getOptions().pageWidth) * options.widthFactor
+          )
+          console.log("pageW after", that.verovioWrapper.getOptions().pageWidth)
+        }
+
         resolve()
       })
     }
@@ -144,187 +161,256 @@ class Core {
 
     return new Promise((resolve, reject) => {
 
-      var d: string;
-      var u: boolean;
-      var type: string = data?.constructor.name;
-      switch (type) {
-        case 'String':
-          data = meiConverter.reformatMEI(data as string)
-          d = data
-          u = isUrl
-          break;
-        case 'XMLDocument':
-          data = meiOperation.disableFeatures(["grace", "arpeg"], (data as Document)) // for Debugging
-          that.svgEditor.copyClassesFromMei(data)
-          d = new XMLSerializer().serializeToString(data as Document);
-          u = false;
-          break;
-        case 'HTMLUnknownElement':
-          d = new XMLSerializer().serializeToString(data as HTMLElement);
-          u = false;
-          break;
-        case undefined:
-          d = new MeiTemplate().emptyMEI()
-          u = false
-          break;
-        default:
-          reject("Wrong Datatype: " + type)
-          break;
-      }
-
-      //just render the data once to make pagecount accessible
-      var message: VerovioMessage = {
-        id: uuidv4(),
-        action: 'renderData',
-        mei: d,
-        isUrl: u
-      };
-      this.verovioWrapper.setMessage(message);
-
+      this.sendDataToVerovio(data, isUrl)
       var pageGroup = document.createElement("g")
       pageGroup.setAttribute("id", "vrvSVG")
 
       if (cq.getVrvSVG(that.containerId) !== null) {
         that.svgEditor.cacheClasses().cacheScales()
-        //cq.getVrvSVG(that.containerId).remove()
       }
 
-      if(!cq.getVrvSVG(that.containerId)) document.querySelector("#" + that.containerId + "> #svgContainer").append(pageGroup)
+      if (!cq.getVrvSVG(that.containerId)) document.querySelector("#" + that.containerId + "> #svgContainer").append(pageGroup)
       var pageCount: number = this.verovioWrapper.getToolkit().getPageCount()
       var renderPromises = new Array()
       var staffId = this.m2s?.getLastMouseEnter()?.staff?.getAttribute("refId")
-      
+
       var optionPage: number
-      if(options?.changeOnPageNo != undefined){
-        if(options.changeOnPageNo === "last"){
+      if (options?.changeOnPageNo != undefined) {
+        if (options.changeOnPageNo === "last") {
           optionPage = pageCount
-        }else{
+        } else {
           optionPage = parseInt(options.changeOnPageNo)
-        }     
+        }
       }
-      
+
       //remove all pages, that do not exist anymore
       cq.getVrvSVG(this.containerId).querySelectorAll(":scope > svg").forEach(svg => {
-        if(parseInt(svg.id.match(/\d+/)[0]) > pageCount){
+        if (parseInt(svg.id.match(/\d+/)[0]) > pageCount) {
           svg.remove()
         }
       })
 
       var changeOnPage = optionPage || parseInt(cq.getVrvSVG(this.containerId).querySelector("#" + staffId)?.closest(".page")?.id.split("").reverse()[0])
-      Array.from({length: pageCount}, (_, index) => index + 1 ).forEach(pageNo => {
-        
-        if(!isNaN(changeOnPage)){
-          if(pageNo < changeOnPage) return
+      Array.from({ length: pageCount }, (_, index) => index + 1).forEach(pageNo => {
+
+        if (!isNaN(changeOnPage)) {
+          if (pageNo < changeOnPage) return
         }
-        renderPromises.push(setTimeout(function(){render(pageNo, options)}, 1))
+        renderPromises.push(setTimeout(function () { render(pageNo, options) }, 1))
 
       })
 
+      //Each page will be redered seperatly
       Promise.all(renderPromises).then(() => {
         document.body.classList.remove(waitingFlag)
-        var that = this
-        setTimeout(function(){ // timeout after the vrv rendering completed to render the DOM first
-          that.svgEditor.drawLinesUnderSystems()
-          that.svgEditor.modifyHarm()
-          that.createSVGOverlay(true)
-          that.svgEditor.setXY(that.windowHandler?.getX(), that.windowHandler?.getY())
-
-          that.getMEI("").then(mei => {
-            that.currentMEI = mei  
-            that.currentMEIDoc = that.getCurrentMEI(true) as Document
-            that.svgEditor.markOverfilledMeasures(that.currentMEIDoc)
-            
-            //console.log(that.currentMEIDoc)
-            that.svgEditor
-              .setContainerId(that.containerId)
-              .loadClasses()
-              .fillSVG(that.currentMEIDoc)
-            that.undoMEIStacks.push(mei)
-
-            var lastAddedClass = "lastAdded"
-            document.querySelectorAll("." + lastAddedClass).forEach(m => {
-              m.classList.remove(lastAddedClass)
-            })
-
-            if (that.lastInsertedNoteId != undefined && ["textmode", "clickmode"].some(mode => that.container.classList.contains(mode))) {
-              that.container.querySelector("#" + that.lastInsertedNoteId)?.classList.add(lastAddedClass)
-            }
-            if (that.meiChangedCallback != undefined) {
-              that.meiChangedCallback(that.currentMEI)
-            }
-          })
-
-          //MusicPlayer stuff
-          that.getMidi().then(midi => {
-            that.musicplayer = that.musicplayer || new MusicProcessor(that.containerId)
-            that.musicplayer
-              .setMEI(that.currentMEIDoc)
-              .setMidi(midi)
-              .addCanvas()
-            that.getMidiTimesForSymbols().then(md => {
-              that.musicplayer.setMidiTimes(md)
-              that.musicplayer.update()
-              that.scoreGraph = new ScoreGraph(that.currentMEIDoc, that.containerId, md)
-              //the first condition should only occur at first starting the score editor
-              if (that.container.querySelector(".lastAdded") === null && that.scoreGraph.getCurrentNode() == undefined) {
-                that.scoreGraph.setCurrentNodeById(that.container.querySelector(".staff > .layer :is(.note, .rest, .mRest").id)
-              } else { //second condition always sets lastAdded Note
-                that.scoreGraph.setCurrentNodeById(that.container.querySelector(".lastAdded")?.id)
-              }
-              that.initializeHandlers()
-              that.musicplayer.setScoreGraph(that.scoreGraph)
-              document.getElementById(that.containerId).dispatchEvent(new Event("loadingEnd"))
-              that.svg = new XMLSerializer().serializeToString(that.container.querySelector("#svgContainer"))
-              console.log(that.currentMEIDoc, that.m2s.getMeasureMatrix())
-              resolve(that.currentMEI)
-            })
-          })
-        }, 1)
+        resolve(that.initAfterRender())
       })
+    })
+  }
+
+  sendDataToVerovio(data: any, isUrl: boolean) {
+    var d: string;
+    var u: boolean;
+    var type: string = data?.constructor.name;
+    switch (type) {
+      case 'String':
+        data = meiConverter.reformatMEI(data as string)
+        d = data
+        u = isUrl
+        break;
+      case 'XMLDocument':
+        data = meiOperation.disableFeatures(["grace", "arpeg"], (data as Document)) // for Debugging
+        this.svgEditor.copyClassesFromMei(data)
+        d = new XMLSerializer().serializeToString(data as Document);
+        u = false;
+        break;
+      case 'HTMLUnknownElement':
+        d = new XMLSerializer().serializeToString(data as HTMLElement);
+        u = false;
+        break;
+      case undefined:
+        d = new MeiTemplate().emptyMEI()
+        u = false
+        break;
+      default:
+        console.log("Wrong Datatype: " + type)
+        break;
+    }
+
+    //just render the data once to make pagecount accessible
+    var message: VerovioMessage = {
+      id: uuidv4(),
+      action: 'renderData',
+      mei: d,
+      isUrl: u
+    };
+    this.verovioWrapper.setMessage(message);
+  }
+
+  /**
+   * Init attributes for the svg, creat svg overlay and distribute/ init handlers.
+   * @returns 
+   */
+  initAfterRender(): Promise<string> {
+    var that = this
+    return new Promise((resolve, reject) => {
+      setTimeout(function () { // timeout after the vrv rendering completed to render the DOM first
+        that.svgEditor.drawLinesUnderSystems()
+        that.svgEditor.modifyHarm()
+        that.createSVGOverlay(true)
+        that.svgEditor.setXY(that.windowHandler?.getX(), that.windowHandler?.getY())
+
+        that.getMEI("").then(mei => {
+          that.currentMEI = mei
+          that.currentMEIDoc = that.getCurrentMEI(true) as Document
+          that.currentMEIDoc.querySelectorAll("[dur='breve']").forEach(d => d.setAttribute("dur", "0.5"))
+
+          if (that.currentMEIDoc.querySelector("parsererror")) {
+            try {
+              throw new Error("ParsingError")
+            } catch (error) {
+              console.error("There is a parsingerror in the meiDoc: ", error, that.currentMEIDoc, that.currentMEI)
+            }
+          }
+
+          that.svgEditor.markOverfilledMeasures(that.currentMEIDoc)
+          that.svgEditor
+            .setContainerId(that.containerId)
+            .loadClasses()
+            .loadStyles()
+            .fillSVG(that.currentMEIDoc)
+            .setActiveLayer()
+            .hideRedundantRests(that.currentMEIDoc)
+
+          that.undoMEIStacks.push(mei)
+
+          var lastAddedClass = "lastAdded"
+          that.container.querySelectorAll("." + lastAddedClass).forEach(m => {
+            m.classList.remove(lastAddedClass)
+          })
+
+          if (that.lastInsertedNoteId && ["textmode", "clickmode"].some(mode => that.container.classList.contains(mode))) {
+            that.container.querySelector("#" + that.lastInsertedNoteId)?.classList.add(lastAddedClass)
+            that.container.querySelector("#" + that.lastInsertedNoteId)?.classList.add("marked")
+          }
+          if (that.meiChangedCallback) {
+            that.meiChangedCallback(that.currentMEI)
+          }
+        })
+
+        //Initialize music processor
+        that.getTimemap().then(timemap => {
+          that.musicProcessor = that.musicProcessor || new MusicProcessor(that.containerId)
+          that.musicProcessor
+            .setMEI(that.currentMEIDoc)
+            .setMidi(that.verovioWrapper.renderToMidi())
+            .setTimemap(timemap)
+            .addCanvas()
+            .update()
+          that.scoreGraph = new ScoreGraph(that.currentMEIDoc, that.containerId, null)
+          //the first condition should only occur at first starting the score editor
+          if (that.container.querySelector(".lastAdded") === null && that.scoreGraph.getCurrentNode() == undefined) {
+            that.scoreGraph.setCurrentNodeById(that.container.querySelector(".staff > .layer :is(.note, .rest, .mRest").id)
+          } else { //second condition always sets lastAdded Note
+            that.scoreGraph.setCurrentNodeById(that.container.querySelector(".lastAdded")?.id)
+          }
+          that.initializeHandlers()
+          that.musicProcessor.setScoreGraph(that.scoreGraph)
+          document.getElementById(that.containerId).dispatchEvent(new Event("loadingEnd"))
+          that.svg = new XMLSerializer().serializeToString(that.container.querySelector("#svgContainer"))
+          that.svgEditor.loadClasses()
+          console.log(that.currentMEIDoc, that.m2s.getMeasureMatrix())
+          resolve(that.currentMEI)
+          //})
+        })
+      }, 1)
+    })
+
+  }
+
+  /**
+   * Load everything if there is already a svg present. Displaying the visuals is not necessary here.
+   * But the MEI has to be loaded with verovio anyway to ensure that options and subsequent loads will have access to the underlying MEI.
+   * Only supposed to be used from Main class for first initialisation.
+   * @param container container with already rendered svg (usually a container with "vibe-container" class)
+   * @param data MEI to be loaded in verovio
+   * @returns 
+   */
+  loadWithExistingSVG(container: Element, data: any, isUrl: boolean): Promise<string> {
+    return new Promise(resolve => {
+      this.container = container
+      this.containerId = container.id
+
+      this.verovioWrapper = this.verovioWrapper || new VerovioWrapper();
+      var waitingFlag = "waiting"
+      // if (cq.getVrvSVG(this.containerId) !== null) {
+      //   document.body.classList.add(waitingFlag)
+      // }
+
+      // svg has to be loaded into verovio anyway 
+      this.sendDataToVerovio(data, isUrl)
+
+      document.getElementById(this.containerId).dispatchEvent(new Event("loadingStart"))
+      this.svgEditor.setContainerId(this.containerId)
+      this.svgEditor.cacheClasses().cacheScales().cacheStyles()
+      this.initializeHandlers(true, false)
+      resolve(this.initAfterRender())
     })
   }
 
 
 
-  reloadDataFunction = (function reloadData(): Promise<boolean> {
+  reloadDataHandler = (function reloadDataHandler(): Promise<boolean> {
+    return this.reloadData()
+  }).bind(this)
+
+  reloadData() {
     return this.loadData(this.currentMEI, false)
+  }
+
+  loadDataHandler = (function loadDataHandler(pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, options: LoadOptions = null): Promise<string> {
+    return this.loadData(data, isUrl, { ...{ changeOnPageNo: pageURI }, ...options })
   }).bind(this)
 
-  loadDataFunction = (function loadDataFunction(pageURI: string, data: string | Document | HTMLElement, isUrl: boolean): Promise<string> {
-    return this.loadData(data, isUrl, {changeOnPageNo: pageURI})
+  /**
+   * Provides AligFunction for Tabbar. alignFunction will be first set, when musicprocessor will instantiated
+   */
+  alignFunctionHandler = (function alignFunctionHandler(file: any): void {
+    this.musicProcessor?.resetListeners()
+    this.musicProcessor?.align(file)
   }).bind(this)
-
 
   /**
    * Initialize Handlers
    */
-  initializeHandlers() {
-    //must be first!!!
-    if (this.m2s == undefined) {
-      this.m2s = new Mouse2SVG()
-    } else {
-      //this.m2s.update()
+  initializeHandlers(initNew: boolean = false, dispatch: boolean = true) {
+    //m2s must be first since all coordinates and interacions are based on positions computed in Mouse2SVG
+    this.m2s = initNew ? new Mouse2SVG() : this.m2s || new Mouse2SVG()
+    if(!initNew && dispatch){
+      this.m2s
+        .setContainerId(this.containerId)
+        .setUpdateOverlayCallback(this.createSVGOverlay)
+        .setCurrentMEI(this.currentMEIDoc)
+        .update()
     }
-    this.m2s
-      .setContainerId(this.containerId)
-      .setUpdateOverlayCallback(this.createSVGOverlay)
-      .setCurrentMEI(this.currentMEIDoc)
-      .update()
-    //.setMouseEnterElementListeners()
-    this.insertModeHandler = this.insertModeHandler || new InsertModeHandler(this.containerId)
-    this.deleteHandler = this.deleteHandler || new DeleteHandler(this.containerId)
-    this.noteDragHandler = new NoteDragHandler(this.containerId)
-    this.globalKeyboardHandler = this.globalKeyboardHandler || new GlobalKeyboardHandler(this.containerId)
-    this.sidebarHandler = this.sidebarHandler || new SidebarHandler()
-    this.labelHandler = this.labelHandler || new LabelHandler(this.containerId)
-    this.modHandler = this.modHandler || new CustomToolbarHandler(this.containerId)
-    this.tooltipHandler = this.tooltipHandler || new TooltipHandler()
 
-    this.dispatchFunctions()
+    this.insertModeHandler = initNew ? new InsertModeHandler(this.containerId) : this.insertModeHandler || new InsertModeHandler(this.containerId)
+    this.deleteHandler = initNew ? new DeleteHandler(this.containerId) : this.deleteHandler || new DeleteHandler(this.containerId)
+    this.noteDragHandler = new NoteDragHandler(this.containerId)
+    this.globalKeyboardHandler = initNew ? new GlobalKeyboardHandler(this.containerId) : this.globalKeyboardHandler || new GlobalKeyboardHandler(this.containerId)
+    this.sidebarHandler = initNew ? new SidebarHandler : this.sidebarHandler || new SidebarHandler()
+    this.labelHandler = initNew ? new LabelHandler(this.containerId) : this.labelHandler || new LabelHandler(this.containerId)
+    this.modHandler = initNew ? new CustomToolbarHandler(this.containerId) : this.modHandler || new CustomToolbarHandler(this.containerId)
+    this.tooltipHandler = initNew ? new TooltipHandler() : this.tooltipHandler || new TooltipHandler()
+    this.musicProcessor = initNew ? new MusicProcessor(this.containerId) : this.musicProcessor || new MusicProcessor(this.containerId)
+
+    if(dispatch){
+      this.dispatchFunctions()
+    }
   }
 
   /**
-   * distribute Callback functions for each element which uses some information from of the Core (Handlers, Musicplayer, Callbacks, etc)
+   * distribute Callback functions for each element which uses some information from of the Core (Handlers, musicProcessor, Callbacks, etc)
    */
   dispatchFunctions() {
 
@@ -335,19 +421,21 @@ class Core {
 
     this.insertModeHandler
       .setContainerId(this.containerId)
+      .setScoreGraph(this.scoreGraph)
       .setm2s(this.m2s)
-      .setMusicPlayer(this.musicplayer)
+      .setMusicProcessor(this.musicProcessor)
       .setDeleteHandler(this.deleteHandler)
       .setLabelHandler(this.labelHandler)
       .activateHarmonyMode()
-      .activateSelectionMode()
+      //.activateSelectionMode()
       .setInsertCallback(this.insert)
       .setDeleteCallback(this.delete)
-      .setLoadDataCallback(this.loadDataFunction)
-      .setScoreGraph(this.scoreGraph)
+      .setLoadDataCallback(this.loadDataHandler)
       .setUndoAnnotationStacks(this.undoAnnotationStacks)
       .resetModes()
       .resetCanvas()
+
+    this.noteInputSwitch(this.noteInputToggle)
 
     this.deleteHandler
       .setContainerId(this.containerId)
@@ -358,7 +446,7 @@ class Core {
       .setContainerId(this.containerId)
       .setCurrentMEI(this.currentMEIDoc)
       .setInsertCallback(this.insert)
-      .setMusicPlayer(this.musicplayer)
+      .setMusicProcessor(this.musicProcessor)
       .setm2s(this.m2s)
       .resetListeners()
 
@@ -367,9 +455,9 @@ class Core {
       .setUndoCallback(this.undo)
       .setRedoCallback(this.redo)
       .setCurrentMei(this.currentMEIDoc)
-      .setMusicPlayer(this.musicplayer)
+      .setMusicProcessor(this.musicProcessor)
       .setHarmonyHandlerCallback(this.labelHandler.setHarmonyLabelHandlerKey)
-      .setLoadDataCallback(this.loadDataFunction)
+      .setLoadDataCallback(this.loadDataHandler)
       .setScoreGraph(this.scoreGraph)
       .resetLastInsertedNoteCallback(this.resetLastInsertedNoteId)
       .resetListeners()
@@ -378,7 +466,7 @@ class Core {
       .setContainerId(this.containerId)
       .setCurrentMei(this.currentMEIDoc)
       .setm2s(this.m2s)
-      .setLoadDataCallback(this.loadDataFunction)
+      .setLoadDataCallback(this.loadDataHandler)
       .loadMeter()
       .makeScoreElementsClickable()
       .resetListeners()
@@ -387,14 +475,14 @@ class Core {
       .setContainerId(this.containerId)
       .resetListeners()
       .setCurrentMEI(this.currentMEIDoc)
-      .setLoadDataCallback(this.loadDataFunction)
+      .setLoadDataCallback(this.loadDataHandler)
 
     this.windowHandler
       .setContainerId(this.containerId)
       .setm2s(this.m2s)
       .setCurrentMEI(this.currentMEIDoc)
-      .setLoadDataCallback(this.loadDataFunction)
-      .setSVGReloadCallback(this.reloadDataFunction)
+      .setLoadDataCallback(this.loadDataHandler)
+      .setSVGReloadCallback(this.reloadDataHandler)
       .setAnnotations(this.insertModeHandler.getAnnotations())
       .setInsertModeHandler(this.insertModeHandler)
       .resetListeners()
@@ -406,7 +494,9 @@ class Core {
 
     // always start from click mode
     if (this.firstStart) {
-      document.getElementById("notationTabBtn").click()
+      (this.container.querySelector("#notationTabBtn") as HTMLElement).click();
+      this.container.querySelector(".voiceBtn").classList.add("selected")
+      this.container.querySelector(".layer").classList.add("activeLayer")
       this.firstStart = false
     }
 
@@ -423,6 +513,11 @@ class Core {
     if (Object.entries(this.attributeOptions).length > 0) {
       this.setAttributes(this.attributeOptions)
     }
+
+    // experimental react implementation of color picker
+    //this.container.append(ReactWrapper.createColorPicker("reactContainer"))
+
+
   }
 
   /**
@@ -560,8 +655,6 @@ class Core {
     });
   }
 
-
-
   getMidi(): Promise<string> {
     return new Promise((resolve, reject): void => {
       const message: VerovioMessage = {
@@ -570,7 +663,7 @@ class Core {
       }
       var response: VerovioResponse = this.verovioWrapper.setMessage(message);
       if (response.midi) {
-        this.currentMidi = response.mei;
+        this.currentMidi = response.midi;
         resolve(response.midi)
       } else {
         reject("fail!")
@@ -578,58 +671,16 @@ class Core {
     });
   }
 
-  /**
-   * Get all times for each event visible in the score (notes, rests, etc.)
-   * @returns 
-   */
-  getMidiTimesForSymbols(): Promise<Map<number, Array<Element>>> {
-    return new Promise((resolve): void => {
-      var noteTimes = new Map<number, Array<Element>>();
-      var that = this
-      var container = cq.getVrvSVG(this.containerId)
-      var midi = that.verovioWrapper.getMidiJSON()
-      var tracks = midi.tracks
-      tracks.forEach((t, tIdx) => {
-        var svgNotes = container.querySelectorAll(".staff[n=\"" + (tIdx + 1).toString() + "\"] .note")
-        var prevNote: { midi: any, svg: Element }
-        t.notes.forEach((n, nIdx) => {
-          if (!noteTimes.has(n.ticks)) {
-            noteTimes.set(n.ticks, new Array())
-          }
-          var arr = noteTimes.get(n.ticks)
-          var currNote = svgNotes[nIdx]
-          //indicaton, that some rests are in between
-          //trailing rests are intentionally left out, since there is nothing to play anyway
-          if (prevNote?.midi.ticks + prevNote?.midi.durationTicks != n.ticks) {
-            var elements = container.querySelectorAll(".staff[n=\"" + (tIdx + 1).toString() + "\"] .note, .staff[n=\"" + (tIdx + 1).toString() + "\"] .rest")
-            var elementIds = Array.from(elements).map(e => e.id)
-            var sliceLeft = prevNote == undefined && n.ticks > 0 ? 0 : undefined
-            sliceLeft = prevNote != undefined ? elementIds.findIndex(eid => eid === prevNote.svg.id) + 1 : 0
-            var sliceRight = elementIds.findIndex(eid => eid === currNote.id) - 1
-            var slicedElementIds = elementIds.slice(sliceLeft, sliceRight)
-            var currentTickPos = prevNote?.midi.ticks + prevNote?.midi.durationTicks || 0
-            slicedElementIds.forEach(id => {
-              var ratio = meiOperation.getAbsoluteRatio(this.currentMEIDoc.getElementById(id))
-              var tickDur = 4 * ratio * midi.header.ppq
-              if (!noteTimes.has(currentTickPos)) {
-                noteTimes.set(currentTickPos, new Array())
-              }
-              var restArr = noteTimes.get(currentTickPos)
-              restArr.push(container.querySelector("#" + id))
-              currentTickPos += tickDur
-            })
-          }
-          arr.push(currNote)
-          prevNote = {
-            midi: n,
-            svg: svgNotes[nIdx]
-          }
-        })
-      })
-      resolve(noteTimes)
-    })
+  getTimemap(): Promise<Array<timemapObject>> {
+    return new Promise((resolve, reject): void => {
+      const timemap = this.verovioWrapper.getTimemap()
+      if (timemap) {
+        resolve(timemap)
+      } else {
+        reject("fail!")
+      }
+    });
   }
-
 
   /**
    * Create an overlay of all interative elements over the the score svg.
@@ -639,25 +690,28 @@ class Core {
       document.getElementById(this.containerId).focus()
       var refSVG = document.getElementById(this.containerId).querySelector("#vrvSVG") as unknown as SVGSVGElement
       this.interactionOverlay = document.getElementById(this.containerId).querySelector("#interactionOverlay")
-      if (this.interactionOverlay === null) {
+      if (!this.interactionOverlay) {
         var overlay = document.createElementNS(c._SVGNS_, "svg")
         overlay.setAttribute("id", "interactionOverlay")
         this.interactionOverlay = overlay
       }
 
-      var root = cq.getVrvSVG(this.containerId)
-      var rootBBox = root.getBoundingClientRect()
-      var rootWidth = (rootBBox.width).toString()
-      var rootHeigth = (rootBBox.height).toString()
+      var svgContainer = document.getElementById(this.containerId).querySelector("#svgContainer")
+      var vrvContainer = cq.getVrvSVG(this.containerId)
 
-      //if (this.interactionOverlay.getAttribute("viewBox") === null) {
-        this.interactionOverlay.setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))
-      //}
+      var root = svgContainer.getBoundingClientRect().height > vrvContainer.getBoundingClientRect().height ? svgContainer : vrvContainer
+      var rootBBox = root.getBoundingClientRect()
+      var rootWidth = rootBBox.width
+      var rootHeigth = rootBBox.height
+
+      if (!this.interactionOverlay.getAttribute("viewBox")) {
+        this.interactionOverlay.setAttribute("viewBox", ["0", "0", rootWidth.toString(), rootHeigth.toString()].join(" "))
+      }
 
       document.getElementById(this.containerId).querySelector("#interactionOverlay #scoreRects")?.remove()
       var scoreRects = document.createElementNS(c._SVGNS_, "svg")
       scoreRects.setAttribute("id", "scoreRects")
-      scoreRects.setAttribute("viewBox", ["0", "0", rootWidth, rootHeigth].join(" "))
+      //scoreRects.setAttribute("viewBox", ["0", "0", rootWidth.toString(), rootHeigth.toString()].join(" "))
 
       Array.from(refSVG.attributes).forEach(a => {
         if (!["id", "width", "height"].includes(a.name)) {
@@ -722,7 +776,7 @@ class Core {
           }
         })
 
-        setTimeout(function(){Promise.all(coordPromises)}, 1)
+        setTimeout(function () { Promise.all(coordPromises) }, 1)
       }
       resolve(true)
     })
@@ -773,7 +827,7 @@ class Core {
 
   /**
    * hide ui elements, so that no interaction is possible
-   * should be best called afteer promise of loadData
+   * should be best called after promise of loadData
    * @param options 
    */
   hideUI(options = {}) {
@@ -810,6 +864,22 @@ class Core {
         }
 
       }
+    }
+  }
+
+  /**
+   * Note Input will be disabled. All other interactions stay active.
+   */
+  noteInputSwitch(toggle: string) {
+    this.noteInputToggle = toggle
+    if (toggle === "off") {
+      this.insertModeHandler?.disableNoteInput()
+      this.noteDragHandler?.removeListeners()
+    } else if (toggle === "on") {
+      this.insertModeHandler?.enableNoteInput()
+      this.noteDragHandler?.setListeners()
+    } else {
+      console.log(arguments.callee.name, toggle + " has no effect!")
     }
   }
 
@@ -883,8 +953,8 @@ class Core {
     return this.currentMidi;
   }
 
-  getMusicPlayer(): MusicProcessor {
-    return this.musicplayer;
+  getMusicProcessor(): MusicProcessor {
+    return this.musicProcessor;
   }
 
   getScoreGraph() {
@@ -976,3 +1046,4 @@ class Core {
 }
 
 export { Core as default };
+

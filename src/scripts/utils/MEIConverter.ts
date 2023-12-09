@@ -6,7 +6,7 @@
 * @param mei the mei to be cleaned
 * @returns cleaned mei
 */
-function cleanMEI(mei: string): string{
+export function cleanMEI(mei: string): string{
  mei = mei.replace(/\xml:id/gi, "id");
  mei = mei.replace(/\n/g, ""); // delete all unnecessary newline
  mei = mei.replace(/\s{2,}/g, ""); // delete all unnecessary whitespaces
@@ -20,6 +20,17 @@ export function reformatMEI(mei: string): string{
     return mei
 }
 
+export function cleanIdAttr(mei: Document): Document{
+    mei.querySelectorAll("*").forEach(xi => {
+        if (!xi.hasAttribute('xml:id')) return
+        const id = xi.getAttribute("xml:id")
+        xi.removeAttribute("xml:id")
+        xi.setAttribute("id", id)
+    })
+
+    return mei
+}
+
 /**
  * Converts MEI-String to DOM-conform objec
  * @param mei 
@@ -30,6 +41,10 @@ export function meiToDoc(mei: string): Document{
     meiCopy = cleanMEI(meiCopy)
     var parser: DOMParser = new DOMParser();
     return parser.parseFromString(meiCopy, "text/xml")
+}
+
+export function docToMei(meiDoc: Document): string{
+    return new XMLSerializer().serializeToString(restoreXmlIdTags(meiDoc))
 }
 
 /**

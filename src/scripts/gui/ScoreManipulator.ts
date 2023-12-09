@@ -1,6 +1,7 @@
 import {constants as c} from '../constants';
 import * as meiOperation from '../utils/MEIOperations'
 import * as cq from "../utils/convenienceQueries"
+import { getDOMMatrixCoordinates } from '../utils/coordinates';
 
 const manipFlag = "manipulator"
 
@@ -81,37 +82,24 @@ class ScoreManipulator{
         this.interactionOverlay.querySelector("#manipulatorCanvas")?.appendChild(newSVG)
     }
 
-    drawMeasureAdder(){
+    drawMeasureManipulators(){
         this.lastBline = Array.from(this.vrvSVG.querySelectorAll(".barLine")).reverse()[0].querySelector("path") 
-        var lastBlineRect = this.lastBline.getBoundingClientRect()
-        var rootBBox = this.vrvSVG.getBoundingClientRect()
 
-        var blineTop = lastBlineRect.top - rootBBox.y
-        //var blineRight = lastBlineRect.right + rootBBox.height*0.001 - rootBBox.x
-        var blineRight = lastBlineRect.right - rootBBox.x
-
+        var lastBlineRect = getDOMMatrixCoordinates(this.lastBline, this.vrvSVG)
+        var blineTopAdder = lastBlineRect.top 
+        var blineTopRemover = lastBlineRect.top + lastBlineRect.height / 2
+        var blineRight = lastBlineRect.right 
         var containerSize = lastBlineRect.height * 0.4
 
-        this.drawButton("measureAdder", null, "+", blineRight, blineTop, containerSize, this.lastBline.closest("svg").parentElement, "Add Measure")
-    }
-
-    drawMeasureRemover(){
-        this.lastBline = Array.from(document.getElementById(this.containerId)?.querySelectorAll(".barLine")).reverse()[0].querySelector("path") 
-        var lastBlineRect = this.lastBline.getBoundingClientRect()
-        var lastBlineRect = this.lastBline.getBoundingClientRect()
-        var rootBBox = this.vrvSVG.getBoundingClientRect()
-
-        var blineTop = lastBlineRect.top - rootBBox.y + lastBlineRect.height / 2
-        var blineRight = lastBlineRect.right - rootBBox.x  
-
-        var containerSize = lastBlineRect.height * 0.4
-
-        this.drawButton("measureRemover", null, "-", blineRight, blineTop, containerSize, this.lastBline.closest("svg").parentElement, "Remove Measure")
+        this.drawButton("measureAdder", null, "+", blineRight, blineTopAdder, containerSize, this.lastBline.closest("svg").parentElement, "Add Measure")
+        this.drawButton("measureRemover", null, "-", blineRight, blineTopRemover, containerSize, this.lastBline.closest("svg").parentElement, "Remove Measure")
     }
 
     drawStaffManipulators(){
         this.vrvSVG.querySelector(".measure").querySelectorAll(".staff").forEach(s => {
-            var rootBBox = this.vrvSVG.getBoundingClientRect()
+
+            
+            //var rootBBox = this.vrvSVG.getBoundingClientRect()
 
             var refStaffCoords = this.getStaffManipulatorCoords(s)
             var refStaffX = refStaffCoords.x
@@ -121,26 +109,69 @@ class ScoreManipulator{
             var refStaffHeight = refStaffCoords.height
 
 
-            var posX = refStaffX - refStaffWidth * 0.5 - rootBBox.x
-            var topY = refStaffYTop - refStaffHeight * 0.2 - rootBBox.y
+            var posX = refStaffX - refStaffWidth * 0.5 //- rootBBox.x
+            var topY = refStaffYTop - refStaffHeight * 0.2 //- rootBBox.y
 
             var containerSize = refStaffHeight / 4 
             this.drawButton(null, "addStaff above", "+", posX, topY, containerSize, this.vrvSVG, s.id)
             if(parseInt(s.getAttribute("n")) > 1){
-                posX = refStaffX - rootBBox.x
+                posX = refStaffX //- rootBBox.x
                 this.drawButton(null, "removeStaff above", "-", posX, topY, containerSize, this.vrvSVG, s.id)
             }
 
-            posX = refStaffX - refStaffWidth * 0.5 - rootBBox.x
-            var bottomY = refStaffYBottom - rootBBox.y
+            posX = refStaffX - refStaffWidth * 0.5 //- rootBBox.x
+            var bottomY = refStaffYBottom //- rootBBox.y
 
             var containerSize = (refStaffHeight / 4)
             this.drawButton(null, "addStaff below", "+", posX, bottomY, containerSize, this.vrvSVG, s.id)
             var staffCount =  s.parentElement.querySelectorAll(".staff")
             if(parseInt(s.getAttribute("n")) !== staffCount.length){
-                posX = refStaffX - rootBBox.x
+                posX = refStaffX //- rootBBox.x
                 this.drawButton(null, "removeStaff below", "-", posX, bottomY, containerSize, this.vrvSVG, s.id)
             }
+        })
+    }
+
+    /**
+     * Draw 4 Buttons at the beginning of each new Line
+     */
+    drawVoiceSelectors(){
+        //var rootBBox = this.vrvSVG.getBoundingClientRect()
+        this.vrvSVG.querySelectorAll(".page").forEach(p => {
+            p.querySelector(".measure").querySelectorAll(".staff").forEach(staff => {
+                var bbox = getDOMMatrixCoordinates(staff.querySelector(".staffLine"), this.vrvSVG)//staff.querySelector(".staffLine").getBoundingClientRect()
+                var x = bbox.left //- rootBBox.x
+                var yTop = bbox.top //- rootBBox.y
+                var yBottom = getDOMMatrixCoordinates(Array.from(staff.querySelectorAll(".staffLine")).reverse()[0], this.vrvSVG).bottom //Array.from(staff.querySelectorAll(".staffLine")).reverse()[0].getBoundingClientRect().bottom - rootBBox.y
+                var staffHeight = (yBottom - yTop)
+                yTop -= staffHeight * 0.20 // center the boxes
+                var btnHeight = (staffHeight / 4) * 1.5
+                
+                for(let i = 0; i < 4; i++){
+                    var btn = document.createElementNS("http://www.w3.org/2000/svg", "svg")
+                    var btnRect = document.createElementNS("http://www.w3.org/2000/svg", "rect")
+                    var btnText = document.createElementNS("http://www.w3.org/2000/svg", "text")
+                    btnText.textContent = (i+1).toString()
+                    btn.setAttribute("x", "3px") 
+                    btn.setAttribute("y", (yTop + btnHeight * i).toString())
+                    btn.setAttribute("height", btnHeight.toString())
+                    btn.setAttribute("width", btnHeight.toString())
+                    btn.classList.add("voiceBtn")
+                    btn.classList.add("manipulator")
+                    btn.setAttribute("staffN", staff.getAttribute("n"))
+                    btn.setAttribute("btnN", (i+1).toString())
+                    btn.setAttribute("id", "voiceSelect-" + staff.getAttribute("n") + "-" + (i+1).toString())
+
+                    //btnText is relative to btn
+                    btnText.setAttribute("x", "30%")
+                    btnText.setAttribute("y", "80%")
+
+                    btn.append(btnRect)
+                    btn.append(btnText)
+                    this.interactionOverlay.querySelector("#manipulatorCanvas")?.append(btn)
+                }
+
+            })
         })
     }
 
@@ -153,24 +184,25 @@ class ScoreManipulator{
         var x: number
         var yTop: number
         var yBottom: number
-        var bbox: DOMRect
+        var bbox: any
         var width: number
         var height: number
         if(navigator.userAgent.toLowerCase().indexOf("firefox") != -1){
-            bbox = referenceStaff.querySelector(".staffLine").getBoundingClientRect()
+            bbox = getDOMMatrixCoordinates(referenceStaff, this.vrvSVG)//referenceStaff.querySelector(".staffLine").getBoundingClientRect()
             x = bbox.left
             yTop = bbox.top
-            yBottom = Array.from(referenceStaff.querySelectorAll(".staffLine")).reverse()[0].getBoundingClientRect().bottom
+            yBottom = getDOMMatrixCoordinates(Array.from(referenceStaff.querySelectorAll(".staffLine")).reverse()[0], this.vrvSVG).bottom //Array.from(referenceStaff.querySelectorAll(".staffLine")).reverse()[0].getBoundingClientRect().bottom
         }else{
-            bbox = referenceStaff.querySelector(".clef").getBoundingClientRect()
+            bbox = bbox = getDOMMatrixCoordinates(referenceStaff.querySelector(".clef"), this.vrvSVG) //referenceStaff.querySelector(".clef").getBoundingClientRect()
             x = bbox.left
             yTop = bbox.top
             yBottom =  bbox.bottom
         }
-        height = referenceStaff.querySelector(".clef").getBoundingClientRect().height
-        width = referenceStaff.querySelector(".clef").getBoundingClientRect().width
+        const clefCoords = getDOMMatrixCoordinates(referenceStaff.querySelector(".clef"), this.vrvSVG)
+        //height = referenceStaff.querySelector(".clef").getBoundingClientRect().height
+        //width = referenceStaff.querySelector(".clef").getBoundingClientRect().width
 
-        return{x: x, yTop: yTop, yBottom: yBottom, width: width, height: height}
+        return{x: x, yTop: yTop, yBottom: yBottom, width: clefCoords.width, height: clefCoords.height}
     }
 
     setMEI(mei: Document){

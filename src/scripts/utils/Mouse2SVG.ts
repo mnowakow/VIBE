@@ -1,7 +1,42 @@
 import { constants as c } from '../constants';
 import { NoteBBox, StaffLineBBox, NewNote, Staff } from './Types';
 import { uuidv4 } from './random';
-import { idxNoteMapGClef, idxNoteMapFClef, idxNotePhantomMapBelowG, idxNotePhantomMapAboveG, idxNotePhantomMapBelowF, idxNotePhantomMapAboveF, idxNotePhantomMapBelowC, idxNotePhantomMapAboveC, keysigToNotes, idxNoteMapCClef, modButtonToAttr } from './mappings';
+import { idxNoteMapGClef, 
+    idxNotePhantomMapBelowG, 
+    idxNotePhantomMapAboveG,
+    idxNoteMapGClefOctUp,
+    idxNoteMapGClefOctDown,
+    idxNotePhantomMapBelowGOctUp,
+    idxNotePhantomMapAboveGOctDown,
+    idxNoteMapFClef, 
+    idxNotePhantomMapBelowF, 
+    idxNotePhantomMapAboveF,
+    idxNoteMapFClefOctUp,
+    idxNoteMapFClefOctDown,
+    idxNotePhantomMapBelowGOctDown,
+    idxNotePhantomMapBelowFOctDown,
+    idxNotePhantomMapAboveFOctUp,
+    idxNotePhantomMapBelowFOctUp,
+    idxNotePhantomMapAboveFOctDown,
+    idxNoteMapCClefAlto, 
+    idxNotePhantomMapBelowCAlto, 
+    idxNotePhantomMapAboveCAlto, 
+    idxNoteMapCClefSoprano, 
+    idxNotePhantomMapBelowCSoprano, 
+    idxNotePhantomMapAboveCSoprano, 
+    idxNoteMapCClefMezzo, 
+    idxNotePhantomMapBelowCMezzo, 
+    idxNotePhantomMapAboveCMezzo, 
+    idxNoteMapCClefTenor, 
+    idxNotePhantomMapBelowCTenor, 
+    idxNotePhantomMapAboveCTenor, 
+    idxNoteMapCClefBariton, 
+    idxNotePhantomMapBelowCBariton, 
+    idxNotePhantomMapAboveCBariton, 
+    keysigToNotes, 
+    modButtonToAttr, 
+    clefToLine,
+    idxNotePhantomMapAboveGOctUp} from './mappings';
 import MeasureMatrix from '../datastructures/MeasureMatrix'
 import * as meiOperation from "./MEIOperations"
 import * as coordinates from "./coordinates"
@@ -55,7 +90,7 @@ export class Mouse2SVG {
         var enteredFlag = "lastEntered"
         var activeContainerFlag = "activeContainer"
         this.container.addEventListener("mouseenter", function (e) {
-            Array.from(document.getElementsByClassName("vse-container")).forEach(ac => {
+            Array.from(document.getElementsByClassName("vibe-container")).forEach(ac => {
                 if (ac === that.container) {
                     if (!that.container.classList.contains(activeContainerFlag)) {
                         that.container.classList.add(activeContainerFlag)
@@ -66,7 +101,7 @@ export class Mouse2SVG {
             })
         })
         this.container.addEventListener("mouseleave", function (e) {
-            Array.from(document.getElementsByClassName("vse-container")).forEach(ac => {
+            Array.from(document.getElementsByClassName("vibe-container")).forEach(ac => {
                 if (ac === that.container) {
                     ac.classList.remove(activeContainerFlag)
                 } 
@@ -120,7 +155,8 @@ export class Mouse2SVG {
             })
         });
 
-        this.interactionOverlay.querySelectorAll(".layer").forEach(layer => {
+        //this.interactionOverlay.querySelectorAll(".layer.activeLayer").forEach(layer => {
+        this.container.querySelectorAll(".layer.activeLayer").forEach(layer => {
             layer.addEventListener(mouseEventName, function (e) {
                 e.preventDefault()
                 var target = e.target as HTMLElement
@@ -131,8 +167,10 @@ export class Mouse2SVG {
                     })
                     that.lastLayerMouseEnter.classList.add(enteredFlag)
                 }
+                console.log(that.lastLayerMouseEnter)
             })
         });
+
         return this
     }
 
@@ -189,28 +227,67 @@ export class Mouse2SVG {
         this.measureMatrix.populateFromMEI(this.currentMEI)
         var staves = this.currentMEI.querySelectorAll("staff") //cq.getVrvSVG(this.containerId).querySelectorAll(".staff")
         Array.from(staves).forEach(element => {
-            let g = cq.getVrvSVG(this.containerId).querySelectorAll("#" + element.id + " > path")
-            let staff = element;
-            let idxStaff = parseInt(element.getAttribute("n")) - 1
-            let closestMeasure = element.closest("measure");
-            let idxParentMeasure = parseInt(closestMeasure.getAttribute("n")) - 1
-            let clefShape = this.measureMatrix.get(idxParentMeasure, idxStaff).clef;
+            const g = cq.getVrvSVG(this.containerId).querySelectorAll("#" + element.id + " > path")
+            const staff = element;
+            const idxStaff = parseInt(element.getAttribute("n")) - 1
+            const closestMeasure = element.closest("measure");
+            const idxParentMeasure = parseInt(closestMeasure.getAttribute("n")) - 1
+            const clefShape = this.measureMatrix.get(idxParentMeasure, idxStaff).clef;
+            const clefline = this.measureMatrix.get(idxParentMeasure, idxStaff).clefline
+            const clefDisplacement = this.measureMatrix.get(idxParentMeasure, idxStaff).clefdisplacement
             Array.from(g).forEach((staffLine, idx) => {
                 if (staffLine.id === "") {
                     staffLine.id = uuidv4()
                 }
                 staffLine.classList.add("staffLine");
-                staffLine.classList.add("Clef" + clefShape)
+                staffLine.classList.add("Clef" + clefShape + clefline + clefDisplacement)
                 var map = null;
                 switch (clefShape) {
                     case "G":
-                        map = idxNoteMapGClef;
+                        switch(clefDisplacement){
+                            case "8below":
+                                map = idxNoteMapGClefOctDown;
+                                break;
+                            case "8above":
+                                map = idxNoteMapGClefOctUp;
+                                break;
+                            case null:
+                                map = idxNoteMapGClef;
+                                break;
+                        }
                         break;
                     case "F":
-                        map = idxNoteMapFClef
+                        switch(clefDisplacement){
+                            case "8below":
+                                map = idxNoteMapFClefOctDown;
+                                break;
+                            case "8above":
+                                map = idxNoteMapFClefOctUp;
+                                break;
+                            case null:
+                                map = idxNoteMapFClef;
+                                break;
+                        }
                         break;
                     case "C":
-                        map = idxNoteMapCClef
+                        switch(clefline){
+                            case "1":
+                                map = idxNoteMapCClefSoprano
+                                break;
+                            case "2":
+                                map = idxNoteMapCClefMezzo
+                                break;
+                            case "3":
+                                map = idxNoteMapCClefAlto
+                                break;
+                            case "4":
+                                map = idxNoteMapCClefTenor
+                                break;
+                            case "5":
+                                map = idxNoteMapCClefBariton
+                                break;
+
+                        }
                         break;
                     default:
                         console.error("No Clef found")
@@ -300,22 +377,26 @@ export class Mouse2SVG {
             }
         })
 
-        var currentStaffClef: string
-        var entries = this.getElementinVrvSVG(this.lastStaffMouseEnter?.getAttribute("refId"))?.querySelector(".staffLine")?.classList?.entries()
-        if([null, undefined].some(n => entries == n)) return
-        for (const [key, value] of entries) {
-            if (value.indexOf("Clef") !== -1) {
-                currentStaffClef = value
-                break;
-            }
-        }
+        // var currentStaffClef: string
+        // var entries = this.getElementinVrvSVG(this.lastStaffMouseEnter?.getAttribute("refId"))?.querySelector(".staffLine")?.classList?.entries()
+        // if([null, undefined].some(n => entries == n)) return
+        // for (const [key, value] of entries) {
+        //     if (value.includes("Clef")) {
+        //         currentStaffClef = value
+        //         break;
+        //     }
+        // }
+        const col = this.getElementinVrvSVG(this.lastStaffMouseEnter?.getAttribute("refId"))?.getAttribute("n")
+        const row = this.getElementinVrvSVG(this.lastStaffMouseEnter?.getAttribute("refId"))?.closest(".measure").getAttribute("n")
+        const currentStaff = this.measureMatrix.get(row, col)
 
         // Define relative position for click insert
         // position should also consider right border of bounding box. Position should be 
         if (!staffIsEmpty) {
             let nbb = []
             this.noteBBoxes.forEach(bb => {
-                if (bb.parentStaff.id === this.lastStaffMouseEnter?.getAttribute("refId")) {
+                //console.log(bb.parentStaff.id === this.lastStaffMouseEnter?.getAttribute("refId"), Array.from(this.container.querySelectorAll(".activeLayer")).some(l => bb.parentLayer.id === l.id), Array.from(this.container.querySelectorAll(".activeLayer")), bb.parentLayer)
+                if (bb.parentStaff.id === this.lastStaffMouseEnter?.getAttribute("refId") && Array.from(this.container.querySelectorAll(".activeLayer")).some(l => bb.parentLayer.id === l.id)){
                     nbb.push(bb)
                 }
             });
@@ -351,22 +432,93 @@ export class Mouse2SVG {
             let lineArr = aboveSystem ? this.phantomStaffLinesAbove : this.phantomStaffLinesBelow
             let aboveMap: Map<number, string>
             let belowMap: Map<number, string>
-            switch (currentStaffClef) {
-                case "ClefG":
-                    aboveMap = idxNotePhantomMapAboveG
-                    belowMap = idxNotePhantomMapBelowG
-                    break;
-                case "ClefF":
-                    aboveMap = idxNotePhantomMapAboveF
-                    belowMap = idxNotePhantomMapBelowF
-                    break;
-                case "ClefC":
-                    aboveMap = idxNotePhantomMapAboveC
-                    belowMap = idxNotePhantomMapBelowC
-                    break;
-                default:
-                    console.log("NO CLEF FOUND")
+            // switch (currentStaffClef) {
+            //     case "ClefG2":
+            //         aboveMap = idxNotePhantomMapAboveG
+            //         belowMap = idxNotePhantomMapBelowG
+            //         break;
+            //     case "ClefF4":
+            //         aboveMap = idxNotePhantomMapAboveF
+            //         belowMap = idxNotePhantomMapBelowF
+            //         break;
+            //     case "ClefC1":
+            //         aboveMap = idxNotePhantomMapAboveCSoprano
+            //         belowMap = idxNotePhantomMapBelowCSoprano
+            //         break;
+            //     case "ClefC2":
+            //         aboveMap = idxNotePhantomMapAboveCMezzo
+            //         belowMap = idxNotePhantomMapBelowCMezzo
+            //         break;
+            //     case "ClefC3":
+            //         aboveMap = idxNotePhantomMapAboveCAlto
+            //         belowMap = idxNotePhantomMapBelowCAlto
+            //         break;
+            //     case "ClefC4":
+            //         aboveMap = idxNotePhantomMapAboveCTenor
+            //         belowMap = idxNotePhantomMapBelowCTenor
+            //         break;
+            //     case "ClefC5":
+            //         aboveMap = idxNotePhantomMapAboveCBariton
+            //         belowMap = idxNotePhantomMapBelowCBariton
+            //         break;
+            //     default:
+            //         console.log("NO CLEF FOUND")
 
+            // }
+
+            if(currentStaff.clef === "G"){
+                switch(currentStaff.clefdisplacement){
+                    case null:
+                        aboveMap = idxNotePhantomMapAboveG
+                        belowMap = idxNotePhantomMapBelowG
+                        break;
+                    case "8above":
+                        aboveMap = idxNotePhantomMapAboveGOctUp
+                        belowMap = idxNotePhantomMapBelowGOctUp
+                        break;
+                    case "8below":
+                        aboveMap = idxNotePhantomMapAboveGOctDown
+                        belowMap = idxNotePhantomMapBelowGOctDown
+                        break;
+                }
+            }else if(currentStaff.clef === "F"){
+                switch(currentStaff.clefdisplacement){
+                    case null:
+                        aboveMap = idxNotePhantomMapAboveF
+                        belowMap = idxNotePhantomMapBelowF
+                        break;
+                    case "8above":
+                        aboveMap = idxNotePhantomMapAboveFOctUp
+                        belowMap = idxNotePhantomMapBelowFOctUp
+                        break;
+                    case "8below":
+                        aboveMap = idxNotePhantomMapAboveFOctDown
+                        belowMap = idxNotePhantomMapBelowFOctDown
+                        break;
+                }
+            }else if(currentStaff.clef === "C"){
+                switch(currentStaff.clefline){
+                    case "1":
+                        aboveMap = idxNotePhantomMapAboveCSoprano
+                        belowMap = idxNotePhantomMapBelowCSoprano
+                        break;
+                    case "2":
+                        aboveMap = idxNotePhantomMapAboveCMezzo
+                        belowMap = idxNotePhantomMapBelowCMezzo
+                        break;
+                    case "3":
+                        aboveMap = idxNotePhantomMapAboveCAlto
+                        belowMap = idxNotePhantomMapBelowCAlto
+                        break;
+                    case "4":
+                        aboveMap = idxNotePhantomMapAboveCTenor
+                        belowMap = idxNotePhantomMapBelowCTenor
+                        break;
+                    case "5":
+                        aboveMap = idxNotePhantomMapAboveCBariton
+                        belowMap = idxNotePhantomMapBelowCBariton
+                        break;
+                }
             }
             let map = aboveSystem ? aboveMap : belowMap;
             let mappingidx = 0
@@ -434,9 +586,24 @@ export class Mouse2SVG {
                 }
 
                 let map = null
-                if (currentNearestStaffLine.classList.contains("ClefG")) { map = idxNoteMapGClef }
-                else if (currentNearestStaffLine.classList.contains("ClefF")) { map = idxNoteMapFClef }
-                else if (currentNearestStaffLine.classList.contains("ClefC")) { map = idxNoteMapCClef }
+                if (currentNearestStaffLine.classList.contains("ClefG")) { 
+                    map = idxNoteMapGClef 
+                    if (currentNearestStaffLine.classList.contains("ClefG28above")) { map = idxNoteMapGClefOctUp }
+                    else if (currentNearestStaffLine.classList.contains("ClefG28below")) { map = idxNoteMapGClefOctDown }
+                }
+
+                else if (currentNearestStaffLine.classList.contains("ClefF")) { 
+                    map = idxNoteMapFClef 
+                    if (currentNearestStaffLine.classList.contains("ClefF48above")) { map = idxNoteMapFClefOctUp }
+                    else if (currentNearestStaffLine.classList.contains("ClefF48below")) { map = idxNoteMapFClefOctDown }
+                }
+                else if(currentNearestStaffLine.classList.contains("ClefC")){
+                    if (Array.from(currentNearestStaffLine.classList).some(c => c.includes("ClefC1"))) { map = idxNoteMapCClefSoprano }
+                    else if (Array.from(currentNearestStaffLine.classList).some(c => c.includes("ClefC2"))) { map = idxNoteMapCClefMezzo }
+                    else if (Array.from(currentNearestStaffLine.classList).some(c => c.includes("ClefC3"))) { map = idxNoteMapCClefAlto }
+                    else if (Array.from(currentNearestStaffLine.classList).some(c => c.includes("ClefC4"))) { map = idxNoteMapCClefTenor }
+                    else if (Array.from(currentNearestStaffLine.classList).some(c => c.includes("ClefC5"))) { map = idxNoteMapCClefBariton }
+                }
                 else { throw new Error("No Note to Clef Mapping found") }
 
                 if (map.get(nextPitchIdx) == undefined) { return }
@@ -500,6 +667,7 @@ export class Mouse2SVG {
             nearestNoteId: nearestNoteId,
             relPosX: leftRightPos,
             staffId: this.lastStaffMouseEnter?.getAttribute("refId"),
+            layerId: this.container.querySelector(`#${this.lastStaffMouseEnter?.getAttribute("refId")} .activeLayer`)?.id,
             chordElement: options.targetChord,
             rest: this.container.querySelector("#pauseNote")?.classList.contains("selected")
         }
@@ -544,6 +712,7 @@ export class Mouse2SVG {
 
             var dist = Math.abs(x - posX)
             var staffCondition = n.parentStaff === this.getElementinVrvSVG(this.lastStaffMouseEnter?.getAttribute("refId"))
+            staffCondition &&= Array.from(this.container.querySelectorAll(".activeLayer")).some(l => n.parentLayer === l)
             if (checkStaff === false) {
                 staffCondition = true
                 dist = Math.sqrt(Math.abs(x - posX) ** 2 + Math.abs(y - posY) ** 2)
@@ -557,6 +726,18 @@ export class Mouse2SVG {
             // i++
         })
         return nextNote
+    }
+
+    /**
+     * change to current VOice to interact with.
+     * createLayer if not does not exist
+     * @param staffN 
+     * @param voiceN 
+     */
+    changeLayer(staffN: string, voiceN: string){
+        if(!this.currentMEI.querySelector(`staff[n='${staffN}'] layer[n='${voiceN}']`)){
+            meiOperation.addLayerForStaff(this.currentMEI, staffN, voiceN)
+        }
     }
 
 
@@ -735,6 +916,9 @@ export class Mouse2SVG {
         }
 
         switch (selEl.id) {
+            case "breveNote":
+                dur = 0.5
+                break;
             case "fullNote":
                 dur = 1
                 break;

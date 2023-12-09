@@ -5,16 +5,15 @@
         "target": "es2017",
         "module": "commonjs",
         "allowSyntheticDefaultImports": true,
-        "experimentalDecorators": true
+        "experimentalDecorators": true,
+        "jsx": "react"
     },
     "include": [
-        "./src/**/*.ts",
-        "./test/**/*.ts",
-        "./deployment/server/editor.ts"
-, "src/scripts/handlers/InsertModeHandler_deprecated.txt", "src/scripts/handlers/NoteDragHandler_deprecated.txt"    ],
+        "./src/**/*.ts"
+, "src/scripts/utils/ReactWrapper.tsx", "src/scripts/Core.ts"    ],
     "exclude": [
         "node_modules",
-        "./src/deprecated",
+        "./src/*deprecated*",
     ],
     "awesomeTypescriptLoaderOptions": {
         "useCache": true

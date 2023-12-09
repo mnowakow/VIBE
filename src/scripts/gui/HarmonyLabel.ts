@@ -4,7 +4,7 @@ import Label from "./Label"
 import { keyToUnicode } from "../utils/mappings"
 
 
-class HarmonyLabel implements Label{
+class HarmonyLabel implements Label {
 
     private isBassoContinuo: Boolean = false
     private isText: Boolean = false
@@ -14,45 +14,48 @@ class HarmonyLabel implements Label{
     currentMEI: Document
     element: Element
 
-    constructor(inputString: string, startid: string, mei: Document){
+    constructor(inputString: string, startid: string, mei: Document) {
         this.startid = startid
         this.currentMEI = mei
         this.inputString = inputString
         this.element = this.currentMEI.getElementById(startid)
 
-        if(["note", "chord"].some(c => this.element.tagName === c)){
-            this.checkFormat(inputString)        
+        if (["note", "chord"].some(c => this.element.tagName === c)) {
+            this.checkFormat(inputString)
             this.createElement(inputString)
         }
     }
 
-    checkFormat(inputString: string){
+    checkFormat(inputString: string) {
         this.isBassoContinuo = false
         this.isText = false
         var letters = /[AaBC-Zc-z].*/ // b is allowed character in bc
-        if(inputString.match(letters)){
+        var isEmpty = inputString === ""
+        if (inputString.match(letters)) {
             this.isText = true
-        }else{
+        } else if(isEmpty){
+            this.element.dispatchEvent(new Event("emptyHarmonyText"))
+        } else{
             this.isBassoContinuo = true
         }
     }
-    
+
     /**
      * Change text of already existing label
      * @param inputString 
      */
-    modifyLabel(inputString: string){
+    modifyLabel(inputString: string) {
         this.checkFormat(inputString)
         this.parseInput(inputString)
-       
+
     }
 
-    createElement(inputString: string){
-        
+    createElement(inputString: string) {
+
         this.element = this.currentMEI.createElement("harm")
         this.element.setAttribute("id", uuidv4())
         this.element.setAttribute("place", "below")
-        
+
         Array.from(this.element.children).forEach(c => {
             c.remove()
         })
@@ -60,28 +63,37 @@ class HarmonyLabel implements Label{
         this.setStartId()
     }
 
-    parseInput(inputString){
-        if(this.isBassoContinuo){
+    parseInput(inputString) {
+        if (this.isBassoContinuo) {
             this.parseFB(inputString)
         }
-        if(this.isText){
+        if (this.isText) {
             this.parseText(inputString)
         }
     }
 
-    parseText(inputString: string){
+    parseText(inputString: string) {
         inputString = inputString.replace("b", keyToUnicode.get("b"))
-        inputString = inputString.replace(/(?<!&)#/g, keyToUnicode.get("#"))
+        //inputString = inputString.replace(/(?<!&)#/g, keyToUnicode.get("#"))
+
+        var regex = /(&)?#/g;
+        inputString = inputString.replace(regex, function (match, capturedGroup) {
+            if (capturedGroup === "&") {
+                return match;
+            } else {
+                return keyToUnicode.get("#");
+            }
+        });
         inputString = inputString.replace("n", keyToUnicode.get("n"))
         inputString = inputString.replace("\\^", keyToUnicode.get("\\^"))
         inputString = inputString.replace("/(?<!\/)°\/g", keyToUnicode.get("°"))
         inputString = inputString.replace("/°", keyToUnicode.get("/°"))
-    
+
         this.element.textContent = inputString
     }
 
-    
-    parseFB(sa: string){
+
+    parseFB(sa: string) {
         var splitArray: Array<string> = sa.split(" ")
         splitArray = splitArray.filter(s => s !== "")
         var fb = this.currentMEI.createElementNS(c._MEINS_, "fb")
@@ -91,11 +103,22 @@ class HarmonyLabel implements Label{
         splitArray.forEach(sa => {
             var f = this.currentMEI.createElementNS(c._MEINS_, "f")
             sa = sa.replace("b", keyToUnicode.get("b"))
-            sa = sa.replace(/(?<!&)#/g, keyToUnicode.get("#"))
+            //sa = sa.replace(/(?<!&)#/g, keyToUnicode.get("#"))
+            var regex = /(&)?#/g;
+
+            sa = sa.replace(regex, function(match, capturedGroup) {
+            if (capturedGroup === "&") {
+                // If the '#' is preceded by '&', leave it as is
+                return match;
+            } else {
+                // Replace '#' with the desired value
+                return keyToUnicode.get("#");
+            }
+            });
             sa = sa.replace("n", keyToUnicode.get("n"))
             f.textContent = sa
             fb.appendChild(f)
-        }) 
+        })
     }
 
 
@@ -105,26 +128,26 @@ class HarmonyLabel implements Label{
      * Has to be set by HarmonyHandler
      * @param el 
      */
-    setStartId(startId: string = this.startid){
+    setStartId(startId: string = this.startid) {
         this.element.setAttribute("startid", startId)
         return this
     }
 
 
     ////////////// GETTER/ SETTER ////////////
-    getElement(){
+    getElement() {
         return this.element
     }
 
-    getInput(){
+    getInput() {
         return this.inputString
     }
 
-    getStartId(){
+    getStartId() {
         return this.startid
     }
 
-    setCurrentMEI(mei: Document){
+    setCurrentMEI(mei: Document) {
         this.currentMEI = mei
         return this
     }

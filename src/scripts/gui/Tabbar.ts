@@ -6,10 +6,10 @@ import interact from 'interactjs'
 import { constants as c } from '../constants'
 import * as meioperations from "../utils/MEIOperations"
 import * as cq from "../utils/convenienceQueries"
-import { isJSDocThisTag } from 'typescript'
+import * as ReactWrapper from '../utils/ReactWrapper'
 
 
-const buttonStyleDarkOutline = "btn btn-outline-dark btn-sm"
+const buttonStyleDarkOutline = "btn btn-outline-dark btn-md"
 const buttonStyleDark = "btn btn-dark btn-md"
 const smuflFont = "smufl"
 const alterBtn = "alterBtn"
@@ -22,10 +22,12 @@ class Tabbar {
     private noteButtonGroup: HTMLElement
     private dotButtonGroup: HTMLElement
     private modButtonGroup: HTMLElement
+    private accidButtonGroup: HTMLElement
     private sidebar: HTMLElement
     private sideBarGroup: HTMLElement;
     private soundGroup: HTMLElement;
     private zoomGroup: HTMLElement;
+    private colorGroup: HTMLElement;
     private fileSelectGroup: HTMLElement;
     private midiSelectGroup: HTMLElement
 
@@ -42,11 +44,15 @@ class Tabbar {
     private insertSelectGroup: HTMLElement
     private options: customType.InstanceOptions
 
+    private audioBlob: Blob
+    private audioFile: File
+
     private containerId: string
     private container: Element
     private interactionOverlay: Element
     private vrvSVG: Element
     importCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>
+    alignCallback: (file: any) => void
     getMEICallback: (pageURI: string) => Promise<string>
 
     //private task: Evaluation
@@ -96,6 +102,9 @@ class Tabbar {
 
         //Tempo
         //accordeon.appendChild(this.createTempoAccItem())
+
+        //midiSelect
+        accordeon.append(this.createMidiSelect())
     }
 
     createKeySigAccItem(): Element {
@@ -136,9 +145,20 @@ class Tabbar {
         var clefSelectItem = dc.makeNewAccordionItem("sidebarList", "selectClef", "selectClefHeader", "selectClefBtn", "Clef", buttonStyleDark, "selectClefDiv")
         var clefList = dc.makeNewDiv("clefList", "list-group flex-fill")
         clefSelectItem.querySelector("#selectClefDiv").appendChild(clefList)
+        clefList.appendChild(dc.makeNewAElement("&#x1D11F", "GClefOctUp", "list-group-item list-group-item-action " + smuflFont, "#", true))
         clefList.appendChild(dc.makeNewAElement("&#xE050", "GClef", "list-group-item list-group-item-action " + smuflFont, "#", true))
-        clefList.appendChild(dc.makeNewAElement("&#xE05C", "CClef", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        clefList.appendChild(dc.makeNewAElement("&#x1D120", "GClefOctDown", "list-group-item list-group-item-action " + smuflFont, "#", true))
+
+        clefList.appendChild(dc.makeNewAElement("Soprano &#xE05C", "CClefSoprano", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        clefList.appendChild(dc.makeNewAElement("Mezzo &#xE05C", "CClefMezzo", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        clefList.appendChild(dc.makeNewAElement("Alto &#xE05C", "CClefAlto", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        clefList.appendChild(dc.makeNewAElement("Tenor &#xE05C", "CClefTenor", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        clefList.appendChild(dc.makeNewAElement("Bariton &#xE05C", "CClefBariton", "list-group-item list-group-item-action " + smuflFont, "#", true))
+
+
+        clefList.appendChild(dc.makeNewAElement("&#x1D123", "FClefOctUp", "list-group-item list-group-item-action " + smuflFont, "#", true))
         clefList.appendChild(dc.makeNewAElement("&#xE062", "FClef", "list-group-item list-group-item-action " + smuflFont, "#", true))
+        clefList.appendChild(dc.makeNewAElement("&#x1D124", "FClefOctDown", "list-group-item list-group-item-action " + smuflFont, "#", true))
         return clefSelectItem
     }
 
@@ -219,6 +239,13 @@ class Tabbar {
         return tempoItem
     }
 
+    createMidiSelect(): Element{
+        var selectItem = dc.makeNewSelect("midiDeviceSelect", [], "MIDI Input Device")
+        // buttonStyleDark.split(" ").forEach(c => selectItem.classList.add(c))
+        selectItem.classList.add("accordion-header")
+        return selectItem
+    }
+
     private optionalButtons() {
         if (typeof this.sidebar === "undefined") {
             return
@@ -234,7 +261,10 @@ class Tabbar {
         cq.getContainer(this.containerId).querySelectorAll("#annotationCanvas > g")?.forEach(c => {
             var text = c.querySelector(".annotDiv").textContent || c.querySelector(".annotDiv").getAttribute("data-text")
             var a = dc.makeNewAElement(text, "", "list-group-item list-group-item-action list-group-item-primary", "#")
-            a.setAttribute("refId", c.id)
+            a.setAttribute("refId", c.id);
+            if((c.querySelector(".annotDiv") as HTMLElement).style.backgroundColor.length > 0){
+                (a as HTMLElement).style.backgroundColor = (c.querySelector(".annotDiv") as HTMLElement).style.backgroundColor
+            }
             //a.setAttribute("contenteditable", "true")
             a.addEventListener("click", function () {
                 a.setAttribute("contenteditable", "true")
@@ -261,26 +291,24 @@ class Tabbar {
         this.sidebar.appendChild(annotList)
     }
 
-    createAnnotListFunction = (function (e) {
+    createAnnotListHandler = (function createAnnotListHandler(e) {
         var t = e.target as Element
-        if (t.closest(".vse-container").id !== this.containerId) return
+        if (t.closest(".vibe-container").id !== this.containerId) return
         this.createAnnotList(e)
     }
     ).bind(this)
 
     private createButtons() {
         var that = this
-        // Buttons können in eigenes package ausgelagert werden (Editor)
-
 
         // and now the tabs
         this.notationTab = cq.getContainer(this.containerId).querySelector("#notationTabGroup")
         this.notationTab.append(dc.makeNewButton("Notation", "notationTabBtn", buttonStyleDarkOutline + " " + tabFlag))
 
-        this.articulationTab = cq.getContainer(this.containerId).querySelector("#articulationTabGroup")
-        this.articulationTab.append(dc.makeNewButton("Articulation", "articulationTabBtn", buttonStyleDarkOutline + " " + tabFlag))
+        //this.articulationTab = cq.getContainer(this.containerId).querySelector("#articulationTabGroup")
+        //this.articulationTab.append(dc.makeNewButton("Articulation", "articulationTabBtn", buttonStyleDarkOutline + " " + tabFlag))
 
-        this.melismaTab = cq.getContainer(this.containerId).querySelector("#melismaTabGroup")
+        //this.melismaTab = cq.getContainer(this.containerId).querySelector("#melismaTabGroup")
         //this.melismaTab.append(dc.makeNewButton("Melisma", "melismaTabBtn", buttonStyleDarkOutline + " " + tabFlag))
 
 
@@ -288,6 +316,7 @@ class Tabbar {
         this.annotationTab.append(dc.makeNewButton("Annotation", "annotationTabBtn", buttonStyleDarkOutline + " " + tabFlag))
 
         this.noteButtonGroup = cq.getContainer(this.containerId).querySelector("#noteGroup")
+        this.noteButtonGroup.append(dc.makeNewButton("&#x1D15C", "breveNote", buttonStyleDarkOutline + " " + smuflFont, "", true))
         this.noteButtonGroup.append(dc.makeNewButton("&#x1D15D", "fullNote", buttonStyleDarkOutline + " " + smuflFont, "", true))
         this.noteButtonGroup.append(dc.makeNewButton("&#x1D15E", "halfNote", buttonStyleDarkOutline + " " + smuflFont, "", true))
         this.noteButtonGroup.append(dc.makeNewButton("&#x1D15F", "quarterNote", buttonStyleDarkOutline + " " + smuflFont + " selected", "", true))
@@ -299,17 +328,21 @@ class Tabbar {
         this.dotButtonGroup.append(dc.makeNewButton(".", "oneDot", buttonStyleDarkOutline + " " + smuflFont, "", true))
         this.dotButtonGroup.append(dc.makeNewButton(". .", "twoDot", buttonStyleDarkOutline + " " + smuflFont, "", true))
 
+        // mods for phrasing and rhythm
         this.modButtonGroup = cq.getContainer(this.containerId).querySelector("#modGroup")
         this.modButtonGroup.appendChild(dc.makeNewButton("____", "tupletBtn", buttonStyleDarkOutline + " " + smuflFont, "", true))
         //this.modButtonGroup.appendChild(dc.makeNewButton("&#x1D13D;&#x1D13E;", "pauseNote", buttonStyleDarkOutline + " " + smuflFont, "", true))
         this.modButtonGroup.appendChild(dc.makeNewButton("&#8256", "tieNotes", buttonStyleDarkOutline + " " + smuflFont, "", true))
         this.modButtonGroup.appendChild(dc.makeNewButton("&#9835;", "organizeBeams", buttonStyleDarkOutline + " " + smuflFont, "", true))
-        this.modButtonGroup.appendChild(dc.makeNewButton("&#x266D;", "alterDown", buttonStyleDarkOutline + " " + smuflFont + " " + alterBtn, "", true))
-        this.modButtonGroup.appendChild(dc.makeNewButton("&#x266F;", "alterUp", buttonStyleDarkOutline + " " + smuflFont + " " + alterBtn, "", true))
-        this.modButtonGroup.appendChild(dc.makeNewButton("&#x266E;", "alterNeutral", buttonStyleDarkOutline + " " + smuflFont + " " + alterBtn, "", true))
-        this.modButtonGroup.appendChild(dc.makeNewButton("&#x1D12B", "alterDDown", buttonStyleDarkOutline + " " + smuflFont + " " + alterBtn, "", true))
-        this.modButtonGroup.appendChild(dc.makeNewButton("&#x1D12A", "alterDUp", buttonStyleDarkOutline + " " + smuflFont + " " + alterBtn, "", true))
-        this.modButtonGroup.addEventListener("click", this.exclusiveSelectHandler)
+        
+        //accidentals
+        this.accidButtonGroup = cq.getContainer(this.containerId).querySelector("#accidGroup")
+        this.accidButtonGroup.appendChild(dc.makeNewButton("&#x266D;", "alterDown", buttonStyleDarkOutline + " " + smuflFont + " " + alterBtn, "", true))
+        this.accidButtonGroup.appendChild(dc.makeNewButton("&#x266F;", "alterUp", buttonStyleDarkOutline + " " + smuflFont + " " + alterBtn, "", true))
+        this.accidButtonGroup.appendChild(dc.makeNewButton("&#x266E;", "alterNeutral", buttonStyleDarkOutline + " " + smuflFont + " " + alterBtn, "", true))
+        this.accidButtonGroup.appendChild(dc.makeNewButton("&#x1D12B", "alterDDown", buttonStyleDarkOutline + " " + smuflFont + " " + alterBtn, "", true))
+        this.accidButtonGroup.appendChild(dc.makeNewButton("&#x1D12A", "alterDUp", buttonStyleDarkOutline + " " + smuflFont + " " + alterBtn, "", true))
+        this.accidButtonGroup.addEventListener("click", this.exclusiveSelectHandler)
 
         this.soundGroup = cq.getContainer(this.containerId).querySelector("#soundGroup")
         this.soundGroup.appendChild(dc.makeNewButton("", "playBtn", buttonStyleDarkOutline))
@@ -319,13 +352,21 @@ class Tabbar {
         this.zoomGroup = cq.getContainer(this.containerId).querySelector("#zoomGroup")
         this.zoomGroup.append(dc.makeNewButton("", "zoomOutBtn", buttonStyleDarkOutline))
         this.zoomGroup.append(dc.makeNewButton("", "zoomInBtn", buttonStyleDarkOutline))
-        
-        this.midiSelectGroup = cq.getContainer(this.containerId).querySelector("#midiSelectGroup")
-        this.midiSelectGroup.append(dc.makeNewSelect("midiDeviceSelect", [], "MIDI Input Device"))
+
+        this.colorGroup = cq.getContainer(this.containerId).querySelector("#colorGroup")
+        function handleColor(color: string){
+            this.colorGroup.setAttribute("selectedColor", color)
+            this.colorGroup.dispatchEvent(new Event("change"))
+        }
+        this.colorGroup.append(ReactWrapper.createColorPicker("colorPicker", handleColor.bind(this)))
 
         this.fileSelectGroup = cq.getContainer(this.containerId).querySelector("#fileSelectGroup")
-        this.fileSelectGroup.append(dc.makeNewInput("importFile", "file", ""))
-        this.fileSelectGroup.append(dc.makeNewButton("Import File", "importFileBtn", buttonStyleDarkOutline))
+
+        this.fileSelectGroup.append(dc.makeNewInput("importAudioFile", "file", ""))
+        this.fileSelectGroup.append(dc.makeNewButton("Import Audiofile", "importAudioFileBtn", buttonStyleDarkOutline))
+
+        this.fileSelectGroup.append(dc.makeNewInput("importXML", "file", ""))
+        this.fileSelectGroup.append(dc.makeNewButton("Import Score", "importXMLBtn", buttonStyleDarkOutline))
         this.fileSelectGroup.append(dc.makeNewButton("Export MEI", "exportFileBtn", buttonStyleDarkOutline))
         var showBBToggle = dc.makeNewToggle("showBB", buttonStyleDark, "BBoxes", "showBBDiv")
         this.setToggleLogic(
@@ -368,7 +409,7 @@ class Tabbar {
 
     createInsertSelect() {
         //InsertSelect DropdownMenu
-        this.insertSelectGroup = dc.makeNewDiv("insertGroup", "customGroup btn-group-sm me-2 h-100", { role: "group" }) as HTMLElement
+        this.insertSelectGroup = dc.makeNewDiv("insertGroup", "customGroup btn-group-md me-2 h-100", { role: "group" }) as HTMLElement
         var toggle = dc.makeNewToggle("insertToggle", buttonStyleDarkOutline, "Replace", "insertToggleDiv")
         toggle.addEventListener("click", function (e: MouseEvent) {
             e.preventDefault()
@@ -388,15 +429,15 @@ class Tabbar {
     }
 
     createButtonsAnnotationMode() {
-        this.annotGroupKM = dc.makeNewDiv("annotGroupKM", "customGroup btn-group-sm me-2 h-100", { role: "group" }) as HTMLElement
+        this.annotGroupKM = dc.makeNewDiv("annotGroupKM", "customGroup btn-group-md me-2 h-100", { role: "group" }) as HTMLElement
         this.annotGroupKM.append(dc.makeNewButton("Text", "staticTextButton", buttonStyleDarkOutline))
-        this.annotGroupKM.append(dc.makeNewButton("Linked Text", "linkedAnnotButton", buttonStyleDarkOutline + " selected"))
+        this.annotGroupKM.append(dc.makeNewButton("Sticky Text", "linkedAnnotButton", buttonStyleDarkOutline + " selected"))
         this.annotGroupKM.append(dc.makeNewButton("Harmony", "harmonyAnnotButton", buttonStyleDarkOutline))
         this.annotGroupKM.addEventListener("click", this.exclusiveSelectHandler)
     }
 
     createArticualtionButtons(){
-        this.articGroup = dc.makeNewDiv("articGroup", "customGroup btn-group-sm me-2 h-100", { role: "group" }) as HTMLElement
+        this.articGroup = dc.makeNewDiv("articGroup", "customGroup btn-group-md me-2 h-100", { role: "group" }) as HTMLElement
         this.articGroup.append(dc.makeNewButton(".", "staccatoBtn", buttonStyleDarkOutline))
         this.articGroup.append(dc.makeNewButton("_", "tenutoBtn", buttonStyleDarkOutline))
         this.articGroup.append(dc.makeNewButton("&#x1D17F;", "marcatoBtn", buttonStyleDarkOutline + " " + smuflFont, "", true))
@@ -415,7 +456,7 @@ class Tabbar {
         
         //tabs
         btnToolbar.appendChild(this.notationTab)
-        btnToolbar.appendChild(this.articulationTab)
+        //btnToolbar.appendChild(this.articulationTab)
         //btnToolbar.appendChild(this.melismaTab)
 
         btnToolbar.appendChild(this.annotationTab)
@@ -423,7 +464,10 @@ class Tabbar {
         //further utils
         btnToolbar.appendChild(this.soundGroup)
         btnToolbar.appendChild(this.zoomGroup)
-        btnToolbar.appendChild(this.midiSelectGroup)
+
+        btnToolbar.append(this.colorGroup)
+
+        //btnToolbar.appendChild(this.midiSelectGroup)
         btnToolbar.appendChild(this.fileSelectGroup)
         
     }
@@ -462,9 +506,9 @@ class Tabbar {
         // achtung: nie preventDefault in einem Document anwenden
         document.addEventListener("keydown", this.closeHandlerKey)
 
-        //document.getElementsByClassName("vse-container")[0]?.addEventListener("click", this.closeHandlerMouse)
+        //document.getElementsByClassName("vibe-container")[0]?.addEventListener("click", this.closeHandlerMouse)
 
-        cq.getContainer(this.containerId).querySelectorAll("#dotGroup button, #noteGroup button, #modGroup button").forEach(el => {
+        cq.getContainer(this.containerId).querySelectorAll("#dotGroup button, #noteGroup button, #modGroup button, #accidGroup Button").forEach(el => {
             el.addEventListener("click", this.exclusiveSelectHandler)
         })
 
@@ -488,30 +532,54 @@ class Tabbar {
 
         })
 
-        cq.getContainer(this.containerId).addEventListener("annotChanged", this.createAnnotListFunction, true)
+        cq.getContainer(this.containerId).addEventListener("annotChanged", this.createAnnotListHandler, true)
 
 
-        //FileSelection
-        cq.getContainer(this.containerId).querySelector("#importFileBtn").addEventListener("click", function () {
-            var impF = this.parentElement.querySelector("#importFile")
+        //Markup/ XML FileSelection
+        cq.getContainer(this.containerId).querySelector("#importXMLBtn").addEventListener("click", function () {
+            var impF = this.parentElement.querySelector("#importXML")
             impF.setAttribute("accept", [".musicxml", ".mei"].join(", "))
             impF.click()
         })
 
         var that = this
-        cq.getContainer(this.containerId).querySelector("#importFile").addEventListener("change", function (e) {
+        cq.getContainer(this.containerId).querySelector("#importXML").addEventListener("input", function (e) {
             var fr = new FileReader()
             fr.onload = function () {
                 that.importCallback("", fr.result as string, false, c._TARGETDIVID_).then(mei => {
                     var meiXml = meioperations.mergeSectionScoreDefToLayer(mei)
                     meiXml = meioperations.mergeArticToParent(meiXml)
                     that.importCallback("", meiXml, false, c._TARGETDIVID_)
+                    that.align(null, null)
                 })
             }
             fr.readAsText(this.files[0])
 
         }, false)
 
+        /**
+         * Import Audio File for alignment
+         */
+        cq.getContainer(this.containerId).querySelector("#importAudioFileBtn").addEventListener("click", function () {
+            var impF = this.parentElement.querySelector("#importAudioFile")
+            impF.setAttribute("accept", [".mp3", ".wav"].join(", "))
+            impF.click()
+        })
+
+        cq.getContainer(this.containerId).querySelector("#importAudioFile").addEventListener("input", function (e) {
+            var fr = new FileReader();
+        
+            fr.onload = function () {
+                var arrayBuffer = new Blob([fr.result])
+                that.align(arrayBuffer, f)
+            }
+            var f = this.files[0] as File
+            fr.readAsArrayBuffer(f);
+        }, false);
+
+        /**
+         * Download settings
+         */
         cq.getContainer(this.containerId).querySelector("#exportFileBtn").addEventListener("click", function () {
             that.getMEICallback("").then(mei => {
                 var d = new Date()
@@ -523,10 +591,32 @@ class Tabbar {
                     + ("0" + d.getMinutes()).slice(-2)
                     + ("0" + d.getSeconds()).slice(-2)
                     + "_"
-                    + "vseScore_" + that.containerId + ".mei"
+                    + "vibeScore_" + that.containerId + ".mei"
                 that.download(fileName, mei)
             })
         })
+    }
+
+    /**
+     * Call the alignCallback with parameters. Only when the audioBlob and audioFile are defined, an alignment can take place.
+     * This is called when either an audiofile or xml data is loaded. In the case of XML Data an audio file must be loaded prevously
+     * @param blob 
+     * @param file 
+     * @returns 
+     */
+    align(blob: Blob, file: File){
+        this.audioBlob = blob
+        this.audioFile = file
+        if(!(this.audioBlob && this.audioFile)) return
+        this.fileSelectGroup.querySelectorAll("#audioSlider, #recordAlignment, #exportAlignment").forEach(el => el.remove())
+        var recBtn = dc.makeNewToggle("recordAlignment", buttonStyleDarkOutline + " " + smuflFont, "rec", "recordDiv")
+        var audioSlider = dc.makeNewAudioSlider("audioSlider", "", URL.createObjectURL(this.audioFile))
+        var exportAlignBtn = dc.makeNewButton("Export Alignment", "exportAlignment", buttonStyleDarkOutline + " " + smuflFont)
+        
+        this.fileSelectGroup.prepend(audioSlider)
+        this.fileSelectGroup.prepend(recBtn)
+        this.fileSelectGroup.prepend(exportAlignBtn)
+        this.alignCallback(this.audioBlob);
     }
 
     download(file: string, text: string) {
@@ -548,7 +638,7 @@ class Tabbar {
 
         document.removeEventListener("keydown", this.closeHandlerKey)
 
-        cq.getContainer(this.containerId).querySelectorAll(".btn-group-sm button").forEach(el => {
+        cq.getContainer(this.containerId).querySelectorAll(".btn-group-md button").forEach(el => {
             el.removeEventListener("click", this.exclusiveSelectHandler)
         })
 
@@ -558,7 +648,7 @@ class Tabbar {
             a.removeEventListener("click", this.customToolbarHandler)
         })
 
-        cq.getContainer(this.containerId).removeEventListener("annotChanged", this.createAnnotListFunction)
+        cq.getContainer(this.containerId).removeEventListener("annotChanged", this.createAnnotListHandler)
         interact("#annotList").unset()
     }
 
@@ -624,7 +714,7 @@ class Tabbar {
             })
             if (!target.classList.contains(selectedFlag)) {
                 target.classList.add(selectedFlag)
-            }else if(["modGroup", "dotGroup", "chordGroupKM", "articGroup"].some(id => id === target.parentElement.id) && target.classList.contains(selectedFlag)){
+            }else if(["modGroup", "dotGroup", "chordGroupKM", "articGroup", "accidGroup"].some(id => id === target.parentElement.id) && target.classList.contains(selectedFlag)){
                 target.classList.remove(selectedFlag)
             }
 
@@ -654,7 +744,6 @@ class Tabbar {
             Array.from(cq.getContainer(this.containerId).querySelectorAll(".openSidebar")).forEach(el => {
                 elParent = el.parentElement
                 elParent.querySelectorAll(":scope > div").forEach(d => {
-                    if(d.id === "svgContainer") return
                     that.styleCache.set(d.id, d.getAttribute("style"))
                     d.removeAttribute("style")
                 })
@@ -700,6 +789,8 @@ class Tabbar {
         //this.customToolbar.appendChild(this.insertSelectGroup)
         this.customToolbar.appendChild(this.noteButtonGroup)
         this.customToolbar.appendChild(this.dotButtonGroup)
+        this.customToolbar.appendChild(this.accidButtonGroup)
+        this.customToolbar.append(this.articGroup)
         this.customToolbar.appendChild(this.modButtonGroup)
     }
 
@@ -728,10 +819,34 @@ class Tabbar {
      */
     setImportCallback(importCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>) {
         this.importCallback = importCallback
+        return this
+    }
+
+    setAlignCallback(alignCallback: (file: any) => void){
+        this.alignCallback = alignCallback
+        return this
     }
 
     setGetMEICallback(getMEICallback: (pageURI: string) => Promise<string>) {
         this.getMEICallback = getMEICallback
+        return this
+    }
+
+    /**
+     * Set audio File and directly computes alignment
+     * @param file 
+     * @returns 
+     */
+    setAudioFile(file: File){
+        this.audioFile = file
+        var fr = new FileReader()
+        var that = this
+        fr.readAsArrayBuffer(file);
+        fr.onload = function () {
+            var arrayBuffer = new Blob([fr.result])
+            that.align(arrayBuffer, file)
+        }
+        return this
     }
 }
 

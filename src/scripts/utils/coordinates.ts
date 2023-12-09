@@ -13,7 +13,13 @@ export function getDOMMatrixCoordinates(element: Element | DOMRect, canvas: Elem
     }
     if(canvas.id === "vrvSVG") canvas = canvas.previousElementSibling
     var canvasMatrix = (canvas as unknown as SVGGraphicsElement).getScreenCTM().inverse()
-    var elementBBox = !(element instanceof Element) ? element : element.getBoundingClientRect()
+    //var elementBBox = !(element instanceof Element) ? element : element.getBoundingClientRect()
+    var elementBBox
+    try{
+        elementBBox = (element as any).getBoundingClientRect()
+    }catch(error){
+        elementBBox = element
+    }
     var ptLT = new DOMPoint(elementBBox.left, elementBBox.top)
     ptLT = ptLT.matrixTransform(canvasMatrix)
     var ptRB = new DOMPoint(elementBBox.right, elementBBox.bottom)

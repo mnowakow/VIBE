@@ -1,20 +1,15 @@
-import * as d3 from 'd3';
 import { Mouse2SVG } from '../utils/Mouse2SVG';
 import Handler from './Handler';
 import MusicProcessor from '../MusicProcessor';
 import { numToNoteButtonId, numToDotButtonId, attrToModButtonId } from '../utils/mappings'
-import { constants as c } from "../constants"
-import LabelHandler from './LabelHandler';
 import * as coordinates from "../utils/coordinates"
 import * as cq from "../utils/convenienceQueries"
-import { idText } from 'typescript';
 import ScoreGraph from '../datastructures/ScoreGraph';
-
 const marked = "marked"
 
 class SelectionHandler implements Handler {
 
-    private canvas;
+    private canvas: Element;
     private initialX: number;
     private initialY: number;
     m2s: Mouse2SVG;
@@ -28,6 +23,21 @@ class SelectionHandler implements Handler {
     private vrvSVG: Element
     private scoreGraph: ScoreGraph
 
+    private selStart: any
+    private selecting: any
+    private selEnd: any
+    private getCoords: any
+
+    private selectStarted = false
+    private isSelecting = false
+    private selectEnded = false
+
+    private isDragging = false
+    private selectStartX: number
+    private selectStartY: number
+    private selectDist = 0
+    private dragOnce = false
+
     constructor(containerId: string) {
         this.setContainerId(containerId)
 
@@ -36,16 +46,36 @@ class SelectionHandler implements Handler {
         this.shiftPressed = false
         this.setKeyListeners()
 
-        this.canvas = d3.select("#" + this.containerId + " #interactionOverlay"); // draw directly in svg
-        var dragSelectAction = d3.drag()
-            .on('start', selStart)
-            .on('drag', selecting)
-            .on('end', selEnd)
-
         var that = this;
-        function selStart() {
-            if (document.getElementById(that.containerId).classList.contains("annotMode")) return // prevent selecting when resizing annotation objects
-            var pt = coordinates.transformToDOMMatrixCoordinates(d3.event.sourceEvent.clientX, d3.event.sourceEvent.clientY, cq.getInteractOverlay(that.containerId))
+        this.getCoords = (function getCoords(e: MouseEvent){
+            this.selectDist = Math.sqrt(Math.abs(e.clientX - this.selectStartX)**2 + Math.abs(e.clientY - this.selectStartY)**2)
+            if(this.selectDist > 10){ 
+                console.log("dragging", this.selectDist)
+                this.isDragging = true
+                if(!this.dragOnce){
+                    this.dragOnce = true
+                    //this.interactionOverlay.dispatchEvent(new Event("removeClickHandler"))
+                    this.selStart(e)
+                }
+            }
+        }).bind(this)
+
+        this.selStart = (function selStart(e: MouseEvent) {
+            e.preventDefault()
+
+            this.selectStartX  = this.selectStartX || e.clientX
+            this.selectStartY  = this.selectStartY || e.clientY
+            if(!this.isDragging) return
+
+            console.log("selectstart")
+
+            if (cq.getContainer(that.containerId).classList.contains("annotMode")){
+                this.selEnd(e)
+                return
+            } 
+
+            //var pt = coordinates.transformToDOMMatrixCoordinates(d3.event.sourceEvent.clientX, d3.event.sourceEvent.clientY, cq.getInteractOverlay(that.containerId))
+            var pt = coordinates.transformToDOMMatrixCoordinates(e.clientX, e.clientY, cq.getInteractOverlay(that.containerId))
             that.initialX = pt.x //d3.event.x
             that.initialY = pt.y //d3.event.y
 
@@ -56,11 +86,15 @@ class SelectionHandler implements Handler {
                 })
             }
             that.initRect(that.initialX, that.initialY)
-        }
+            this.isSelecting = true
+        }).bind(this)
 
-        function selecting() {
+        this.selecting = (function selecting(e: MouseEvent) {
+            e.preventDefault()
             if (document.getElementById(that.containerId).classList.contains("annotMode")) return // prevent selecting when resizing annotation objects
-            var pt = coordinates.transformToDOMMatrixCoordinates(d3.event.sourceEvent.clientX, d3.event.sourceEvent.clientY, cq.getInteractOverlay(that.containerId))
+            if(!this.isSelecting) return
+            //var pt = coordinates.transformToDOMMatrixCoordinates(d3.event.sourceEvent.clientX, d3.event.sourceEvent.clientY, cq.getInteractOverlay(that.containerId))
+            var pt = coordinates.transformToDOMMatrixCoordinates(e.clientX, e.clientY, cq.getInteractOverlay(that.containerId))
             const curX = pt.x //d3.event.x + container.scrollLeft 
             const curY = pt.y //d3.event.y + container.scrollTop 
 
@@ -110,11 +144,20 @@ class SelectionHandler implements Handler {
                 }
             })
 
-        }
+        }).bind(this)
 
-        function selEnd() {
+        this.selEnd = (function selEnd(e: MouseEvent) {
+            console.log("selectionend", e.target)
+            
+            e.preventDefault()
+            this.isSelecting = false
+            this.isDragging = false
+            this.dragOnce = false
+            this.selectStartX = undefined
+            this.selectStartY = undefined
+            this.selectDist = 0
             if (document.getElementById(that.containerId).classList.contains("annotMode")) return // prevent selecting when resizing annotation objects
-            var selectRect = that.interactionOverlay.querySelector("#selectRect");
+            var selectRect = cq.getInteractOverlay(that.containerId).querySelector("#selectRect");
             if (selectRect !== null && selectRect?.getAttribute("width") !== "0" && selectRect?.getAttribute("height") !== "0") {
                 document.dispatchEvent(that.selectEndEvent)
             }
@@ -124,7 +167,7 @@ class SelectionHandler implements Handler {
             document.getElementById(that.containerId)?.querySelectorAll(".lastAdded")?.forEach(la => la.classList.remove("lastAdded"))
             if (firstMarkedNote?.length > 0) {
                 document.getElementById(that.containerId)?.querySelectorAll("#noteGroup *, #dotGroup *, #modGroup *, #articGroup *").forEach(b => b.classList.remove("selected"))
-                
+
                 //select buttons for given note state
                 var modBtnId = that.container.querySelector("#customToolbar #articGroup") !== null ? "artic" : "accid"
                 document.getElementById(that.containerId)?.querySelector("#" + attrToModButtonId.get(meiNote?.getAttribute(modBtnId)))?.classList.add("selected")
@@ -134,37 +177,41 @@ class SelectionHandler implements Handler {
                 document.getElementById(that.containerId)?.querySelector("#" + numToNoteButtonId.get(meiNote?.getAttribute("dur")))?.classList.add("selected")
                 document.getElementById(that.containerId)?.querySelector("#" + numToDotButtonId.get(meiNote?.getAttribute("dots")))?.classList.add("selected")
             }
-        }
-        this.dsa = dragSelectAction
-        this.setListeners()
-        //this.canvas.call(dragSelectAction);
+            //this.interactionOverlay.dispatchEvent(new Event("resetClickHandler"))
+        }).bind(this)
+        this.resetListeners()
     }
     musicPlayer?: MusicProcessor;
     currentMEI?: string | Document;
 
 
     initRect(ulx: number, uly: number): void {
-        this.canvas.append('rect')
-            .attr('x', ulx)
-            .attr('y', uly)
-            .attr('width', 0)
-            .attr('height', 0)
-            .attr('id', 'selectRect')
-            .attr('stroke', 'black')
-            .attr('stroke-width', "1px")
-            .attr('fill', 'none')
+        const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        rect.setAttribute("x", ulx.toString());
+        rect.setAttribute("y", uly.toString());
+        rect.setAttribute("width", "0");
+        rect.setAttribute("height", "0");
+        rect.setAttribute("id", "selectRect");
+        rect.setAttribute("stroke", "black");
+        rect.setAttribute("stroke-width", "1px");
+        rect.setAttribute("fill", "none");
+        this.interactionOverlay.appendChild(rect);
     }
 
     updateRect(newX: number, newY: number, currentWidth: number, currentHeight: number): void {
-        d3.select('#selectRect')
-            .attr('x', newX)
-            .attr('y', newY)
-            .attr('width', currentWidth)
-            .attr('height', currentHeight);
+        const rect = this.interactionOverlay.querySelector("#selectRect") as SVGRectElement;
+        rect.setAttribute("x", newX.toString());
+        rect.setAttribute("y", newY.toString());
+        rect.setAttribute("width", currentWidth.toString());
+        rect.setAttribute("height", currentHeight.toString());
     }
 
     removeListeners(): void {
-        d3.select("#" + this.containerId + " #interactionOverlay").on('mousedown.drag', null)
+        //d3.select("#" + this.containerId + " #interactionOverlay").on('mousedown.drag', null)
+        this.interactionOverlay.removeEventListener("mousedown", this.selStart)
+        this.interactionOverlay.removeEventListener("mousemove", this.selecting)
+        this.interactionOverlay.removeEventListener("mouseup", this.selEnd)
+        
         this.interactionOverlay.querySelectorAll(".note, .rest, .mRest, .notehead").forEach(el => {
             el.removeEventListener("click", this.markedHandler)
         })
@@ -173,10 +220,15 @@ class SelectionHandler implements Handler {
     }
 
     setListeners(): void {
-        this.canvas.call(this.dsa);
+        //this.interactionOverlay.call(this.dsa);
         cq.getInteractOverlay(this.containerId).querySelectorAll(".note, .rest, .mRest, .notehead").forEach(el => {
             el.addEventListener("click", this.markedHandler)
         })
+
+        this.interactionOverlay.addEventListener("mousedown", this.selStart)
+        this.interactionOverlay.addEventListener("mousemove", this.selecting)
+        this.interactionOverlay.addEventListener("mousemove", this.getCoords)
+        this.interactionOverlay.addEventListener("mouseup", this.selEnd)
     }
 
     setKeyListeners() {
@@ -239,7 +291,6 @@ class SelectionHandler implements Handler {
         console.log("shiftPressed ", this.shiftPressed)
     }).bind(this)
 
-
     ///////// GETTER/ SETTER ////////
 
     setm2s(m2s: Mouse2SVG) {
@@ -259,6 +310,11 @@ class SelectionHandler implements Handler {
         this.vrvSVG = cq.getVrvSVG(id)
         return this
     }
+
+    getIsSelecting(): boolean{
+        return this.isSelecting
+    }
 }
 
 export default SelectionHandler;
+

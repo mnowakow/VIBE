@@ -225,39 +225,41 @@ class CustomToolbarHandler implements Handler {
             }
 
             meiOperation.cleanUp(this.currentMEI)
-            var mei = meiConverter.restoreXmlIdTags(this.currentMEI)
+            const mei = meiConverter.restoreXmlIdTags(this.currentMEI)
             this.loadDataCallback("", mei, false)
         }
     }
 
     /**
-     * Alter Notes (accid) according to button.
+     * Alter Notes (accid) according to button. When Button is not Selected, 
      * @param e 
      * @returns 
      */
     alterNotes(e: MouseEvent) {
-        var target = e.target as Element
-        var accidSig: string
+        const target = e.target as Element
+        var accidSig = "n"
 
-        switch (target.id) {
-            case "alterUp":
-                accidSig = "s"
-                break;
-            case "alterDown":
-                accidSig = "f"
-                break;
-            case "alterDUp":
-                accidSig = "ss"
-                break;
-            case "alterDDown":
-                accidSig = "ff"
-                break;
-            case "alterNeutral":
-                accidSig = "n"
-                break;
-            default:
-                console.error(target.id, "No such option for accid alteration")
-                return
+        if(target.classList.contains("selected")){
+            switch (target.id) {
+                case "alterUp":
+                    accidSig = "s"
+                    break;
+                case "alterDown":
+                    accidSig = "f"
+                    break;
+                case "alterDUp":
+                    accidSig = "ss"
+                    break;
+                case "alterDDown":
+                    accidSig = "ff"
+                    break;
+                case "alterNeutral":
+                    accidSig = "n"
+                    break;
+                default:
+                    console.error(target.id, "No such option for accid alteration")
+                    return
+            }
         }
 
         this.vrvSVG.querySelectorAll(".note.marked").forEach(nm => {
@@ -266,7 +268,7 @@ class CustomToolbarHandler implements Handler {
             meiElement.removeAttribute("accid.ges")
         })
 
-        var mei = meiConverter.restoreXmlIdTags(this.currentMEI)
+        const mei = meiConverter.restoreXmlIdTags(this.currentMEI)
         meiOperation.adjustAccids(mei)
         this.loadDataCallback("", mei, false)
     }
@@ -311,6 +313,7 @@ class CustomToolbarHandler implements Handler {
                 artic = "stacc"
                 break;
         }
+        
         meiOperation.setArticulation(this.currentMEI, artic)
         var mei = meiConverter.restoreXmlIdTags(this.currentMEI)
         this.loadDataCallback("", mei, false)

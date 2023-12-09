@@ -9,6 +9,13 @@ import MeasureMatrix from '../datastructures/MeasureMatrix'
 import HarmonyLabel from '../gui/HarmonyLabel'
 import * as coordinates from './coordinates'
 
+/**
+ * This script is a collection of functions which help to manipulate the underlying MEI, so that it can be renderd anew.
+ * E.g.: Add and remove notes, process beams and slurs, cleanup empty elements, etc.
+ * 
+ * Some extract features from the MEI which are not apparent in the MEI itself, like processing ratios and relationsships between notes.
+ * 
+ */
 
 const countableNoteUnitSelector: string =
   ":scope > *[dur]:not([grace])"
@@ -17,11 +24,7 @@ const overfillMeasure = false
 
 const siblingNames = ["note", "chord", "clef", "beam"]
 
-// ":scope > note:not([grace])," +
-// ":scope > chord," +
-// ":scope > beam > chord," +
-// ":scope > beam > note:not([grace])," +
-// ":scope > rest"
+
 
 ////// DELETE //////
 /**
@@ -45,9 +48,10 @@ export function removeFromMEI(scoreElements: Array<Element>, currentMEI: Documen
           currentMEI.getElementById(se.id).remove() // possibility to remove rests entirely
         }
 
-        // remove all tie when startid is no more a note or is deleted
-        currentMEI.querySelectorAll("tie").forEach(t => {
-          if (t.getAttribute("startid") === "#" + se.id) {
+        // remove all tie/ harms etc when startid is no more a note or is deleted
+        //currentMEI.querySelectorAll("tie").forEach(t => {
+        currentMEI.querySelectorAll("[startid]").forEach(t => {
+          if (t.getAttribute("startid").includes(se.id)) {
             if (currentMEI.getElementById(se.id) === null) {
               currentMEI.querySelector(t.getAttribute("endid"))?.remove()
             }
@@ -71,15 +75,8 @@ export function removeFromMEI(scoreElements: Array<Element>, currentMEI: Documen
         }
       }
     })
-    //removeEmptyElements(currentMEI)
-    // For now: No Shifts (22.07.2021)
-    // if($(".measure").length > 1){
-    //   checkDeleteShifts(currentMEI);
-    // }
-    cleanUp(currentMEI)
-    //fillWithRests(currentMEI)
 
-    // Warum ist das ein Problem?
+    cleanUp(currentMEI)
     currentMEI = meiConverter.restoreXmlIdTags(currentMEI)
     resolve(currentMEI)
   })
@@ -172,6 +169,7 @@ export function addToMEI(newSound: NewNote | NewChord, currentMEI: Document, rep
   var newElem: Element
   var nearestNoteIsSameDurRest: Boolean = false
   if (newSound.hasOwnProperty("pname")) {
+    if (!newSound.nearestNoteId) return currentMEI
     var newNote = newSound as NewNote
     if (newNote.rest) {
       newElem = currentMEI.createElement("rest")
@@ -272,7 +270,7 @@ export function addToMEI(newSound: NewNote | NewChord, currentMEI: Document, rep
         }
 
         if (replace) {
-          let ms = Array.from(trueSibling.parentElement.querySelectorAll("note:not(chord note), chord, rest, mRest")) as Element[] //querySelectorAll(":scope > *")
+          let ms = Array.from(trueSibling.parentElement.querySelectorAll("note:not(chord note), chord, rest, mRest")) as Element[]
 
           if (newNote.relPosX === "left") {
             var measureSiblings = ms.filter((_, i) => i >= ms.indexOf(trueSibling))
@@ -306,8 +304,41 @@ export function addToMEI(newSound: NewNote | NewChord, currentMEI: Document, rep
     var newChord = newSound as NewChord
     newElem = convertToElement(newChord, currentMEI)
     var nearestElem = currentMEI.getElementById(newChord.nearestNoteId)
-    if (nearestElem?.tagName === "layer") {
-      nearestElem.insertBefore(newElem, nearestElem.firstChild)
+    // if (nearestElem?.tagName === "layer") {
+    //   nearestElem.insertBefore(newElem, nearestElem.firstChild)
+    var sibling: HTMLElement = currentMEI.getElementById(newChord.nearestNoteId);
+    if (!sibling) return
+    var parentLayer = sibling.closest("layer")
+    var trueParent = sibling.parentElement
+    var isTrueSibling = parentLayer == trueParent
+    var trueSibling: HTMLElement = sibling;
+    if (!isTrueSibling) {
+      var currParent: HTMLElement = trueParent;
+      while (!isTrueSibling) {
+        trueSibling = currParent;
+        currParent = currParent?.parentElement;
+        isTrueSibling = currParent.tagName === "layer"
+      }
+    }
+
+    if (replace) {
+      let ms = Array.from(trueSibling.parentElement.querySelectorAll("note:not(chord note), chord, rest, mRest")) as Element[]
+
+      if (newChord.relPosX === "left") {
+        var measureSiblings = ms.filter((_, i) => i >= ms.indexOf(trueSibling))
+        trueSibling.parentElement.insertBefore(newElem, trueSibling)
+        changeDurationsInLayer(currentMEI, measureSiblings, newElem)
+      } else {
+        if (["clef"].every(el => trueSibling.nextElementSibling?.tagName !== el) && trueSibling.nextElementSibling !== null) {
+
+          var measureSiblings = ms.filter((_, i) => i >= ms.indexOf(trueSibling.nextElementSibling))
+          trueSibling.parentElement.insertBefore(newElem, trueSibling.nextElementSibling)
+
+          changeDurationsInLayer(currentMEI, measureSiblings, newElem)
+        } else {
+          trueSibling.parentElement.insertBefore(newElem, trueSibling.nextElementSibling)
+        }
+      }
     } else if (newChord.relPosX === "left") {
       nearestElem.parentElement.insertBefore(newElem, currentMEI.getElementById(newChord.nearestNoteId))
     } else {
@@ -317,11 +348,63 @@ export function addToMEI(newSound: NewNote | NewChord, currentMEI: Document, rep
 
   // if measure overfills tie note to next measure
   var currentLayer = newElem.closest("layer")
+  currentMEI = tieToNextMeasure(currentMEI, newElem, currMeiClone, replace, newSound)
+
+  newElem = currentMEI.querySelector("#" + newElem.id)
+  fillLayerWithRests(currentLayer, currentMEI)
+
+  //reestablish beams
+  beams?.forEach(b => {
+    var first: Element
+    var last: Element
+    Array.from(b.children).forEach(bc => {
+      var existingChild = currentMEI.querySelector("#" + bc.id)
+      if (existingChild !== null) {
+        if (first == undefined) {
+          first = bc
+        } else {
+          last = bc
+        }
+      } else if (!first) {
+        first = newElem
+      }
+    })
+    if (!last) {
+      last = newElem
+    }
+
+    if (first && last) {
+      var newBeam = currentMEI.createElement("beam")
+      newBeam.id = b.id
+      var beamElements = currentMEI.querySelectorAll("#" + first.id + ", #" + first.id + "~ *:not(#" + last.id + "~ *)") // all elements in between first and last
+      beamElements[0].insertAdjacentElement("beforebegin", newBeam)
+      beamElements.forEach(be => {
+        newBeam.append(be)
+      })
+    }
+  })
+
+  cleanUp(currentMEI)
+  adjustAccids(currentMEI)
+  currentMEI = meiConverter.restoreXmlIdTags(currentMEI)
+  return currentMEI
+}
+
+
+/**
+ * 
+ * @param currentMEI MEI to be changed
+ * @param newElem Element to tie to next measure
+ * @param currMeiClone clone of the original MEI to compute ratios before anything was changed
+ * @param replace replace flag, if addToMEI must be called again
+ * @param newSound change parameters of newSound if it has to be shifted to the right
+ */
+function tieToNextMeasure(currentMEI: Document, newElem: Element, currMeiClone: Node, replace: Boolean, newSound: any) {
+  var currentLayer = newElem.closest("layer")
   if (!overfillMeasure) {
     var newMeasureRatio = getAbsoluteRatio(newElem.closest("layer"))
     var measureRatio = getMeterRatioLocal(currMeiClone as Document, newElem)
     if (newMeasureRatio > measureRatio) {
-      //currentMEI = currMeiClone as Document
       // Decide if next measure should be created and what should be added
       var lastElement = Array.from(currentLayer.querySelectorAll(":scope > :is(note, chord)")).reverse()[0]
       var lastElementRatio = getAbsoluteRatio(lastElement)
@@ -349,53 +432,17 @@ export function addToMEI(newSound: NewNote | NewChord, currentMEI: Document, rep
         if (currentLayer.closest("measure").nextElementSibling === null) { // add measure if there is none to extend into
           addMeasure(currentMEI)
         }
-        var cl = currentMEI.getElementById(currentLayer.id)
-        newSound.nearestNoteId = cl.closest("measure").nextElementSibling.querySelector("staff[n='" + cl.closest("staff").getAttribute("n") + "'] layer[n='" + cl.getAttribute("n") + "'] :is(chord, note, rest, mRest)")?.id
-        newSound.relPosX = "left"
-        if (newSound.nearestNoteId !== null) {
-          currentMEI = addToMEI(newSound, currentMEI, replace)
+        if (newSound) {
+          var cl = currentMEI.getElementById(currentLayer.id)
+          newSound.nearestNoteId = cl.closest("measure").nextElementSibling.querySelector("staff[n='" + cl.closest("staff").getAttribute("n") + "'] layer[n='" + cl.getAttribute("n") + "'] :is(chord, note, rest, mRest)")?.id
+          newSound.relPosX = "left"
+          if (newSound.nearestNoteId !== null) {
+            currentMEI = addToMEI(newSound, currentMEI, replace)
+          }
         }
       }
     }
   }
-
-  newElem = currentMEI.querySelector("#" + newElem.id)
-  fillLayerWithRests(currentLayer, currentMEI)
-
-  //reestablish beams
-  beams.forEach(b => {
-    var first: Element
-    var last: Element
-    Array.from(b.children).forEach(bc => {
-      var existingChild = currentMEI.querySelector("#" + bc.id)
-      if (existingChild !== null) {
-        if (first == undefined) {
-          first = bc
-        } else {
-          last = bc
-        }
-      } else if (first == undefined) {
-        first = newElem
-      }
-    })
-    if (last == undefined) {
-      last = newElem
-    }
-
-    if (first != undefined && last != undefined) {
-      var newBeam = currentMEI.createElement("beam")
-      newBeam.id = b.id
-      var beamElements = currentMEI.querySelectorAll("#" + first.id + ", #" + first.id + "~ *:not(#" + last.id + "~ *)") // all elements in between first and last
-      beamElements[0].insertAdjacentElement("beforebegin", newBeam)
-      beamElements.forEach(be => {
-        newBeam.append(be)
-      })
-    }
-  })
-
-  cleanUp(currentMEI)
-  adjustAccids(currentMEI)
-  currentMEI = meiConverter.restoreXmlIdTags(currentMEI)
   return currentMEI
 }
 
@@ -1193,109 +1240,6 @@ function replaceWithRest(element: Element, currentMEI: Document) {
   elmei.remove()
 }
 
-/** 
- * @deprecated
- * Change duration of the following sound events. Elements to change duration are determined by the class to be "marked". 
- * @param currentMEI  Current MEI as Document
- * @param additionalElements Elements to be considered to be changed.
- * @param refElement Reference Element after which all determined elements (.marked and additionElements) will be changed (e.g. replacing duration during a note insert).
- * If no refElement is given, filter the additionalElements to exclude the refElement
- * @param marked Consider marked elements
- * @returns 
- */
-function _changeDuration(currentMEI: Document, additionalElements: Array<Element> = new Array(), refElement: Element = null): Document {
-  var currMeiClone = currentMEI.cloneNode(true)
-  var changedFlag = "changed"
-  var multiplier: number
-
-  var elmei: Element
-
-  var i = refElement === null ? 1 : 0
-  for (i; i < additionalElements.length; i++) {
-    elmei = currentMEI.getElementById(additionalElements[i].id) as Element
-    var elmeiRatio = getAbsoluteRatio(elmei)
-    var chord = elmei.closest("chord")
-
-    //Dur is attribute of chord and all notes will be changed accordingly
-    if (chord !== null) {
-      if (chord.classList.contains(changedFlag)) {
-        return
-      } else {
-        elmei = chord
-        elmei.classList.add(changedFlag)
-      }
-    }
-    var dur = parseInt(elmei.getAttribute("dur"))
-    var dots = parseInt(elmei.getAttribute("dots")) // is NaN if elmei has no dots
-
-    if (dur > 0) {
-
-      var layerRatio = getAbsoluteRatio(elmei.closest("layer")) // current ratio of layer with already inserted new sound event
-      var localRatio = getMeterRatioLocal(currentMEI, elmei) //getMeterRatioGlobal(currentMEI )
-
-      var danglingRatio = layerRatio - localRatio
-      if (danglingRatio > 0) {
-        var nextElementRatio = getAbsoluteRatio(elmei)
-        var neNewRatio = nextElementRatio - danglingRatio
-        if (neNewRatio > 0) {
-          var durArr = ratioToDur(neNewRatio)
-          elmei.setAttribute("dur", durArr[0].toString())
-          if (durArr[1] > 0) {
-            elmei.setAttribute("dots", durArr[1].toString())
-          } else {
-            elmei.removeAttribute("dots")
-          }
-        } else {
-          elmei.remove()
-        }
-      }
-
-      if ((layerRatio <= localRatio && refElement === null) || (layerRatio < localRatio && refElement !== null)) {
-        var nextElementRatio = getAbsoluteRatio(elmei)
-        var neNewRatio: number
-        if (refElement !== null) {
-          neNewRatio = nextElementRatio - getAbsoluteRatio(refElement)
-        } else {
-          var addRatios = (function (elements: Element[]): number {
-            var r = 0
-            elements.forEach((v, i) => {
-              if (i > 0) {
-                r += getAbsoluteRatio(v)
-              }
-            })
-            return r
-          })
-          neNewRatio = nextElementRatio - (layerRatio - addRatios(additionalElements) - getAbsoluteRatio(additionalElements[0]))
-        }
-        if (neNewRatio > 0) {
-          var durArr = ratioToDur(neNewRatio)
-          elmei.setAttribute("dur", durArr[0].toString())
-          if (durArr[1] > 0) {
-            elmei.setAttribute("dots", durArr[1].toString())
-          } else {
-            elmei.removeAttribute("dots")
-          }
-        } else {
-          elmei.remove()
-        }
-      }
-    }
-  }
-
-  if (!overfillMeasure && elmei != undefined && elmei?.closest("layer") !== null) {
-    var newMeasureRatio = getAbsoluteRatio(elmei.closest("layer"))
-    var localRatio = getMeterRatioLocal(currentMEI, elmei)
-    if (newMeasureRatio > localRatio) { //getMeterRatioGlobal(currentMEI )){
-      currentMEI = currMeiClone as Document
-    }
-  }
-
-  //clean up after changing durations
-  currentMEI.querySelectorAll(".changed").forEach(c => c.classList.remove(changedFlag))
-  cleanUp(currentMEI)
-  return currentMEI
-}
-
 function addRatios(elements: Element[]): number {
   var r = 0
   elements.forEach((v, i) => {
@@ -1339,11 +1283,6 @@ export function changeDurationsInLayer(currentMEI: Document, additionalElements:
     if (remainRatio < nnRatio) {
       var diffRatio = nnRatio - remainRatio
       var nextNoteMEI = currentMEI.getElementById(nextNote.id)
-      //var dur = ratioToDur(diffRatio)
-      // currentMEI.getElementById(nextNote.id).setAttribute("dur", dur.shift().toString())
-      // if (dur.length > 0) {
-      //   currentMEI.getElementById(nextNote.id).setAttribute("dots", dur.shift().toString())
-      // }
       changeDur(nextNoteMEI, diffRatio)
       harm = currentMEI.querySelector('harm[startid="' + nextNote.id + '"]')
       if (harm !== null) {
@@ -1369,6 +1308,8 @@ export function changeDurationsInLayer(currentMEI: Document, additionalElements:
       currEl.remove()
       changeDurationsInLayer(currentMEI, additionalElements, refElement, remainRatio, meiCopy)
     }
+  } else {
+    currentMEI = tieToNextMeasure(currentMEI, refElement, currentMEI.cloneNode(true), true, null)
   }
 
   cleanUp(currentMEI)
@@ -1418,6 +1359,7 @@ export function cleanUp(currentMEI: Document) {
   removeEmptyElements(currentMEI)
   adjustRests(currentMEI)
   redistributeHarms(currentMEI)
+  reformatBreve(currentMEI)
 }
 
 
@@ -1608,7 +1550,6 @@ function adjustRests(currentMEI: Document) {
       })
     }
   })
-
 }
 
 /**
@@ -1620,7 +1561,7 @@ function redistributeHarms(currentMEI: Document) {
     var startid = h.getAttribute("startid")
     if (startid !== null) {
       var note = currentMEI.getElementById(startid)
-      if (note.parentElement.tagName === "chord") h.setAttribute("startid", note.parentElement.id)
+      if (note?.parentElement.tagName === "chord") h.setAttribute("startid", note.parentElement.id)
     }
   })
 }
@@ -1641,6 +1582,10 @@ function removeTiesFromDoc(currentMEI: Document) {
       })
     }
   })
+}
+
+function reformatBreve(currentMEI: Document) {
+  currentMEI.querySelectorAll("[dur='0.5']").forEach(d => d.setAttribute("dur", "breve"))
 }
 
 export function addMeasure(currentMEI: Document) {
@@ -1683,6 +1628,7 @@ export function addStaff(currentMEI: Document, referenceStaff: Element, relPos: 
   var refn: string
   var refElement: Element
   currentMEI.querySelectorAll("staff[n=\"" + staffNum + "\"]").forEach(s => {
+    var layers = s.querySelectorAll("layer")
     var newStaff = new MeiTemplate().createStaff(1, 1) as Element
     switch (relPos) {
       case "above":
@@ -1703,7 +1649,7 @@ export function addStaff(currentMEI: Document, referenceStaff: Element, relPos: 
     //copy elements from the current Staff that have to appear in new staff
     var newLayer = newStaff.querySelector("layer")
     var copyMeter = s.querySelector("meterSig")?.cloneNode(true)
-    if (copyMeter != undefined && copyMeter !== null) {
+    if (copyMeter) {
       newLayer.insertBefore(copyMeter, newLayer.firstChild)
     }
 
@@ -1770,6 +1716,13 @@ export function removeStaff(currentMEI: Document, referenceStaff: Element, relPo
   cleanUp(currentMEI)
 }
 
+
+export function addLayerForStaff(currentMEI: Document, staffN: string, layerN: string) {
+  currentMEI.querySelectorAll(`staff[n='${staffN}']`).forEach(staff => {
+    staff.append(new MeiTemplate().createLayer(layerN))
+  })
+}
+
 /**
  * Create a tuplet out of given Elements.
  * Tuplet duration and kind will be derived from number and attributes of the given notes.
@@ -1823,10 +1776,10 @@ export function createTuplet(meiElements: Array<Element>, currentMEI: Document) 
  * Paste copied ids. First position to which the Elements are copied is the Element according to the refId (= RefElement).
  * If multiple staffs are copied, overhanging staffs will be pasted to the staffs below the staff of the RefElement, if definedstaffs exist. 
  * Else these copiedId will be not pasted.
- * @param ids 
- * @param refId 
+ * @param ids Array of Element IDs to be pasted
+ * @param pastePosition 
  */
-export function paste(ids: Array<string>, refId: string, currentMEI: Document): string {
+export function paste(ids: Array<string>, pastePosition: string, currentMEI: Document): Array<any> {
   //ordered by staff
   var meiElements = new Array<Array<Element>>()
   ids.forEach(id => {
@@ -1846,34 +1799,34 @@ export function paste(ids: Array<string>, refId: string, currentMEI: Document): 
     }
   })
 
-  var refElement = currentMEI.getElementById(refId) as Element
+  var refElement = currentMEI.getElementById(pastePosition) as Element
   refElement = refElement?.closest("chord") || refElement
   var refStaff = refElement?.closest("staff")
   var refLayer = refElement?.closest("layer")
   var refMeasure = refElement?.closest("measure")
   var currentMeasure: Element
-  let anyNew
+  var anyNew
 
   //console.log(...meiElements)
 
   meiElements.forEach((staff, staffIdx) => {
-    if (refElement === null) return
+    if (!refElement) return
     currentMeasure = refElement.closest("measure")
     staff.forEach((element, elementIdx) => {
       if (["NOTE", "REST"].includes(element.tagName.toUpperCase())) {
-        var newNote = convertToNewNote(element)
+        const newNote = convertToNewNote(element)
         newNote.nearestNoteId = refElement.id
-        newNote.relPosX = "right"
+        newNote.relPosX = elementIdx === 0 ? "left" : "right" // make sure to replace the element on the pasteposition
         anyNew = newNote
       } else if (element.tagName.toUpperCase() === "CHORD") {
-        var newChord = convertToNewChord(element)
+        const newChord = convertToNewChord(element)
         newChord.nearestNoteId = refElement.id
-        newChord.relPosX = "right"
+        newChord.relPosX = elementIdx === 0 ? "left" : "right" // make sure to replace the element on the pasteposition
         anyNew = newChord
         var elementArr = Array.from(element.querySelectorAll("note"))
       }
-      var replace = (document.querySelector(".activeContainer")?.querySelector("#insertToggle") as HTMLInputElement)?.checked || true
-      addToMEI(anyNew, currentMEI, replace)
+      const replace = (document.querySelector(".activeContainer")?.querySelector("#insertToggle") as HTMLInputElement)?.checked || true
+      currentMEI = addToMEI(anyNew, meiConverter.cleanIdAttr(currentMEI), replace)
 
       refElement = convertToElement(anyNew, currentMEI) //element
     })
@@ -1887,11 +1840,11 @@ export function paste(ids: Array<string>, refId: string, currentMEI: Document): 
   })
 
   //Element gets replaced in all other modes except keymode/textmode
-  if (!document.querySelector(".activeContainer").classList.contains("textmode") && currentMEI.getElementById(refId)?.tagName !== "LAYER") {
-    removeFromMEI([currentMEI.getElementById(refId)], currentMEI)
+  if (!document.querySelector(".activeContainer").classList.contains("textmode") && currentMEI.getElementById(pastePosition)?.tagName !== "LAYER") {
+    removeFromMEI([currentMEI.getElementById(pastePosition)], currentMEI)
   }
 
-  return anyNew?.id
+  return [currentMEI, anyNew?.id]
 }
 
 /**
@@ -1902,10 +1855,39 @@ export function paste(ids: Array<string>, refId: string, currentMEI: Document): 
  * @returns 
  */
 export function replaceClefinScoreDef(target: Element, newClef: string, currentMEI: Document): Document {
-  var staffN = document.querySelector(".activeContainer #vrvSVG #" + target.id).closest(".staff").getAttribute("n")
-  var staffDefClef = currentMEI.querySelector("staffDef[n=\"" + staffN + "\"] > clef")
-  staffDefClef.setAttribute("shape", newClef.charAt(0))
-  staffDefClef.setAttribute("line", clefToLine.get(newClef.charAt(0)))
+  const staffN = document.querySelector(".activeContainer #vrvSVG #" + target.id).closest(".staff").getAttribute("n")
+  const staffDefClef = currentMEI.querySelector("staffDef[n=\"" + staffN + "\"] > clef")
+
+  const shape = newClef.charAt(0)
+  var line = clefToLine.get(newClef.charAt(0))
+  if(shape === "C"){ // get line depending on id of the cclef
+    line = clefToLine.get(newClef.match(/CClef(.*)/)[1])
+  }
+
+  const disPlace = newClef.includes("OctDown") ? "below" : newClef.includes("OctUp") ? "above" : null
+
+  if (staffDefClef) {
+    staffDefClef.setAttribute("shape", shape)
+    staffDefClef.setAttribute("line", line)
+    if(disPlace){
+      staffDefClef.setAttribute("dis", "8")
+      staffDefClef.setAttribute("dis.place", disPlace)
+    }else{
+      staffDefClef.removeAttribute("dis")
+      staffDefClef.removeAttribute("dis.place")
+    }
+  } else {
+    const staffDef = currentMEI.querySelector("staffDef[n=\"" + staffN + "\"]")
+    staffDef?.setAttribute("clef.shape", shape)
+    staffDef?.setAttribute("clef.line", line)
+    if(disPlace){
+      staffDef?.setAttribute("clef.dis", "8")
+      staffDef?.setAttribute("clef.dis.place", disPlace)
+    }else{
+      staffDef?.removeAttribute("clef.dis")
+      staffDef?.removeAttribute("clef.dis.place")
+    }
+  }
   cleanUp(currentMEI)
   currentMEI = meiConverter.restoreXmlIdTags(currentMEI)
   return currentMEI
@@ -1921,10 +1903,21 @@ export function insertClef(target: Element, newClef: string, currentMEI: Documen
   var targetLayerId = currentMEI.getElementById(targetStaffId).querySelector("layer").id
   currentMEI.getElementById(targetLayerId).querySelectorAll("clef").forEach(c => c.remove())
 
+  const shape = newClef.charAt(0)
+  var line = clefToLine.get(newClef.charAt(0))
+  if(shape === "C"){ // get line depending on id of the cclef
+    line = clefToLine.get(newClef.match(/CClef(.*)/)[1])
+  }
+  var disPlace = newClef.includes("OctDown") ? "below" : newClef.includes("OctUp") ? "above" : null
+
   var clefElement = currentMEI.createElement("clef")
   clefElement.setAttribute("id", uuidv4())
-  clefElement.setAttribute("shape", newClef.charAt(0))
-  clefElement.setAttribute("line", clefToLine.get(newClef.charAt(0)))
+  clefElement.setAttribute("shape", shape)
+  clefElement.setAttribute("line", line)
+  if(disPlace){
+    clefElement.setAttribute("dis", "8")
+    clefElement.setAttribute("dis.place", disPlace)
+  }
 
   currentMEI.getElementById(targetLayerId).append(clefElement)
   cleanUp(currentMEI)
@@ -2091,7 +2084,7 @@ export function getTimestamp(note: Element) {
   var layer = note.closest("layer")
   var elements = Array.from(layer.querySelectorAll("*[dur]"))
   elements = elements.filter((v, i) => i <= elements.indexOf(note))
-  var tstamp: number
+  var tstamp = 0
   elements.forEach(e => {
     var dur = parseInt(e.getAttribute("dur"))
     tstamp += 4 / dur
