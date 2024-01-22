@@ -2,10 +2,10 @@ import ScoreGraph from "./ScoreGraph"
 
 class ScoreNode{
 
-    private up: ScoreNode
-    private right: ScoreNode
-    private down: ScoreNode
-    private left: ScoreNode
+    private up: ScoreNode = null
+    private right: ScoreNode = null
+    private down: ScoreNode = null
+    private left: ScoreNode = null
     private id: string
     private timeCode: number
     private docElement: Element

@@ -86,13 +86,13 @@ class Annotations implements Handler {
     clickHarmonyBtnHandler = (function clickHarmonyBtnHandler(e: MouseEvent){
         //e.preventDefault()
         this.removeTextListeners()
-        e.target.dispatchEvent(new Event("annotationButtonClicked"))
+        //e.target.dispatchEvent(new Event("annotationButtonClicked"))
     }).bind(this)
 
     clickAnnotTextHandler = (function clickAnnotTextHandler(e: MouseEvent){
         //e.preventDefault()
         this.resetTextListeners()
-        e.target.dispatchEvent(new Event("annotationButtonClicked"))
+        //e.target.dispatchEvent(new Event("annotationButtonClicked"))
     }).bind(this)
 
     removeListeners() {
@@ -227,6 +227,7 @@ class Annotations implements Handler {
         switch (selectedButton) {
             case "linkedAnnotButton":
             case "staticTextButton":
+                this.container.classList.remove("harmonyMode")
                 this.createTextAnnotation(e, selectedButton)
                 break;
             case "harmonyAnnotButton":

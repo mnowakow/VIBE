@@ -1,6 +1,6 @@
 import ScoreGraph from "../datastructures/ScoreGraph";
 import MusicProcessor from "../MusicProcessor";
-import { keyCodeNoteMap, keysigToNotes, octToNum, midiToNote } from "../utils/mappings";
+import { keyCodeNoteMap, keysigToNotes, octToNum, midiToNote, accidButtonToAttr, articButtonToAttr } from "../utils/mappings";
 import { Mouse2SVG } from "../utils/Mouse2SVG";
 import { uuidv4 } from "../utils/random";
 import { NewNote } from "../utils/Types";
@@ -116,19 +116,21 @@ class KeyModeHandler implements Handler {
         newNote.staffId = currentStaff.closest("measure").nextElementSibling.querySelector(`staff[n='${staffN}']`).id
         newNote.layerId = currentStaff.closest("measure").nextElementSibling.querySelector(`staff[n='${staffN}'] layer[n='${layerN}']`).id
         newNote.relPosX = "left"
-        newNote.nearestNoteId = this.m2s.getCurrentMei().querySelector("#" + newNote.staffId).querySelector("mRest").id
+        newNote.nearestNoteId = this.m2s.getCurrentMei().querySelector("#" + newNote.staffId).querySelector(`layer[n='${layerN}'] > mRest`).id
       } else {
         //or if ne note must be rendered into the next bar
         var oldStaffId = newNote.staffId
         if (this.m2s.getCurrentMei().querySelector("#" + newNote.nearestNoteId) === null) return
         if (this.m2s.getCurrentMei().querySelector("#" + newNote.nearestNoteId).tagName !== "mRest") {
-          newNote.staffId = this.m2s.getCurrentMei().getElementById(this.scoreGraph.getNextClass(["note", "rest", "mRest"], "right")?.getId())?.closest("staff").id || newNote.staffId
-          newNote.layerId = this.m2s.getCurrentMei().getElementById(this.scoreGraph.getNextClass(["note", "rest", "mRest"], "right")?.getId())?.closest("layer").id || newNote.layerId
+          // newNote.staffId = this.m2s.getCurrentMei().getElementById(this.scoreGraph.getNextClass(["note", "rest", "mRest"], "right")?.getId())?.closest("staff").id || newNote.staffId
+          // newNote.layerId = this.m2s.getCurrentMei().getElementById(this.scoreGraph.getNextClass(["note", "rest", "mRest"], "right")?.getId())?.closest("layer").id || newNote.layerId
+          newNote.staffId = this.m2s.getCurrentMei().getElementById(this.scoreGraph.lookUp(["note", "rest", "mRest"], "right")?.getId())?.closest("staff").id || newNote.staffId
+          newNote.layerId = this.m2s.getCurrentMei().getElementById(this.scoreGraph.lookUp(["note", "rest", "mRest"], "right")?.getId())?.closest("layer").id || newNote.layerId
         }
 
         if (oldStaffId !== newNote.staffId) {
           newNote.relPosX = "left"
-          newNote.nearestNoteId = this.scoreGraph.getCurrentNode()?.getId()
+          newNote.nearestNoteId = this.scoreGraph.getNextClass(["note", "rest", "mRest"], "right")?.getId()//this.scoreGraph.getCurrentNode()?.getId()
         }
       }
       this.insertCallback(newNote, true).then(() => {
@@ -203,8 +205,22 @@ class KeyModeHandler implements Handler {
    */
   createNewNote(pname: string, oct: string, options): NewNote {
     //get relevant staffinfo
-    var nearestNodeId = this.scoreGraph.getCurrentNode()?.getId()
-    if (nearestNodeId == undefined) return
+    // var nearestNodeId = this.scoreGraph.getCurrentNode()?.getId()
+    // if (nearestNodeId == undefined) return
+    if(!this.scoreGraph.getCurrentNode()) return
+
+    function getLastActiveNode(cid: string, sg: ScoreGraph){
+      var activeNotes = Array.from(cq.getContainer(cid).querySelectorAll(".activeLayer > .note")).reverse()
+      var hasNotes = activeNotes.length > 0
+      var lastNode = cq.getContainer(cid).querySelector(".activeLayer > :is(.lastAdded, .rest, .mRest")
+          if(hasNotes){
+              lastNode = activeNotes[0]
+          }
+      sg.setCurrentNodeById(lastNode.id)
+      return lastNode.id
+    }
+
+    var nearestNodeId = this.scoreGraph.getCurrentNode().getDocElement().closest(".activeLayer") ? this.scoreGraph.getCurrentNode().getId() : getLastActiveNode(this.containerId, this.scoreGraph)
     var closestStaff = this.m2s.getCurrentMei().getElementById(nearestNodeId)?.closest("staff") || this.m2s.getCurrentMei().querySelector("measure > staff") //asume first measure first staff
     var closestMeasure = closestStaff.closest("measure")
     var closestStaffIdx = parseInt(closestStaff.getAttribute("n")) - 1
@@ -213,12 +229,18 @@ class KeyModeHandler implements Handler {
     var keysig = this.m2s.getMeasureMatrix().get(closestMeasureIdx, closestStaffIdx).keysig
     var accids = keysigToNotes.get(keysig)
     var accid: string
-    if (options === null) {
-      accids = accids.filter((s: string) => { return s === pname })
-      if (accids.length === 1) {
-        accid = keysig.charAt(1)
+    var artic: string
+    if (!options) {
+      accid = accidButtonToAttr.get(cq.getContainer(this.containerId).querySelector("#accidGroup > button.selected")?.id) // try first to create a new accid based on the tabbar state
+      artic = articButtonToAttr.get(cq.getContainer(this.containerId).querySelector("#articGroup > button.selected")?.id)
+      if(!accid){
+        accids = accids.filter((s: string) => { return s === pname })
+        if (accids.length === 1) {
+          accid = keysig.charAt(1)
+        }
       }
-    } else if (options?.accid) {
+    }
+    if (options?.accid) {
       accid = options.accid
       //should the note be enharmonically swapped?
       //midi inputs are only given as sharps
@@ -227,7 +249,9 @@ class KeyModeHandler implements Handler {
         accid = "f"
         pname = String.fromCharCode(pname.charCodeAt(0) + increment)
       }
-    
+    }
+    if(options?.artic){
+      artic = options.artic // TODO: Which format will be set?
     }
 
     var targetChord: Element
@@ -248,6 +272,7 @@ class KeyModeHandler implements Handler {
       oct: oct,
       keysig: keysig,
       accid: accid,
+      artic: artic,
       nearestNoteId: nearestNodeId,
       relPosX: "right",
       staffId: this.vrvSVG.querySelector("#" + nearestNodeId)?.closest(".staff").id,

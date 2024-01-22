@@ -132,7 +132,8 @@ class LabelHandler implements Handler {
     }
 
     setHarmonyLabelHandlerClick = (function setHarmonyLabelHandler(e: MouseEvent) {
-        if (this.container.classList.contains("harmonyMode")) {
+        //if (this.container.classList.contains("harmonyMode")) {
+        if(this.container.querySelector("#annotGroupKM > #harmonyAnnotButton.selected")){
             this.harmonyLabelHandler(e)
         }
     }).bind(this)

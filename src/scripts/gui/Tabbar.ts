@@ -344,6 +344,8 @@ class Tabbar {
         this.accidButtonGroup.appendChild(dc.makeNewButton("&#x1D12A", "alterDUp", buttonStyleDarkOutline + " " + smuflFont + " " + alterBtn, "", true))
         this.accidButtonGroup.addEventListener("click", this.exclusiveSelectHandler)
 
+        this.createArticulationButtons()
+
         this.soundGroup = cq.getContainer(this.containerId).querySelector("#soundGroup")
         this.soundGroup.appendChild(dc.makeNewButton("", "playBtn", buttonStyleDarkOutline))
         //this.soundGroup.appendChild(dc.makeNewButton("", "pauseBtn", buttonStyleDarkOutline))
@@ -436,13 +438,13 @@ class Tabbar {
         this.annotGroupKM.addEventListener("click", this.exclusiveSelectHandler)
     }
 
-    createArticualtionButtons(){
-        this.articGroup = dc.makeNewDiv("articGroup", "customGroup btn-group-md me-2 h-100", { role: "group" }) as HTMLElement
+    createArticulationButtons(){
+        this.articGroup = cq.getContainer(this.containerId).querySelector("#articGroup") //dc.makeNewDiv("articGroup", "customGroup btn-group-md me-2 h-100", { role: "group" }) as HTMLElement
         this.articGroup.append(dc.makeNewButton(".", "staccatoBtn", buttonStyleDarkOutline))
         this.articGroup.append(dc.makeNewButton("_", "tenutoBtn", buttonStyleDarkOutline))
         this.articGroup.append(dc.makeNewButton("&#x1D17F;", "marcatoBtn", buttonStyleDarkOutline + " " + smuflFont, "", true))
         this.articGroup.append(dc.makeNewButton("&#x1D17B;", "accentBtn", buttonStyleDarkOutline + " " + smuflFont, "", true))
-        this.articGroup.addEventListener("click", this.exclusiveSelectHandler)
+        //this.articGroup.addEventListener("click", this.exclusiveSelectHandler)
 
     }
 
@@ -476,7 +478,7 @@ class Tabbar {
         this.customToolbar = cq.getContainer(this.containerId).querySelector("#customToolbar")
         //this.createInsertSelect()
         this.createButtonsAnnotationMode()
-        this.createArticualtionButtons()
+        //this.createArticulationButtons()
     }
 
     removeAllCustomGroups() {
@@ -508,7 +510,7 @@ class Tabbar {
 
         //document.getElementsByClassName("vibe-container")[0]?.addEventListener("click", this.closeHandlerMouse)
 
-        cq.getContainer(this.containerId).querySelectorAll("#dotGroup button, #noteGroup button, #modGroup button, #accidGroup Button").forEach(el => {
+        cq.getContainer(this.containerId).querySelectorAll("#dotGroup button, #noteGroup button, #modGroup button, #accidGroup button, #articGroup button").forEach(el => {
             el.addEventListener("click", this.exclusiveSelectHandler)
         })
 
@@ -697,13 +699,13 @@ class Tabbar {
 
 
     /**
-     * MAke Buttons in Toolbar selectable exclusively
+     * Make Buttons in Toolbar selectable exclusively
      */
     exclusiveSelectHandler = (function exclusiveSelectHandler(e: MouseEvent): void {
         this.exclusiveSelect(e)
     }).bind(this)
 
-    exclusiveSelect(e: MouseEvent) {1
+    exclusiveSelect(e: MouseEvent) {
         var target = e.target as Element
         var tagname = "button"
         if (target.tagName.toLowerCase() === tagname) {
@@ -717,8 +719,8 @@ class Tabbar {
             }else if(["modGroup", "dotGroup", "chordGroupKM", "articGroup", "accidGroup"].some(id => id === target.parentElement.id) && target.classList.contains(selectedFlag)){
                 target.classList.remove(selectedFlag)
             }
-
         }
+        return this
     }
 
     private styleCache = new Map<string, string>()

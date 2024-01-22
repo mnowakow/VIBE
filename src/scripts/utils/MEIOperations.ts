@@ -177,16 +177,20 @@ export function addToMEI(newSound: NewNote | NewChord, currentMEI: Document, rep
       newElem = currentMEI.createElement("note");
       newElem.setAttribute("pname", newNote.pname);
       newElem.setAttribute("oct", newNote.oct);
-      if (newNote.accid != undefined) {
+      if (newNote.accid) {
         newElem.setAttribute("accid.ges", newNote.accid)
+      }
+
+      if(newNote.artic){
+        newElem.setAttribute("artic", newNote.artic)
       }
     }
     newElem.setAttribute("dur", newNote.dur);
 
-    if (newNote.dots != undefined) {
+    if (newNote.dots) {
       newElem.setAttribute("dots", newNote.dots)
     }
-    if (newNote.id != undefined && newNote.id !== null) {
+    if (newNote.id) {
       newElem.setAttribute("id", newNote.id)
     }
 

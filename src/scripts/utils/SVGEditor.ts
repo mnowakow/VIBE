@@ -57,14 +57,23 @@ class SVGEditor {
     cacheClasses() {
         //var svg = document.querySelector("#"+this.containerId + " #vrvSVG")
         var svg = document.querySelector("#" + this.containerId)
-        if (svg === null) {
-            return this
-        }
-
+        if (!svg ) return this
+        
         this.classListMap = new Map();
+        var hasLastAdded: boolean = !!svg.querySelector(".lastAdded")
         svg.querySelectorAll("*").forEach(el => {
             //if(el.tagName.toLowerCase() === "g" && el.getAttribute("id") !== null){
-            if (el.getAttribute("id") !== null && !el.classList.contains("lastAdded")) {
+            if(el.tagName.toLocaleLowerCase() !== "g" && !el.getAttribute("id")) return
+            if(hasLastAdded){
+                if(el.classList.contains("marked")){
+                    el.classList.remove("marked")
+                }
+                // if(el.classList.contains("lastAdded")){
+                //     el.classList.replace("lastAdded", "marked")
+                // }
+            }
+    
+            if (el.getAttribute("id") && !el.classList.contains("lastAdded")) {
                 if (!this.classListMap.has(el.id)) {
                     this.classListMap.set(el.id, new Array())
                 }

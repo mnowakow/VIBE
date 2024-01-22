@@ -559,21 +559,24 @@ export const numToDotButtonId: Map<string, string> = new Map;
 numToDotButtonId.set("1", "oneDot")
 numToDotButtonId.set("2", "twoDot")
 
-export const attrToModButtonId: Map<string, string> = new Map;
-attrToModButtonId.set("s", "alterUp")
-attrToModButtonId.set("f", "alterDown")
-attrToModButtonId.set("n", "alterNeutral")
-attrToModButtonId.set("ff", "alterDDown")
-attrToModButtonId.set("ss", "alterDUp")
-attrToModButtonId.set("acc", "accentBtn")
-attrToModButtonId.set("stacc", "staccatoBtn")
-attrToModButtonId.set("marc", "marcatoBtn")
-attrToModButtonId.set("ten", "tenutoBtn")
+export const attrToAccidButtonId: Map<string, string> = new Map;
+attrToAccidButtonId.set("s", "alterUp")
+attrToAccidButtonId.set("f", "alterDown")
+attrToAccidButtonId.set("n", "alterNeutral")
+attrToAccidButtonId.set("ff", "alterDDown")
+attrToAccidButtonId.set("ss", "alterDUp")
 
+export const accidButtonToAttr: Map<string, string> = new Map;
+attrToAccidButtonId.forEach((v, k) => accidButtonToAttr.set(v, k))
 
-export const modButtonToAttr: Map<string, string> = new Map;
-attrToModButtonId.forEach((v, k) => modButtonToAttr.set(v, k))
+export const attrToArticButtonId: Map<string, string> = new Map;
+attrToArticButtonId.set("acc", "accentBtn")
+attrToArticButtonId.set("ten", "tenutoBtn")
+attrToArticButtonId.set("marc", "marcatoBtn")
+attrToArticButtonId.set("stacc", "staccatoBtn")
 
+export const articButtonToAttr: Map<string, string> = new Map;
+attrToArticButtonId.forEach((v, k) => articButtonToAttr.set(v, k))
 
 export const octToNum: Map<string, string> = new Map;
 octToNum.set("subkontraOct", "0")

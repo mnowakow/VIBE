@@ -618,6 +618,11 @@ g.currentlyPlaying *{
     font-family: 'Times New Roman', Times, serif;
 }
 
+.labekFO{
+    height: 100%;
+    width: 100%;
+}
+
 /* KEYMODE */
 
 #keyModeSelectRect{
@@ -772,6 +777,7 @@ g.currentlyPlaying *{
 
 foreignObject > [contenteditable]{
     font-family: Consolas, Menlo, Monaco, Lucida Console, Liberation Mono, DejaVu Sans Mono, Bitstream Vera Sans Mono, Courier New, monospace, serif;
+
 }
 
 button{

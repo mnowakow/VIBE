@@ -8,7 +8,8 @@ import { NewNote } from "../utils/Types";
 import Cursor from "../gui/Cursor";
 import PhantomElementHandler from "./PhantomElementHandler";
 import * as cq from "../utils/convenienceQueries"
-import { numToNoteButtonId, numToDotButtonId, attrToModButtonId } from '../utils/mappings'
+import { numToNoteButtonId, numToDotButtonId, attrToAccidButtonId } from '../utils/mappings'
+import ScoreGraph from "../datastructures/ScoreGraph";
 
 const marked = "marked"
 
@@ -26,6 +27,7 @@ class ClickModeHandler implements Handler {
     private vrvSVG: Element
     private interactionOverlay: Element
     private container: Element
+    private scoreGraph: ScoreGraph
 
     private currentElementToHighlight: Element
 
@@ -350,7 +352,11 @@ class ClickModeHandler implements Handler {
         const t = e.target as HTMLElement
         const notehead = cq.getVrvSVG(this.containerId).querySelector(`#${t.parentElement.getAttribute("refId")}`)
         notehead?.classList.add(marked)
-        notehead.closest(".note")?.classList.add(marked)
+        const note = notehead.closest(".note")
+        if(note){
+            note.classList.add(marked)
+            this.scoreGraph.setCurrentNodeById(note.id)
+        }
     }
 
     /**
@@ -480,7 +486,7 @@ class ClickModeHandler implements Handler {
 
             //select buttons for given note state
             var modBtnId = this.container.querySelector("#customToolbar #articGroup") !== null ? "artic" : "accid"
-            document.getElementById(this.containerId)?.querySelector("#" + attrToModButtonId.get(meiNote?.getAttribute(modBtnId)))?.classList.add("selected")
+            document.getElementById(this.containerId)?.querySelector("#" + attrToAccidButtonId.get(meiNote?.getAttribute(modBtnId)))?.classList.add("selected")
             if (meiNote?.closest("chord") !== null) {
                 meiNote = meiNote.closest("chord")
             }
@@ -573,6 +579,11 @@ class ClickModeHandler implements Handler {
 
     setMusicProcessor(musicPlayer: MusicProcessor) {
         this.musicPlayer = musicPlayer
+        return this
+    }
+
+    setScoreGraph(sg: ScoreGraph){
+        this.scoreGraph = sg
         return this
     }
 

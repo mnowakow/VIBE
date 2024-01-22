@@ -34,9 +34,10 @@ import { idxNoteMapGClef,
     idxNotePhantomMapBelowCBariton, 
     idxNotePhantomMapAboveCBariton, 
     keysigToNotes, 
-    modButtonToAttr, 
+    accidButtonToAttr, 
     clefToLine,
-    idxNotePhantomMapAboveGOctUp} from './mappings';
+    idxNotePhantomMapAboveGOctUp,
+    articButtonToAttr} from './mappings';
 import MeasureMatrix from '../datastructures/MeasureMatrix'
 import * as meiOperation from "./MEIOperations"
 import * as coordinates from "./coordinates"
@@ -646,7 +647,7 @@ export class Mouse2SVG {
         var keysig = this.measureMatrix.get(closestMeasureIdx, closestStaffIdx).keysig
         var accid
         if(this.container.querySelector(".alterBtn.selected") !== null){
-            accid = modButtonToAttr.get(this.container.querySelector(".alterBtn.selected").id)
+            accid = accidButtonToAttr.get(this.container.querySelector(".alterBtn.selected").id)
         }else if (keysig != undefined) {
             accid = keysigToNotes.get(keysig)
             accid = accid.filter((s: string) => { return s === pname })
@@ -655,6 +656,7 @@ export class Mouse2SVG {
             }
         }
 
+        var artic = articButtonToAttr.get(this.container.querySelector("#articGroup > .selected")?.id)
 
         var newNote: NewNote = {
             id: uuidv4(),
@@ -664,6 +666,7 @@ export class Mouse2SVG {
             oct: oct,
             keysig: keysig,
             accid: accid,
+            artic: artic, 
             nearestNoteId: nearestNoteId,
             relPosX: leftRightPos,
             staffId: this.lastStaffMouseEnter?.getAttribute("refId"),

@@ -285,12 +285,12 @@ class Core {
           that.undoMEIStacks.push(mei)
 
           var lastAddedClass = "lastAdded"
-          that.container.querySelectorAll("." + lastAddedClass).forEach(m => {
-            m.classList.remove(lastAddedClass)
-          })
+          // that.container.querySelectorAll("." + lastAddedClass).forEach(m => {
+          //   m.classList.replace("lastAdded", "marked") //remove(lastAddedClass)
+          // })
 
           if (that.lastInsertedNoteId && ["textmode", "clickmode"].some(mode => that.container.classList.contains(mode))) {
-            that.container.querySelector("#" + that.lastInsertedNoteId)?.classList.add(lastAddedClass)
+            //that.container.querySelector("#" + that.lastInsertedNoteId)?.classList.add(lastAddedClass)
             that.container.querySelector("#" + that.lastInsertedNoteId)?.classList.add("marked")
           }
           if (that.meiChangedCallback) {
@@ -309,10 +309,10 @@ class Core {
             .update()
           that.scoreGraph = new ScoreGraph(that.currentMEIDoc, that.containerId, null)
           //the first condition should only occur at first starting the score editor
-          if (that.container.querySelector(".lastAdded") === null && that.scoreGraph.getCurrentNode() == undefined) {
-            that.scoreGraph.setCurrentNodeById(that.container.querySelector(".staff > .layer :is(.note, .rest, .mRest").id)
+          if (!that.container.querySelector(".lastAdded, .marked")) { //that.scoreGraph.getCurrentNode() == undefined) {
+            that.scoreGraph.setCurrentNodeById(that.container.querySelector("#vrvSVG .staff > .layer.activeLayer :is(.note, .rest, .mRest").id)
           } else { //second condition always sets lastAdded Note
-            that.scoreGraph.setCurrentNodeById(that.container.querySelector(".lastAdded")?.id)
+            that.scoreGraph.setCurrentNodeById(that.container.querySelector("#vrvSVG :is(.lastAdded, .marked)")?.id)
           }
           that.initializeHandlers()
           that.musicProcessor.setScoreGraph(that.scoreGraph)
@@ -915,7 +915,7 @@ class Core {
    * @returns {string} - serialized svg
    */
   getSVG(plain = true): string {
-    var svgDom = this.container.querySelector("#svgContainer")
+    var svgDom = this.container //.querySelector("#svgContainer")
     if (plain) {
       svgDom.querySelectorAll(".lastAdded, .marked").forEach(sd => {
         sd.classList.remove("lastAdded")

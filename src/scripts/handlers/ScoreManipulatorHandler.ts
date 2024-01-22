@@ -8,6 +8,7 @@ import * as meiConverter from '../utils/MEIConverter'
 import * as cq from "../utils/convenienceQueries"
 import { isJSDocThisTag } from "typescript";
 import MeiTemplate from "../assets/mei_template";
+import ScoreGraph from "../datastructures/ScoreGraph";
 
 const manipSelector = ".manipulator"
 const canvasId = "manipulatorCanvas"
@@ -20,6 +21,7 @@ class ScoreManipulatorHandler implements Handler {
     m2s?: Mouse2SVG;
     musicPlayer?: MusicProcessor;
     currentMEI?: Document;
+    private scoreGraph: ScoreGraph
     private containerId: string
     private interactionOverlay: Element
     private cacheLayers = {}
@@ -228,6 +230,14 @@ class ScoreManipulatorHandler implements Handler {
         cq.getContainer(this.containerId).querySelectorAll("#vrvSVG .staff:not(:has(.activeLayer))").forEach(staff => {
             this.setActiveLayerClass(staff.getAttribute("n"), "1")
         })
+
+        var activeNotes = Array.from(cq.getContainer(this.containerId).querySelectorAll(".activeLayer > .note")).reverse()
+        var hasNotes = activeNotes.length > 0
+        var lastNode = cq.getContainer(this.containerId).querySelector(".activeLayer > :is(.rest, .mRest")
+            if(hasNotes){
+                lastNode = activeNotes[0]
+            }
+        this.scoreGraph.setCurrentNodeById(lastNode.id)
     }
 
     //SETTER////
@@ -245,6 +255,11 @@ class ScoreManipulatorHandler implements Handler {
 
     setMusicProcessor(mp: MusicProcessor) {
         this.musicPlayer = mp
+        return this
+    }
+
+    setScoreGraph(sg: ScoreGraph){
+        this.scoreGraph = sg
         return this
     }
 

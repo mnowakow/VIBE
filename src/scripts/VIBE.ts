@@ -8,7 +8,7 @@ import Tabbar from './gui/Tabbar'
 import { isCallChain } from 'typescript';
 
 /**
- * Main Class for the VerovioScoreEditor
+ * Main Class for the Verovio Interface for Browser based Editing
  */
 class VIBE {
     public coreInstance: Core;
@@ -139,6 +139,9 @@ class VIBE {
 
             //parentElement for local accidental Buttons
             this.container.append(dc.makeNewDiv("accidGroup", btnGrpClass, { role: "group" }))
+            
+            //parentElement for local articulation Buttons
+            this.container.append(dc.makeNewDiv("articGroup", btnGrpClass, { role: "group" }))
 
             //sidebarList
             this.container.append(dc.makeNewDiv("sidebarContainer", "sidebar closedSidebar"))

@@ -48,7 +48,7 @@ class CustomToolbarHandler implements Handler {
         var d = this.alterDUpButton = this.container.querySelector("#alterDUp")
         var e = this.alterDDownButton = this.container.querySelector("#alterDDown")
         this.alterButtons = [a, b, c, d, e]
-        this.articButtons = new Array()
+        this.articButtons = Array.from(this.container.querySelectorAll("#articGroup .btn"))//new Array()
         this.tabButtons = Array.from(this.container.querySelectorAll(".tabBtn"))
 
     }
@@ -64,9 +64,9 @@ class CustomToolbarHandler implements Handler {
         this.alterButtons.forEach(ab => {
             ab.addEventListener("click", this.alterFunction)
         })
-        if(this.articButtons.length === 0){
-            cq.getContainer(this.containerId).querySelectorAll("#articGroup .btn").forEach(btn => this.articButtons.push(btn))
-        }
+        // if(this.articButtons.length === 0){
+        //     cq.getContainer(this.containerId).querySelectorAll("#articGroup .btn").forEach(btn => this.articButtons.push(btn))
+        // }
         this.articButtons.forEach(ab => {
             ab.addEventListener("click", this.articulationHandlerFunction)
         })

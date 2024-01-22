@@ -84,6 +84,7 @@ class InsertModeHandler implements Handler {
     this.clickModeHandler = this.clickModeHandler || new ClickModeHandler()
     this.clickModeHandler
       .setContainerId(this.containerId)
+      .setScoreGraph(this.scoreGraph)
       .setInsertCallback(this.insertCallback)
       .setDeleteCallback(this.deleteCallback)
       .setAnnotations(this.annotations)
@@ -127,6 +128,7 @@ class InsertModeHandler implements Handler {
         break;
       case "staticTextButton":
       case "linkedAnnotButton":
+        this.container.classList.remove("harmonyMode")
         this.annotationMode = true
         this.harmonyMode = false
         if (this.annotations == undefined) {
@@ -236,6 +238,7 @@ class InsertModeHandler implements Handler {
       .setContainerId(this.containerId)
       .setm2s(this.m2s)
       .setMEI(this.m2s.getCurrentMei())
+      .setScoreGraph(this.scoreGraph)
       .setMusicProcessor(this.musicPlayer)
       .setLoadDataCallback(this.loadDataCallback)
       .drawElements()

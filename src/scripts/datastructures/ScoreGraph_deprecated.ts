@@ -23,114 +23,57 @@ class ScoreGraph {
         this.container = document.getElementById(containerId)
         this.vrvSVG = cq.getVrvSVG(containerId)
         this.interactionOverlay = cq.getInteractOverlay(containerId)
-        this.populate(xmlDoc)
+        this.populate(xmlDoc, miditimes)
     }
-
-     /**
-      * Populate scoreGraoh according to mei
-      * Determine left and right relations between elements (up and down won't be considered anymore since the keyboard interaction (arrowup/arrowdown) always should result in a transposition)
-     */
-    private populate(xmlDoc: Document) {
-        this.graph = new Map()
-        
-        interface GroupedLayers{
-            [staffn: string]: {
-                [layern: string]: Array<Element>
-            }
-        }
-
-        interface GroupedStaffDefs{
-            [staffn: string]: Array<Element>
-        }
-
-        //Collect all layers grouped by staff and layer index.
-        var groupedLayers: GroupedLayers = {}
-        xmlDoc.querySelectorAll("staff").forEach(s => 
-            s.querySelectorAll("layer").forEach(l => {
-                const sn = s.getAttribute("n")
-                const ln = l.getAttribute("n")
-                if(!groupedLayers[sn]){
-                    groupedLayers[sn] = {}
-                }
-                if(!groupedLayers[sn][ln]){
-                    groupedLayers[sn][ln] = new Array()
-                }
-                groupedLayers[sn][ln].push(l)
-            })
-        )
-
-        //Collect Clef, meter and key to beginning of Graph
-        //Elements must be parsed from rendered svg
-        var groupedStaffDefs: GroupedStaffDefs = {}
-        cq.getContainer(this.containerId).querySelectorAll("#vrvSVG .measure[n='1'] .staff").forEach(sd => {
-            const n = sd.getAttribute("n")
-            if(!groupedStaffDefs[n]){
-                groupedStaffDefs[n] = new Array()
-            }
-            const clef = sd.querySelector(".clef")
-            if(clef) groupedStaffDefs[n].push(clef)
-            const keySig = sd.querySelector(".keySig")
-            if(keySig) groupedStaffDefs[n].push(keySig)
-            const meterSig = sd.querySelector(".meterSig")
-            if(meterSig) groupedStaffDefs[n].push(meterSig)
-        })
-
-        //iterate through all layers to add and connect score nodes
-        var prevNode: ScoreNode
-        for(const sn in groupedLayers){
-            for(const ln in groupedLayers[sn]){
-                const staffDef = groupedStaffDefs[sn]
-                var lastStaffDefId: string
-                if(staffDef){
-                    staffDef.forEach(sd => {
-                        lastStaffDefId = sd.id
-                        this.graph.set(sd.id, new ScoreNode(sd.id))
-                        const currentNode = this.graph.get(sd.id)
-                        if(prevNode){
-                            prevNode.setRight(currentNode)
-                            currentNode.setLeft(prevNode)
-                        }
-                        prevNode = currentNode
-                    })
-                }
-                prevNode = null
-                const layer = groupedLayers[sn][ln]
-                layer.forEach((l, layerIdx) => {
-                    l.querySelectorAll(":scope > note, rest, mRest, chord, keySig, clef, meterSig").forEach((el, elementIdx) => {
-                        this.graph.set(el.id, new ScoreNode(el.id))
-                        const currentNode = this.graph.get(el.id)
-                        if(prevNode){
-                            prevNode.setRight(currentNode)
-                            currentNode.setLeft(prevNode)
-                        }else{
-                            currentNode.setLeft(this.graph.get(lastStaffDefId))
-                            if(layerIdx === 0 && elementIdx === 0){
-                                this.graph.get(lastStaffDefId)?.setRight(currentNode)
-                            }
-                        }
-                        
-                        prevNode = currentNode
-                    })
-                })      
-            }
-        }
-
-        console.log("ScoreGraph", this.graph)
-    }
-
-
 
     /**
      * @deprecated
+     * Use function populate instead
+     * @param xmlDoc 
+     */
+    altPop(xmlDoc: Document) {
+        var documentNodes = Array.from(cq.getVrvSVG(this.containerId).querySelectorAll(documentNodeSelector))
+        var documentNodes = documentNodes.filter(dn => {
+            if (!dn.classList.contains("note")) {
+                return dn
+            }
+            if (dn.classList.contains("note")) {
+                if (dn.closest(".chord") === null) {
+                    return dn
+                }
+            }
+        })
+
+        var nodeCoodrs = new Map<Element, { x: number, y: number }>()
+        var root = cq.getVrvSVG(this.containerId)
+        var rootBBox = root.getBoundingClientRect()
+        documentNodes.forEach(dn => {
+            var dnx = dn.getBoundingClientRect().x - rootBBox.x - root.scrollLeft - window.pageXOffset
+            var dny = dn.getBoundingClientRect().y - rootBBox.y - root.scrollTop - window.pageYOffset
+            nodeCoodrs.set(dn, { x: dnx, y: dny })
+        })
+
+        for (const [key, value] of nodeCoodrs.entries()) {
+            var closestLeft: Element
+            var closestRight: Element
+            var closestTop: Element
+            var closestDown: Element
+            for (const [key, value] of nodeCoodrs.entries()) {
+                //TODO
+            }
+        }
+
+    }
+
+    /**
      * Populate scoreGraoh according to mei
      * Add midi timeCode
      * @param xmlDoc 
      * @param miditimes 
      */
-    private populate_old(xmlDoc: Document, miditimes: Map<number, Array<Element>>) {
+    private populate(xmlDoc: Document, miditimes: Map<number, Array<Element>>) {
         this.graph = new Map()
         this.midiTimes = miditimes
-
         xmlDoc.querySelectorAll(meiNodeSelector).forEach(e => {
             if ((e.tagName === "note" && e.closest("chord") !== null)) { // || (e.tagName === "layer" && e.children.length > 0)){
                 return
