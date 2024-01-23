@@ -14,7 +14,8 @@
     "files": [
         "src/images/*/*",
         "src/scripts/js/*",
-        "src/fonts/*"
+        "src/fonts/*",
+        "src/styles/*.css"
     ],
     "dependencies": {
         "@babel/plugin-transform-classes": "^7.16.7",
