@@ -8,7 +8,8 @@ A score editor using verovio as rendering engine
 
 ## Getting started
 - Install node modules: `npm install`
-- Transpile TypeScript: `tsc`
+- Transpile TypeScript in watch mode: `tsc -w`
+- Build the application: `npm run build`
 
 ## Initializing
 To initailize the score editor only need two different things are needed 
