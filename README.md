@@ -6,6 +6,10 @@ Current version on github: ![GitHub package.json version](https://img.shields.io
 
 A score editor using verovio as rendering engine
 
+## Getting started
+- Install node modules: `npm install`
+- Transpile TypeScript: `tsc`
+
 ## Initializing
 To initailize the score editor only need two different things are needed 
 1. The `container` the score editor will be displayed in. The container must contain an ID, since many editors can be displayed on one page.
