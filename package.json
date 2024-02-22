@@ -9,7 +9,8 @@
     "since 2017-06"
   ],
   "scripts": {
-    "build": "webpack --mode=development"
+    "build": "webpack --mode=development",
+    "watch": "webpack --watch"
   },
   "files": [
     "src/images/*/*",
