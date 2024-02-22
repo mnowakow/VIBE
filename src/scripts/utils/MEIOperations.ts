@@ -600,6 +600,11 @@ export function connectNotes(left: Element, right: Element, connectionShape: "ti
 
 ///// GENERAL OPERATIONS /////
 
+/**
+ * Calculates the length of an element, e.g., a chord, a note, ...
+ * @param el The element
+ * @returns The length of the element, NaN for mRests
+ */
 export function getAbsoluteRatio(el: Element): number {
   var i = 0;
   var arr: Array<Element>;
@@ -1148,18 +1153,25 @@ export function fillWithRests(newElement: Element, oldElement: Element, currentM
   return currentMEI
 }
 
+/**
+ * 
+ * @param layer Fills up the layer with an adequate amount of rests
+ * @param currentMEI The MEI document
+ */
 export function fillLayerWithRests(layer: Element, currentMEI: Document) {
   var targetDur = getMeterRatioLocal(currentMEI, layer)
   var currentDur = getAbsoluteRatio(layer)
-  if (currentDur < targetDur) {
-    var remainRatio = targetDur - currentDur
-    var smallestUnit = gcd(remainRatio)
-    var restDur = ratioToDur(smallestUnit)[0]
-    var restCount = remainRatio / smallestUnit
-
-    for (var i = 0; i < restCount; i++) {
-      var rest = createNewRestElement(restDur)
-      Array.from(layer.querySelectorAll("note, chord, rest")).reverse()[0].insertAdjacentElement("afterend", rest)
+  let durCandidates: number[] =  [1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
+  while (currentDur < targetDur) {
+    var toGo = targetDur - currentDur;
+    for (const dur of durCandidates) {
+      var rest = 1. / dur
+      if (rest <= toGo && currentDur % rest == 0.) {
+        var restEl = createNewRestElement(dur)
+        Array.from(layer.querySelectorAll("note, chord, rest")).reverse()[0].insertAdjacentElement("afterend", restEl)
+        currentDur += rest
+        break
+      }
     }
   }
 }
