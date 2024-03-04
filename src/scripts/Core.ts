@@ -20,10 +20,7 @@ import CustomToolbarHandler from './handlers/CustomToolbarHandler';
 import * as cq from "./utils/convenienceQueries"
 import * as coordinates from "./utils/coordinates"
 import TooltipHandler from './handlers/TooltipHandler';
-
-import * as ReactWrapper from './utils/ReactWrapper'
-import { Scale } from 'tone';
-import { constants } from 'buffer';
+import { right } from '@popperjs/core';
 
 
 /**
@@ -143,15 +140,20 @@ class Core {
         pageElement.setAttribute("preserveAspectRatio", "xMinYMin meet")
         var systemHeigth = pageElement.querySelector(".system").getBoundingClientRect().height
         systemHeigth += systemHeigth * 0.2
-        that.verovioWrapper.setHeightValue(systemHeigth)
+        //that.verovioWrapper.setHeightValue(systemHeigth)
 
-        if (options?.widthFactor) {
-          console.log("pageW before", that.verovioWrapper.getOptions().pageWidth)
-          that.verovioWrapper.setWidthValue(
-            parseFloat(that.verovioWrapper.getOptions().pageWidth) * options.widthFactor
-          )
-          console.log("pageW after", that.verovioWrapper.getOptions().pageWidth)
-        }
+        // if(!options){
+        //   options = {}
+        // }
+        // options.widthFactor = (that.container as HTMLElement).clientWidth / screen.availWidth
+
+        // if (options?.widthFactor) {
+        //   console.log("pageW before", that.verovioWrapper.getOptions().pageWidth)
+        //   that.verovioWrapper.setWidthValue(
+        //     parseFloat(that.verovioWrapper.getOptions().pageWidth) * options.widthFactor
+        //   )
+        //   console.log("pageW after", that.verovioWrapper.getOptions().pageWidth)
+        // }
 
         resolve()
       })
@@ -340,16 +342,26 @@ class Core {
     return new Promise(resolve => {
       this.container = container
       this.containerId = container.id
-
       this.verovioWrapper = this.verovioWrapper || new VerovioWrapper();
       var waitingFlag = "waiting"
-      // if (cq.getVrvSVG(this.containerId) !== null) {
-      //   document.body.classList.add(waitingFlag)
-      // }
-
       // svg has to be loaded into verovio anyway 
       this.sendDataToVerovio(data, isUrl)
-
+      this.interactionOverlay = cq.getInteractOverlay(this.containerId)
+      // get most right standing canvas in interactionOverlay
+      let rightMostElement: Element = this.interactionOverlay
+      let rightCoord = 0
+      this.container.querySelectorAll("#interactionOverlay > *, #vrvSVG > svg > *").forEach(c => {
+        let bbox = c.getBoundingClientRect()
+        if(bbox.x + bbox.width > rightCoord){
+          rightCoord = bbox.x + bbox.width
+          rightMostElement = c
+        }
+      })
+      var sizeRatio = ((this.container.getBoundingClientRect().width / this.interactionOverlay.getBoundingClientRect().width) + 2) * 100 //rightMostElement.getBoundingClientRect().width * 60 
+      if(!sizeRatio || sizeRatio <= 0){
+        sizeRatio = 100
+      }
+      (this.container.querySelector("#svgContainer") as HTMLElement).style.width = sizeRatio.toString() + "%"
       document.getElementById(this.containerId).dispatchEvent(new Event("loadingStart"))
       this.svgEditor.setContainerId(this.containerId)
       this.svgEditor.cacheClasses().cacheScales().cacheStyles()

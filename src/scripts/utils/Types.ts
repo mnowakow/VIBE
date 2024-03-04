@@ -112,7 +112,8 @@ export type Annotation = {
   sourceID: string,
   targetID: string | Array<string> 
   targetType?: any
-  relativePos?: any
+  originalHeight?: string, 
+  originalWidth?: string
 }
 
 export type Coord = {

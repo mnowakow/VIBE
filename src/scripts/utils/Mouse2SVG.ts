@@ -686,13 +686,18 @@ export class Mouse2SVG {
      * @param orientation only consider elements which are left or right of given coordinates
      * @returns 
      */
-    findScoreTarget(posX: number, posY: number, checkStaff = true, orientation = { left: true, right: true }): NoteBBox {
+    findScoreTarget(posX: number, posY: number, checkStaff = true, orientation: {left: boolean, right: boolean} = null, blackList: Array<string> = null): NoteBBox {
 
+        if(!orientation) orientation = { left: true, right: true } 
         var notes: NoteBBox[] = this.getNoteBBoxes()
         var nextNote: NoteBBox
         var tempDist: number = Math.pow(10, 10)
         var i = 0
         notes.forEach(n => {
+            if(blackList){
+                var blackListFilter = Array.from(this.getElementinVrvSVG(n.id).classList).filter(element => blackList.includes(element))
+                if(blackListFilter.length > 0) return 
+            }
             var x: number
             var y: number
             if (this.getElementinVrvSVG(n.id)?.closest(".chord") && navigator.userAgent.toLowerCase().indexOf("firefox") > -1) { // special rule for firefox browsers
@@ -706,9 +711,9 @@ export class Mouse2SVG {
             //filter for left and right elements
             if(this.vrvSVG.querySelector("#" + n.id) === null) return
             if (!this.vrvSVG.querySelector("#" + n.id).classList.contains("mRest")) { //mRest are excluded from this rule
-                if (orientation.left === false) {
+                if (!orientation.left) {
                     if (x < posX) return //exclude left elements
-                } else if (orientation.right === false) {
+                } else if (!orientation.right ) {
                     if (x > posX) return // exclude right elements
                 }
             }
@@ -716,7 +721,7 @@ export class Mouse2SVG {
             var dist = Math.abs(x - posX)
             var staffCondition = n.parentStaff === this.getElementinVrvSVG(this.lastStaffMouseEnter?.getAttribute("refId"))
             staffCondition &&= Array.from(this.container.querySelectorAll(".activeLayer")).some(l => n.parentLayer === l)
-            if (checkStaff === false) {
+            if (!checkStaff) {
                 staffCondition = true
                 dist = Math.sqrt(Math.abs(x - posX) ** 2 + Math.abs(y - posY) ** 2)
             }

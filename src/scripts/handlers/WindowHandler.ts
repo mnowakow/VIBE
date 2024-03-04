@@ -30,6 +30,7 @@ class WindowHandler implements Handler {
     x: number
     y: number
     divScrolls: Map<string, { sl: number, st: number }>
+    private scrollingTimer: Array<any>
 
     constructor() {
         this.ctrlPressed = false
@@ -37,6 +38,7 @@ class WindowHandler implements Handler {
         while (this.w !== this.w.parent) {
             this.w = this.w.parent
         }
+        this.scrollingTimer = new Array()
     }
 
     svgReloadCallback: () => void
@@ -45,12 +47,12 @@ class WindowHandler implements Handler {
         this.eventContainer = this.container
         window.addEventListener("scroll", this.updateFunction)
         //window.addEventListener("resize", this.update)
-        this.w.addEventListener("resize", this.reloadSVGFunction)
+        //this.w.addEventListener("resize", this.reloadSVGFunction)
         this.w.addEventListener("deviceorientation", this.updateFunction)
         this.eventContainer.querySelector("#sidebarContainer").addEventListener("transitionend", this.updateFunction)
-        this.eventContainer.querySelector("#sidebarContainer").addEventListener("transitionend", this.reloadSVGFunction)
+        //this.eventContainer.querySelector("#sidebarContainer").addEventListener("transitionend", this.reloadSVGFunction)
         this.eventContainer.querySelector("#sidebarContainer").addEventListener("resizemove", this.updateFunction)
-        this.eventContainer.querySelector("#sidebarContainer").addEventListener("resizemove", this.reloadSVGFunction)
+        //this.eventContainer.querySelector("#sidebarContainer").addEventListener("resizemove", this.reloadSVGFunction)
         this.vrvSVG.addEventListener("scroll", this.updateFunction)
         //this.vrvSVG.addEventListener("resize", this.update)
         this.vrvSVG.addEventListener("deviceorientation", this.updateFunction)
@@ -93,7 +95,6 @@ class WindowHandler implements Handler {
     /**
      * Update all elements that are affected by a window size change
      */
-    private scrollingTimer = new Array()
     update(e: Event) {
         // special rule for transition events since so much with different propertynames are fired
         if (e instanceof TransitionEvent) {

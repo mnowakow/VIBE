@@ -1,6 +1,4 @@
-import { createQualifiedName } from 'typescript';
 import { VerovioMessage, VerovioResponse } from './Types';
-import { getVrvSVG } from './convenienceQueries';
 import { Midi } from "@tonejs/midi";
 import { Buffer } from "buffer";
 
@@ -23,9 +21,9 @@ export default class VerovioWrapper {
     //@ts-ignore
     this.vrvToolkit = new verovio.toolkit() || null;
     this.r = 1
-    // if (this.isRetina()) {
-    //   this.r = 2
-    // }
+    if (this.isRetina()) {
+      this.r = 2
+    }
     this.widthValue = 1500
     var pageWidth = (this.widthValue / (window.devicePixelRatio / this.r)) / (screen.availHeight / window.innerWidth)
 
@@ -36,7 +34,7 @@ export default class VerovioWrapper {
       pageMarginTop: 50,
       adjustPageHeight: true,
       font: 'Bravura',
-      pageWidth: pageWidth, // adjust size with window size
+      //pageWidth: pageWidth, // adjust size with window size
       //pageHeight: pageWidth / 4,
       //justifyVertically: true,
       svgViewBox: true,

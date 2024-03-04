@@ -723,11 +723,22 @@ class Tabbar {
         return this
     }
 
-    private styleCache = new Map<string, string>()
+    private styleCache: Map<string, string>;
     sidebarHandler = (function sidebarHandler(e: MouseEvent): void {
         //toggle
         var that = this
         var elParent: Element
+        // initial style caching
+        if(!this.styleCache){
+            this.styleCache = new Map<string, string>()
+            Array.from(cq.getContainer(this.containerId).querySelectorAll(".openSidebar, .closedSidebar")).forEach(el => {
+                elParent = el.parentElement
+                elParent.querySelectorAll(":scope > div").forEach(d => {
+                    that.styleCache.set(d.id, d.getAttribute("style"))
+                })
+            })
+            return 
+        }
         if (this.sidebar.classList.contains("closedSidebar")) {
             Array.from(cq.getContainer(this.containerId).querySelectorAll(".closedSidebar")).forEach(el => {
                 elParent = el.parentElement
@@ -739,15 +750,14 @@ class Tabbar {
                   document.getElementById(that.containerId)?.querySelector("#" + key)?.setAttribute("style", value)  
                 }
             }
-            that.styleCache = new Map<string, string>()
+            //that.styleCache = new Map<string, string>()
 
         } else {
-            //document.getElementById("sidebarContainer").style.width = "0"
             Array.from(cq.getContainer(this.containerId).querySelectorAll(".openSidebar")).forEach(el => {
                 elParent = el.parentElement
                 elParent.querySelectorAll(":scope > div").forEach(d => {
                     that.styleCache.set(d.id, d.getAttribute("style"))
-                    d.removeAttribute("style")
+                    //d.removeAttribute("style")
                 })
                 el.classList.add("closedSidebar")
                 el.classList.remove("openSidebar")

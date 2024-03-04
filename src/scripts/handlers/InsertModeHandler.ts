@@ -65,9 +65,9 @@ class InsertModeHandler implements Handler {
   }
 
   activateInsertMode(clicked: Boolean = false) {
-    if (this.annotationMode || this.harmonyMode) {
-      this.insertDeactivate()
-    }
+    // if (this.annotationMode || this.harmonyMode) {
+    //   this.insertDeactivate()
+    // }
     // if (clicked) {
     //   if (this.unselectMenuItem("clickInsert")) { return }
     // }

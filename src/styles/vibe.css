@@ -478,11 +478,19 @@ text{
     border-color: black;
     border-style: solid;
     border-width: 3px;
+    position: absolute;
+}
+
+.annotFO{
+    /* width: 100%;
+    height: 100%; */
+    width: 15%;
+    height: 10%;
 }
 
 
 .annotStaticText .annotFO div{
-    background-color: white;
+    background-color: rgb(201, 167, 167);
     border: 1px solid black;
 }
 
@@ -692,16 +700,16 @@ g.currentlyPlaying *{
     cursor: pointer;
 }
 
-.voiceBtn.inactive > rect{
+.voiceBtn.inactive  rect{
    fill: lightgray;
 }
 
-.voiceBtn.inactive > text{
+.voiceBtn.inactive  text{
     fill: gray;
  }
 
 
-.voiceBtn > rect{
+.voiceBtn  rect, .voiceBtn foreignObject{
     stroke-width: 5%;
     stroke: black;
     width: 100%;
@@ -709,12 +717,30 @@ g.currentlyPlaying *{
     fill: antiquewhite
 }
 
-.voiceBtn > text{
+rect.voiceBtn{
+    stroke: black;
+    fill: antiquewhite;
+}
+
+.voiceBtn foreignObject > div{
+    text-align: center;
+    position:relative;
+    top: -20%;
+}
+
+/* .voiceBtn  text, .voiceBtn foreignObject > div{
     font-size: 100%;
     width: 100%;
     height: 100%;
     fill: black;
 }
+
+
+
+rect.voiceBtn + text{
+    font-size: 100%;
+    fill: black;
+} */
 
 .tooltip.show{
     display:contents;
@@ -777,7 +803,7 @@ g.currentlyPlaying *{
 
 foreignObject > [contenteditable]{
     font-family: Consolas, Menlo, Monaco, Lucida Console, Liberation Mono, DejaVu Sans Mono, Bitstream Vera Sans Mono, Courier New, monospace, serif;
-
+    font-size: 1em;
 }
 
 button{

@@ -10,6 +10,7 @@ import CustomAnnotationShapeDrawer from "../handlers/CustomAnnotationShapeDrawer
 import LabelHandler from "../handlers/LabelHandler";
 import * as cq from "../utils/convenienceQueries"
 import * as coordinates from "../utils/coordinates"
+import { getElementTimestampById } from "../utils/MEIOperations";
 
 class Annotations implements Handler {
     m2s?: Mouse2SVG;
@@ -43,7 +44,7 @@ class Annotations implements Handler {
         var rootHeigth = this.rootBBox.height.toString()
         var vb = cq.getInteractOverlay(this.containerId).getAttribute("viewBox") //this.vrvSVG.getAttribute("viewBox")
 
-        this.annotationCanvas =  cq.getInteractOverlay(this.containerId)?.querySelector("#annotationCanvas")
+        this.annotationCanvas = cq.getInteractOverlay(this.containerId)?.querySelector("#annotationCanvas")
         if (!this.annotationCanvas) {
             this.annotationCanvas = document.createElementNS(c._SVGNS_, "svg")
             this.annotationCanvas.setAttribute("id", "annotationCanvas")
@@ -80,16 +81,17 @@ class Annotations implements Handler {
             b.addEventListener("click", this.clickAnnotTextHandler)
         })
         harmonyButton?.addEventListener("click", this.clickHarmonyBtnHandler)
+        //window.addEventListener("resize", this.resizeHandler)
         return this
     }
 
-    clickHarmonyBtnHandler = (function clickHarmonyBtnHandler(e: MouseEvent){
+    clickHarmonyBtnHandler = (function clickHarmonyBtnHandler(e: MouseEvent) {
         //e.preventDefault()
         this.removeTextListeners()
         //e.target.dispatchEvent(new Event("annotationButtonClicked"))
     }).bind(this)
 
-    clickAnnotTextHandler = (function clickAnnotTextHandler(e: MouseEvent){
+    clickAnnotTextHandler = (function clickAnnotTextHandler(e: MouseEvent) {
         //e.preventDefault()
         this.resetTextListeners()
         //e.target.dispatchEvent(new Event("annotationButtonClicked"))
@@ -98,10 +100,11 @@ class Annotations implements Handler {
     removeListeners() {
         this.removeTextListeners()
         var harmonyButton = cq.getContainer(this.containerId).querySelector("#harmonyAnnotButton")
-        cq.getContainer(this.containerId).querySelectorAll(".annotText").forEach(b => { 
+        cq.getContainer(this.containerId).querySelectorAll(".annotText").forEach(b => {
             b.removeEventListener("click", this.clickAnnotTextHandler)
         })
         harmonyButton?.removeEventListener("click", this.clickHarmonyBtnHandler)
+        //window.removeEventListener("resize", this.resizeHandler)
     }
 
     setTextListeners() {
@@ -273,7 +276,23 @@ class Annotations implements Handler {
 
         var posx = pt.x //matrixTransform(rootMatrix).x //e.pageX - this.rootBBox.x - window.pageXOffset
         var posy = pt.y //matrixTransform(rootMatrix).y //e.pageY - this.rootBBox.y - window.pageYOffset
-        var annotationTarget = this.m2s.findScoreTarget(posx, posy, false)
+
+
+        var staves = this.interactionOverlay.querySelectorAll(".staff")
+        var tempDist: number = Math.pow(10, 10)
+        var annotationTarget: NoteBBox | Element = this.m2s.findScoreTarget(posx, posy, false, null, ["mRest"])
+        if(!annotationTarget){
+            var annotationCoords
+            staves.forEach(s => {
+                var coord = coordinates.getDOMMatrixCoordinates(s, this.interactionOverlay)
+                var dist = Math.sqrt(Math.abs(coord.x - posx) ** 2 + Math.abs(coord.y - posy) ** 2)
+                if (dist < tempDist) {
+                    tempDist = dist
+                    annotationTarget = this.vrvSVG.querySelector("#" + s.getAttribute("refId"))
+                    annotationCoords = coord
+                }
+            })
+        }
 
         var textGroup = document.createElementNS(c._SVGNS_, "g")
         textGroup.setAttribute("id", uuidv4())
@@ -309,25 +328,27 @@ class Annotations implements Handler {
 
         textForeignObject.setAttribute("x", foX)
         textForeignObject.setAttribute("y", foY)
-        textForeignObject.setAttribute("height", foH)
-        textForeignObject.setAttribute("width", foW)
+        // textForeignObject.style.height = foH + "px" //setAttribute("height", foH)
+        // textForeignObject.style.width = foW + "px" //setAttribute("width", foW)
 
         if (isLinked) {
             var line = document.createElementNS(c._SVGNS_, "line")
             line.classList.add("annotLine")
 
+            const targetCoords = annotationCoords || annotationTarget
+
             const lX2 = textForeignObject.x.baseVal.valueAsString
             const lY2 = textForeignObject.y.baseVal.valueAsString
-            const lX1 = annotationTarget.x.toString()
-            const lY1 = annotationTarget.y.toString()
+            const lX1 = targetCoords.x.toString()
+            const lY1 = targetCoords.y.toString()
 
             line.setAttribute("x2", lX2)
             line.setAttribute("y2", lY2)
             line.setAttribute("x1", lX1)
             line.setAttribute("y1", lY1)
 
-            const xDiff = parseFloat(lX1) - parseFloat(lX2)
-            const yDiff = parseFloat(lY1) - parseFloat(lY2)
+            const xDiff = parseFloat(lX2) - parseFloat(lX1)//parseFloat(lX1) - parseFloat(lX2)
+            const yDiff = parseFloat(lY2) - parseFloat(lY1)//parseFloat(lY1) - parseFloat(lY2)
             line.setAttribute("x-diff", xDiff.toString())
             line.setAttribute("y-diff", yDiff.toString())
 
@@ -341,10 +362,8 @@ class Annotations implements Handler {
         var newAnnot: Annotation = {
             sourceID: textGroup.id,
             targetID: annotationTarget.id,
-            // relativePos: {
-            //     x: textGroup.getBoundingClientRect().x - annotationTarget.getBoundingClientRect().x, 
-            //     y: textGroup.getBoundingClientRect().y - annotationTarget.getBoundingClientRect().y
-            // }
+            originalWidth: "200",
+            originalHeight: "100",
         }
 
         this.annotations.push(newAnnot)
@@ -507,14 +526,14 @@ class Annotations implements Handler {
 
             const source = cq.getInteractOverlay(this.containerId).querySelector(`#${a.sourceID}`)
             if (!source?.querySelector(".annotLinkedText")) return
-            if(!a.targetID){
+            if (!a.targetID) {
                 a.targetID = source.getAttribute("targetid")
             }
             const target = cq.getContainer(this.containerId).querySelector(`#${a.targetID}`)
             if (!target) return
             var foreignObject = source.querySelector(".annotFO")
             const targetBbox = target.getBoundingClientRect()
-            const targetPt = coordinates.transformToDOMMatrixCoordinates(targetBbox.x, targetBbox.y, cq.getInteractOverlay(this.containerId).querySelector("#annotationCanvas"))
+            const targetPt = coordinates.transformToDOMMatrixCoordinates(targetBbox.x, targetBbox.y, cq.getInteractOverlay(this.containerId))//.querySelector("#annotationCanvas"))
             var line = source.querySelector("line")
             const xSource = targetPt.x + parseFloat(line.getAttribute("x-diff"))
             const ySource = targetPt.y + parseFloat(line.getAttribute("y-diff"))

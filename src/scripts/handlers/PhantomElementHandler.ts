@@ -102,18 +102,14 @@ class PhantomElementHandler implements Handler{
      */
     trackMouse(e: MouseEvent){
         if(this.m2s.getLastMouseEnter().staff === null) return
-        // var pt = coordinates.transformToDOMMatrixCoordinates(e.clientX, e.clientY, this.interactionOverlay)
-        // var relX = pt.x
-        // var relY = pt.y
         var definitionScale = cq.getVrvSVG(this.containerId).querySelector("#" + this.m2s.getLastMouseEnter().staff?.getAttribute("refId"))?.closest(".definition-scale")
-        if(definitionScale == undefined || definitionScale == null) return
+        if(!definitionScale) return
 
-        var pt = coordinates.transformToDOMMatrixCoordinates(e.clientX, e.clientY, this.interactionOverlay)
+        var pt = coordinates.transformToDOMMatrixCoordinates(e.clientX, e.clientY, cq.getInteractOverlay(this.containerId))
         var relX = pt.x
         var relY = pt.y
 
-        var dsCoords = coordinates.getDOMMatrixCoordinates(definitionScale, definitionScale.closest(".page"))
-        //console.log(relX, dsCoords, definitionScale.getBoundingClientRect())
+        var dsCoords = coordinates.getDOMMatrixCoordinates(definitionScale, cq.getInteractOverlay(this.containerId))
         if(relX < dsCoords.left || relX > dsCoords.right){
             this.isTrackingMouse = false
             return
@@ -147,9 +143,6 @@ class PhantomElementHandler implements Handler{
             })
             this.setPhantomLineListeners()
         }
-        // if(e.type === "draggingNote"){
-        //     console.log(phantomNoteElement, this.phantomLines)
-        // }
     }
 
     removeLines(){

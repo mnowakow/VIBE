@@ -339,7 +339,7 @@ class AnnotationChangeHandler implements Handler {
             var edx = pt.x //.matrixTransform(this.canvasMatrix).x
             var edy = pt.y //matrixTransform(this.canvasMatrix).y
 
-            var ptDist = coordinates.transformToDOMMatrixCoordinates(target.getBoundingClientRect().x, event.target.getBoundingClientRect().y, cq.getInteractOverlay(this.containerId).querySelector("#annotationCanvas")) //new DOMPoint(target.getBoundingClientRect().x, event.target.getBoundingClientRect().y)
+            var ptDist = coordinates.transformToDOMMatrixCoordinates(target.getBoundingClientRect().x, event.target.getBoundingClientRect().y, cq.getInteractOverlay(this.containerId).querySelector("#annotationCanvas")) 
             var distX = (parseFloat(target.getAttribute('distX'))) || edx - ptDist.x //matrixTransform(this.canvasMatrix).x 
             var distY = (parseFloat(target.getAttribute('distY'))) || edy - ptDist.y //matrixTransform(this.canvasMatrix).y 
 
@@ -721,6 +721,20 @@ class AnnotationChangeHandler implements Handler {
 
     setAnnotations(annotations: Array<Annotation>) {
         this.annotations = annotations
+        // this.annotations.forEach(annot => {
+        //     var annotElement = cq.getInteractOverlay(this.containerId).querySelector("#" + annot.sourceID +  " .annotFO") as HTMLElement
+        //     var h = annotElement.getBoundingClientRect().height
+        //     var w = annotElement.getBoundingClientRect().width
+        //     var ratio = parseFloat(annot.originalWidth) / w
+        //     if(isNaN(ratio)) return
+        //     annot.originalWidth = (w * ratio).toString()
+        //     annot.originalHeight = (h * ratio).toString()
+        //     annotElement.style.height = annot.originalHeight.toString() + "px"
+        //     annotElement.style.width = annot.originalWidth.toString() + "px"
+        //     console.log(annot, annotElement, this.annotations)
+
+        // })
+        
         // var newFactor = parseInt((cq.getContainer(this.containerId).querySelector("#svgContainer") as HTMLElement).style?.width?.split("%")[0]) || 100
         // if (newFactor === this.factor) return this
         // var that = this

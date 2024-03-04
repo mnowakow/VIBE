@@ -150,7 +150,9 @@ class ScoreManipulator{
                 for(let i = 0; i < 4; i++){
                     var btn = document.createElementNS("http://www.w3.org/2000/svg", "svg")
                     var btnRect = document.createElementNS("http://www.w3.org/2000/svg", "rect")
-                    var btnText = document.createElementNS("http://www.w3.org/2000/svg", "text")
+                    var btnFO = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject")
+                    var btnText = document.createElement("div")
+                    btnFO.append(btnText)
                     btnText.textContent = (i+1).toString()
                     btn.setAttribute("x", "3px") 
                     btn.setAttribute("y", (yTop + btnHeight * i).toString())
@@ -163,11 +165,11 @@ class ScoreManipulator{
                     btn.setAttribute("id", "voiceSelect-" + staff.getAttribute("n") + "-" + (i+1).toString())
 
                     //btnText is relative to btn
-                    btnText.setAttribute("x", "30%")
-                    btnText.setAttribute("y", "80%")
-
+                    var fontSize = btnHeight
+                    btnText.style.fontSize = fontSize.toString() + "px"
+                    
                     btn.append(btnRect)
-                    btn.append(btnText)
+                    btn.append(btnFO)
                     this.interactionOverlay.querySelector("#manipulatorCanvas")?.append(btn)
                 }
 
