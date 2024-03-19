@@ -5,7 +5,6 @@ import InsertHandler from './handlers/InsertModeHandler';
 import { Mouse2SVG } from './utils/Mouse2SVG';
 import * as dc from './utils/DOMCreator'
 import Tabbar from './gui/Tabbar'
-import { isCallChain } from 'typescript';
 
 /**
  * Main Class for the Verovio Interface for Browser based Editing
@@ -221,7 +220,7 @@ class VIBE {
             }
 
             this.tabbar
-                .setImportCallback(this.coreInstance.loadDataHandler)
+                .setLoadDataCallback(this.coreInstance.loadDataHandler)
                 .setAlignCallback(this.coreInstance.alignFunctionHandler)
                 .setGetMEICallback(this.coreInstance.getMEI.bind(this.coreInstance))
             //block everthing when firefox is not at least version 114.0

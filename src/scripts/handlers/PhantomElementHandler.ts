@@ -118,7 +118,12 @@ class PhantomElementHandler implements Handler{
         this.isTrackingMouse = true
 
         var target = e.target as HTMLElement
-        target = target.closest("g") as unknown as HTMLElement
+        try{
+            target = target.closest("g") as unknown as HTMLElement
+        }catch(error){
+            console.log(e, target)
+            return
+        }
         var options = {}
 
         if(target?.classList.contains("staffLine")){

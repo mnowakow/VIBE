@@ -17,8 +17,6 @@ import ScoreManipulatorHandler from './ScoreManipulatorHandler';
 import { cleanUp } from '../utils/MEIOperations';
 import * as cq from "../utils/convenienceQueries"
 import MeasureMatrix from '../datastructures/MeasureMatrix';
-import { MidSideMerge } from 'tone';
-import { TickSignal } from 'tone/build/esm/core/clock/TickSignal';
 
 /**
  * Handle logic and interaction with Tabbar and Custom Toolbar.
@@ -107,6 +105,8 @@ class InsertModeHandler implements Handler {
     this.deleteHandler.setListeners()
 
     this.annotations?.setm2s(this.m2s)
+
+    this.labelHandler.deactivateHarmonyHighlight()
     //this.annotations?.updateCanvas()
     //this.annotations?.resetTextListeners() // annotations should also be interactable when in notation mode
     //this.activateSelectionMode()
@@ -119,34 +119,50 @@ class InsertModeHandler implements Handler {
     this.keyMode = false;
     this.clickInsertMode = false;
 
-    var selectedButton = this.container.querySelector("#annotGroupKM button.selected")?.id
-    switch (selectedButton) {
-      case "harmonyAnnotButton":
-        this.activateHarmonyMode()
-        this.harmonyMode = true
-        this.annotationMode = false
-        break;
-      case "staticTextButton":
-      case "linkedAnnotButton":
-        this.container.classList.remove("harmonyMode")
-        this.annotationMode = true
-        this.harmonyMode = false
-        if (this.annotations == undefined) {
-          this.annotations = new Annotations(this.containerId)
-        } else {
-          this.annotations.updateCanvas()
-        }
-        this.annotations.setAnnotationCanvas(cq.getInteractOverlay(this.containerId).querySelector("#annotationCanvas"))
-        this.annotations.updateLinkedTexts()
-        break;
+    var selectedButtonId = this.container.querySelector("#annotGroupKM button.selected")?.id
+    setAnnotationState(selectedButtonId)
+
+    // the annotationgroup buttons are just created, when AnnnotationTabBtn is clicked
+    Array.from(this.container.querySelectorAll("#annotGroupKM button"))?.forEach(b => {
+      b.addEventListener("click", setButtonId)
+    })
+
+    
+    function setButtonId(e){
+      selectedButtonId = e.target.id
+      setAnnotationState(selectedButtonId)
     }
-    this.annotations
-          .setContainerId(this.containerId)
-          .setm2s(this.m2s)
-          .setMusicProcessor(this.musicPlayer)
-          //.setToFront()
-          .setListeners()
-          .setMenuClickHandler()
+
+    function setAnnotationState(selectedButtonId: string){
+      switch (selectedButtonId) {
+        case "harmonyAnnotButton":
+          that.harmonyMode = true
+          that.annotationMode = false
+          that.isGlobal = false
+          that.activateHarmonyMode()
+          break;
+        case "staticTextButton":
+        case "linkedAnnotButton":
+          that.container.classList.remove("harmonyMode")
+          that.annotationMode = true
+          that.harmonyMode = false
+          if (that.annotations == undefined) {
+            that.annotations = new Annotations(that.containerId)
+          } else {
+            that.annotations.updateCanvas()
+          }
+          that.annotations.setAnnotationCanvas(cq.getInteractOverlay(that.containerId).querySelector("#annotationCanvas"))
+          that.annotations.updateLinkedTexts()
+          break;
+      }
+      that.annotations
+            .setContainerId(that.containerId)
+            .setm2s(that.m2s)
+            .setMusicProcessor(that.musicPlayer)
+            //.setToFront()
+            .setListeners()
+            .setMenuClickHandler()
+    }
   }
 
   activateHarmonyMode() {
@@ -154,11 +170,11 @@ class InsertModeHandler implements Handler {
       this.labelHandler = new LabelHandler(this.containerId)
     }
     //Activate/ Deactivate Global functions according to selected harmonymode
-    if (this.container.querySelector("#activateHarm.selected, #harmonyAnnotButton.selected") !== null) {
+    if (!this.isGlobal) {
       this.insertDeactivate()
       this.container.classList.add("harmonyMode")
       this.isGlobal = false
-    } else {
+    } else{
       this.isGlobal = true
     }
 

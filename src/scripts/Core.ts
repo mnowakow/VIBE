@@ -230,6 +230,7 @@ class Core {
         d = new XMLSerializer().serializeToString(data as HTMLElement);
         u = false;
         break;
+      case null:
       case undefined:
         d = new MeiTemplate().emptyMEI()
         u = false
@@ -429,6 +430,7 @@ class Core {
     this.labelHandler
       .setContainerId(this.containerId)
       .setCurrentMEI(this.currentMEIDoc)
+      .setm2s(this.m2s)
       .reset()
 
     this.insertModeHandler
@@ -438,7 +440,7 @@ class Core {
       .setMusicProcessor(this.musicProcessor)
       .setDeleteHandler(this.deleteHandler)
       .setLabelHandler(this.labelHandler)
-      .activateHarmonyMode()
+      //.activateHarmonyMode()
       //.activateSelectionMode()
       .setInsertCallback(this.insert)
       .setDeleteCallback(this.delete)
@@ -592,7 +594,7 @@ class Core {
           this.undoAnnotationStacks.push([annotCanvas, annotList])
           annotCanvas.replaceWith(annotstate[0])
           annotList.replaceWith(annotstate[1])
-          this.keyboardHandler.resetListeners()
+          this.globalKeyboardHandler.resetListeners()
           this.container.dispatchEvent(new Event("annotationCanvasChanged"))
         }
         resolve(true)
@@ -624,7 +626,7 @@ class Core {
           this.undoAnnotationStacks.push([annotCanvas, annotList])
           annotCanvas.replaceWith(annotstate[0])
           annotList.replaceWith(annotstate[1])
-          this.keyboardHandler.resetListeners()
+          this.globalKeyboardHandler.resetListeners()
         }
         resolve(true)
         return
@@ -723,7 +725,6 @@ class Core {
       document.getElementById(this.containerId).querySelector("#interactionOverlay #scoreRects")?.remove()
       var scoreRects = document.createElementNS(c._SVGNS_, "svg")
       scoreRects.setAttribute("id", "scoreRects")
-      //scoreRects.setAttribute("viewBox", ["0", "0", rootWidth.toString(), rootHeigth.toString()].join(" "))
 
       Array.from(refSVG.attributes).forEach(a => {
         if (!["id", "width", "height"].includes(a.name)) {
@@ -735,20 +736,29 @@ class Core {
 
       if (loadBBoxes) {
         var svgBoxes = Array.from(document.getElementById(this.containerId)
-          .querySelectorAll(".definition-scale :is(g,path)"))//".definition-scale path, .definition-scale .bounding-box"))
+          .querySelectorAll(".definition-scale :is(g,path)"))
           .filter(el => {
             var condition = !["system", "measure", "layer", "ledgerLines", "flag"].some(cn => el.classList.contains(cn))
             return condition
           })
         var reorderedBoxes = new Array<Element>() // reorder so that dependent elements are already in array
-        svgBoxes.forEach(sb => {
-          if (sb.querySelector(":scope > use, :scope > rect, :scope > path") === null) {
-            reorderedBoxes.push(sb)
-          } else {
-            reorderedBoxes.unshift(sb)
-          }
-        })
+        var classOrder = ["harm", "slur", "tie", "tupleNum", "tupletBracket", "clef", "meterSig", "keySig", "notehead", "stem", "rest", "barLine", "staff"]
 
+        let filteredElements: Array<Element>
+        classOrder.forEach(c => {
+          filteredElements = svgBoxes.filter(e => e.classList.contains(c))
+          reorderedBoxes.push(...filteredElements)
+        })
+        filteredElements = svgBoxes.filter(e => e.classList.length === 0 || !classOrder.some(c => e.classList.contains(c)))
+        // {  
+        // if(e.classList.length === 0){
+        //     return e
+        //   }
+        //   if(!classOrder.some(c => e.classList.contains(c))){
+        //     return e
+        //   }
+        // })
+        reorderedBoxes.push(...filteredElements)
         // staff always has to be on top of sibling elements, so that one can interact with score elements
         reorderedBoxes = reorderedBoxes.reverse()
 

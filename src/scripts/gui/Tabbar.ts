@@ -51,7 +51,7 @@ class Tabbar {
     private container: Element
     private interactionOverlay: Element
     private vrvSVG: Element
-    importCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>
+    loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>
     alignCallback: (file: any) => void
     getMEICallback: (pageURI: string) => Promise<string>
 
@@ -364,6 +364,8 @@ class Tabbar {
 
         this.fileSelectGroup = cq.getContainer(this.containerId).querySelector("#fileSelectGroup")
 
+        this.fileSelectGroup.append(dc.makeNewButton("Empty Score", "emptyScoreBtn", buttonStyleDarkOutline))
+
         this.fileSelectGroup.append(dc.makeNewInput("importAudioFile", "file", ""))
         this.fileSelectGroup.append(dc.makeNewButton("Import Audiofile", "importAudioFileBtn", buttonStyleDarkOutline))
 
@@ -548,10 +550,11 @@ class Tabbar {
         cq.getContainer(this.containerId).querySelector("#importXML").addEventListener("input", function (e) {
             var fr = new FileReader()
             fr.onload = function () {
-                that.importCallback("", fr.result as string, false, c._TARGETDIVID_).then(mei => {
+                that.loadDataCallback("", fr.result as string, false, c._TARGETDIVID_).then(mei => {
                     var meiXml = meioperations.mergeSectionScoreDefToLayer(mei)
-                    meiXml = meioperations.mergeArticToParent(meiXml)
-                    that.importCallback("", meiXml, false, c._TARGETDIVID_)
+                    meiXml = meioperations.mergeNotechildrenToAttributes(meiXml)
+                    meiXml = meioperations.adjustOrderNumbers(meiXml)
+                    that.loadDataCallback("", meiXml, false, c._TARGETDIVID_)
                     that.align(null, null)
                 })
             }
@@ -596,6 +599,10 @@ class Tabbar {
                     + "vibeScore_" + that.containerId + ".mei"
                 that.download(fileName, mei)
             })
+        })
+
+        cq.getContainer(this.containerId).querySelector("#emptyScoreBtn").addEventListener("click", function(){
+            that.loadDataCallback("", null, false, c._TARGETDIVID_).then(() => cq.getContainer(that.containerId).querySelectorAll("#annotationCanvas > g").forEach(g => g.remove()))
         })
     }
 
@@ -829,8 +836,8 @@ class Tabbar {
      * Callback from Core, so that imported mei or musicxml can be loaded in the editor
      * @param importCallback 
      */
-    setImportCallback(importCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>) {
-        this.importCallback = importCallback
+    setLoadDataCallback(loadDataCallback: (pageURI: string, data: string | Document | HTMLElement, isUrl: boolean, targetDivID: string) => Promise<string>) {
+        this.loadDataCallback = loadDataCallback
         return this
     }
 

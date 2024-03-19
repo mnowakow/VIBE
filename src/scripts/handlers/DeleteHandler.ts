@@ -62,6 +62,7 @@ class DeleteHandler implements Handler{
      */
     backSpaceHandler = (function backSpaceHandler(e: KeyboardEvent){
         if(!cq.hasActiveElement(this.containerId)) return
+        if(cq.getContainer(this.containerId).querySelector("[contenteditable=\"true\"]")) return
         if(e.code !== "Backspace") return
         var hasRests = false
         var hasNotes = false

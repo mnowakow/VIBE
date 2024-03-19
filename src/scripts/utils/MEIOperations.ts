@@ -1008,6 +1008,14 @@ export function mergeArticToParent(currentMEI: Document) {
   return currentMEI
 }
 
+export function mergeNotechildrenToAttributes(currentMEI: Document) {
+  currentMEI.querySelectorAll("note > *").forEach(a => {
+    a.parentElement.setAttribute(a.tagName, a.getAttribute(a.tagName))
+    a.remove()
+  })
+  return currentMEI
+}
+
 /**
  * Transpose marked notes according to direcion (up or down)
  * @param currentMEI  
@@ -1174,67 +1182,6 @@ export function fillLayerWithRests(layer: Element, currentMEI: Document) {
       }
     }
   }
-}
-
-
-/**
- * Fill Empty Space with rest
- * @deprecated
- * @param currentMEI  
- */
-function _fillWithRests(currentMEI: Document) {
-  var staffDef = currentMEI.getElementsByTagName("staffDef").item(0)
-  var meterCount: string
-  var meterUnit: string
-  var meterRatio: number
-  if (staffDef.getAttribute(c._METERCOUNT_) !== null && staffDef.getAttribute(c._METERUNIT_) !== null) {
-    meterCount = staffDef.getAttribute(c._METERCOUNT_)
-    meterUnit = staffDef.getAttribute(c._METERUNIT_)
-    meterRatio = parseInt(meterCount) / parseInt(meterUnit)
-  } else {
-    var meterRatio = getMeterRatioGlobal(currentMEI)
-    meterCount = (meterRatio * 4).toString()
-    meterUnit = "4"
-  }
-
-  currentMEI.querySelectorAll("measure").forEach(m => {
-    m.querySelectorAll("staff").forEach(s => {
-      s.querySelectorAll("layer").forEach((l, idx) => {
-        //mRest for empty Layer
-        if (l.childElementCount === 0) {
-          if (idx === 0) {
-            var restEl = document.createElementNS(c._MEINS_, "mRest")
-            l.appendChild(restEl)
-          } else { // remove 1+ empty layer
-            l.remove()
-          }
-        } else {
-          var actualMeterFill = getAbsoluteRatio(l)
-          var ratioDiff = Math.abs(actualMeterFill - meterRatio)
-          var smallestValue = gcd(ratioDiff)
-          //var restDurs = findDotsRecursive(ratioDiff, gcd(ratioDiff))
-          if (Number.isInteger(ratioDiff / smallestValue) && ratioDiff > 0) {
-            var leftRatio = ratioDiff
-            var durArr = new Array<number>()
-            while (!Number.isInteger(1 / leftRatio)) {
-              var leftRatio = ratioDiff - smallestValue
-              durArr.push(1 / smallestValue)
-            }
-            durArr.push(1 / leftRatio)
-            durArr = durArr.reverse()
-            durArr.forEach(dur => {
-              var newRest = currentMEI.createElementNS(c._MEINS_, "rest")
-              newRest.setAttribute("dur", dur.toString())
-              l.appendChild(newRest)
-            })
-          }
-
-          //console.log(document.getElementById(l.id), ratioDiff, gcd(ratioDiff), durArr)
-        }
-      })
-    })
-
-  })
 }
 
 /**
@@ -1566,6 +1513,29 @@ function adjustRests(currentMEI: Document) {
       })
     }
   })
+}
+
+export function adjustOrderNumbers(currentMEI: Document){
+  function setN(nodeList: NodeListOf<Element>){
+    var tagCounter = new Map<string, number>()
+    nodeList.forEach(n => {
+      if(!tagCounter.has(n.tagName)){
+        tagCounter.set(n.tagName, 1)
+      }
+      n.setAttribute("n", tagCounter.get(n.tagName).toString())
+      tagCounter.set(n.tagName, tagCounter.get(n.tagName) + 1)
+    })
+  }
+
+  setN(currentMEI.querySelectorAll("measure"))
+  currentMEI.querySelectorAll("measure").forEach(m => {
+    setN(m.querySelectorAll("staff"))
+  })
+  currentMEI.querySelectorAll("staff").forEach(s => {
+    setN(s.querySelectorAll("layer"))
+  })
+
+  return currentMEI
 }
 
 /**

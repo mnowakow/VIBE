@@ -3,13 +3,9 @@ import { Mouse2SVG } from "../utils/Mouse2SVG";
 import { constants as c } from "../constants"
 import Handler from "./Handler";
 import interact from "interactjs"
-import { idxNoteMapFClef } from "../utils/mappings";
 import { Annotation, Coord } from "../utils/Types";
 import * as cq from "../utils/convenienceQueries"
 import * as coordinates from "../utils/coordinates"
-import { elementIsOverfilling } from "../utils/MEIOperations";
-import { isFunction } from "tone";
-import { isFunctionExpression } from "typescript";
 
 
 /**
@@ -46,6 +42,9 @@ class AnnotationChangeHandler implements Handler {
     private annotationCanvas: Element
     factor: number;
 
+    positionx: number
+    positiony: number
+
     constructor(containerId: string) {
         this.setContainerId(containerId)
         //this.update()
@@ -54,6 +53,9 @@ class AnnotationChangeHandler implements Handler {
         this.dragAnnotEndEvent = new Event("dragAnnotEnd")
         this.isInteracting = false
         this.factor = 100
+
+        this.positionx = 0
+        this.positiony = 0
     }
 
 
@@ -108,7 +110,7 @@ class AnnotationChangeHandler implements Handler {
                         that.isInteracting = false
 
                     }
-                },
+                }
             })
             .draggable({
                 listeners: {
@@ -118,14 +120,15 @@ class AnnotationChangeHandler implements Handler {
                         that.deleteTempDistances()
                         that.interactTarget.dispatchEvent(that.dragAnnotEndEvent)
                         that.isInteracting = false
+                        
                     }
                 },
-                modifiers: [
-                    interact.modifiers.restrictRect({
-                        restriction: 'parent',
-                        endOnly: true
-                    })
-                ]
+                // modifiers: [
+                //     interact.modifiers.restrictRect({
+                //         restriction: 'parent',
+                //         endOnly: true
+                //     })
+                // ]
             })
 
         this.lineListener = interact("#" + this.containerId + " #interactionOverlay .lineDragRect.x1")

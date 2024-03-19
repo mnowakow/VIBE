@@ -471,7 +471,7 @@ text{
 
 
 
-.annotLinkedText .annotFO{
+.annotLinkedText .annotDiv{
     /*background-color: rgba(255, 255, 153, 0.8);*/
     background-color: rgba(0, 0, 0, 0.1);
     border-radius: 0px 10px 10px 10px;
@@ -618,17 +618,20 @@ g.currentlyPlaying *{
 .labelDiv{
     border: 2px solid black;
     border-radius: 10px;
-    height: fit-content;
+    /* height: fit-content;
     width: fit-content;
-    min-width: 50px;
+    min-width: 50px; */
     background-color: beige;
-    font-size: 40px;
-    font-family: 'Times New Roman', Times, serif;
+    /* font-size: 40px;
+    font-family: 'Times New Roman', Times, serif; */
 }
 
-.labekFO{
+.labelFO{
+    font-size: 16pt;
+    font-family: 'Times New Roman', Times, serif;
+    text-align: center;
+    width: 10%;
     height: 100%;
-    width: 100%;
 }
 
 /* KEYMODE */

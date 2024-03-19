@@ -163,7 +163,7 @@ class LabelHandler implements Handler {
      * Open Inputbox for (first) selected Note
      */
     harmonyLabelHandler(e: Event) {
-        var nextNote = this.vrvSVG.querySelector(".note.marked, .chord.marked")
+        var nextNote = this.vrvSVG.querySelector(".note.marked, .chord.marked, .rest.marked")
         if (nextNote === null) { return }
         var nextNoteBBox = nextNote.getBoundingClientRect()
         var staffBBox = nextNote.closest(".staff").getBoundingClientRect()
@@ -379,7 +379,7 @@ class LabelHandler implements Handler {
         if (refElementClass === "harm") { // change existing harm
             let harmLabel = label as HarmonyLabel
             harmLabel.modifyLabel(text)
-            //this.currentMEI.getElementById(harmLabel.getElement().id).replaceWith(harmLabel.getElement())
+            this.currentMEI.getElementById(harmLabel.getElement().id).replaceWith(harmLabel.getElement())
         } else if (["note", "chord"].some(cn => refElementClass === cn)) { //create new harm
             let harmLabel = this.setLabel(labelDiv.textContent, labelDiv.closest("g").getAttribute("refElementId")) as HarmonyLabel
             this.currentMEI.getElementById(harmLabel.getStartId()).closest("measure").append(harmLabel.getElement())
@@ -440,8 +440,8 @@ class LabelHandler implements Handler {
 
         textForeignObject.setAttribute("x", "0")
         textForeignObject.setAttribute("y", "0")
-        textForeignObject.setAttribute("height", "1000") //(textDiv.clientHeight + 2 * rectPadding).toString())
-        textForeignObject.setAttribute("width", "1000")//(textDiv.clientHeight + 2 * rectPadding).toString())
+        // textForeignObject.setAttribute("height", "1000") //(textDiv.clientHeight + 2 * rectPadding).toString())
+        // textForeignObject.setAttribute("width", "1000")//(textDiv.clientHeight + 2 * rectPadding).toString())
 
         this.labelCanvas.appendChild(textGroup)
         textGroup.appendChild(text)

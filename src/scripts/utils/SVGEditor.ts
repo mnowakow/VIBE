@@ -453,9 +453,26 @@ class SVGEditor {
 
     setActiveLayer() {
         var container = cq.getContainer(this.containerId)
-        if (!container.querySelector(".layer.activeLayer")) {
-            container.querySelectorAll(".layer[n='1']").forEach(l => l.classList.add("activeLayer"))
-        }
+        var staffN: string = "0"
+        // find out if all staves have at least one active layer
+        container.querySelectorAll(".staff").forEach(s => {
+            var n = s.getAttribute("n")
+            if(parseInt(n) > parseInt(staffN)) staffN = n
+        })
+
+        var i = 1
+        do{
+            let activeLayer = container.querySelector(`.staff[n='${i}'] > .layer.activeLayer`)
+            if(!activeLayer){
+                container.querySelectorAll(`.staff[n='${i}'] > .layer[n='1']`).forEach(l => l.classList.add("activeLayer"))
+            }
+            i += 1
+        }while(i <= parseInt(staffN))
+
+        // if (!container.querySelector(".layer.activeLayer")) {
+        //     container.querySelectorAll(".layer[n='1']").forEach(l => l.classList.add("activeLayer"))
+        // }
+        
         container.querySelectorAll(".activeLayer").forEach(al => {
             var staffN = al.closest(".staff").getAttribute("n")
             var layerN = al.getAttribute("n")

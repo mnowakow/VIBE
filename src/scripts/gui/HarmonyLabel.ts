@@ -34,7 +34,7 @@ class HarmonyLabel implements Label {
         if (inputString.match(letters)) {
             this.isText = true
         } else if(isEmpty){
-            this.element.dispatchEvent(new Event("emptyHarmonyText"))
+            this.element.textContent = ""
         } else{
             this.isBassoContinuo = true
         }
