@@ -34,7 +34,7 @@
     "compression-webpack-plugin": "^9.2.0",
     "css-loader": "^6.7.1",
     "d3": "^5.11.0",
-    "esbuild": "0.17.14",
+    "esbuild": "0.25.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "file-loader": "^6.2.0",
     "h5p-lib-controls": "^0.0.15",
